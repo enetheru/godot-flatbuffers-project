@@ -8,9 +8,11 @@ Makefile
 cmake_install.cmake
 install_manifest.txt
 compile_commands.json
+CMakeUserPresets.json
 CTestTestfile.cmake
 _deps
-cmake-build*
+cmake-build*/
+build/
 .cmake/
 
 # FetchContent and generated files

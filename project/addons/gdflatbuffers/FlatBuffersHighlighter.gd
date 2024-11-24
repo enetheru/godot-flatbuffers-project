@@ -126,8 +126,10 @@ func _get_supported_languages ( ) -> PackedStringArray:
 
 # Override methods for Syntax Highlighter
 func _clear_highlighting_cache ( ):
-	resource = get_edited_resource()
-	file_location = resource.resource_path.get_base_dir() + "/"
+	#resource = get_edited_resource()
+	# file_location = resource.resource_path.get_base_dir() + "/"
+	# FIXME: This ^^ relies on a patch
+
 	if verbose > 2: print_rich("[b]_clear_highlighting_cache( )[/b]")
 	included_files.clear()
 	user_enum_vals.clear()

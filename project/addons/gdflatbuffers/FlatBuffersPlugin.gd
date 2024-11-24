@@ -62,7 +62,10 @@ func disable_syntax_highlighter() -> void:
 
 func change_editor_settings() -> void:
 	# TODO make these project settings
+	var settings : EditorSettings = EditorInterface.get_editor_settings()
+
 	# Editor Settings
+	# FIXME: When I loaded the project for the first time the below line failed, and the above line didnt solve it.
 	if not settings.get( flatc_path ):
 		settings.set( flatc_path, "")
 		var property_info := {

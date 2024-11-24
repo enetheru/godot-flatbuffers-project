@@ -1,6 +1,6 @@
 [configuration]
 
-entry_symbol = "${GDE_ENTRY_SYMBOL}"
+entry_symbol = "${GDE_NAME}_library_init"
 compatibility_minimum = "${GODOT_VERSION_MAJOR}.${GODOT_VERSION_MINOR}"
 ${HOT_RELOAD_REPL}
 
