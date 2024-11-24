@@ -1,0 +1,82 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 28,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "hidden": true,
+            "name": "gcc-msys2-ucrt64",
+            "generator": "Ninja Multi-Config",
+            "binaryDir": "${sourceDir}/build//${presetName}",
+            "vendor": {
+                "jetbrains.com/clion": {
+                    "enablePythonIntegration": false,
+                    "toolchain": "gcc-msys2-ucrt64"
+                }
+            }
+        },
+        {
+            "hidden": true,
+            "name": "clang-msys2-clang64",
+            "generator": "Ninja Multi-Config",
+            "binaryDir": "${sourceDir}/build//${presetName}",
+            "vendor": {
+                "jetbrains.com/clion": {
+                    "enablePythonIntegration": false,
+                    "toolchain": "clang-msys2-clang64"
+                }
+            }
+        },
+        {
+            "hidden": true,
+            "name": "msvc-windows",
+            "generator": "Visual Studio 17 2022",
+            "binaryDir": "${sourceDir}/build//${presetName}",
+            "vendor": {
+                "jetbrains.com/clion": {
+                    "enablePythonIntegration": false,
+                    "toolchain": "msvc-windows"
+                }
+            }
+        },
+        {
+            "hidden": true,
+            "name": "clangcl-windows",
+            "generator": "Visual Studio 17 2022",
+            "binaryDir": "${sourceDir}/build//${presetName}",
+            "vendor": {
+                "jetbrains.com/clion": {
+                    "enablePythonIntegration": false,
+                    "toolchain": "clangcl-windows"
+                }
+            }
+        },
+        {
+            "hidden": true,
+            "name": "clang-windows",
+            "generator": "Ninja Multi-Config",
+            "binaryDir": "${sourceDir}/build//${presetName}",
+            "vendor": {
+                "jetbrains.com/clion": {
+                    "enablePythonIntegration": false,
+                    "toolchain": "clang-windows"
+                }
+            }
+        },
+        {
+            "hidden": true,
+            "name": "gcc-clion-mingw",
+            "generator": "Ninja Multi-Config",
+            "binaryDir": "${sourceDir}/build//${presetName}",
+            "vendor": {
+                "jetbrains.com/clion": {
+                    "enablePythonIntegration": false,
+                    "toolchain":  "gcc-clion-mingw"
+                }
+            }
+        }
+    ]
+}

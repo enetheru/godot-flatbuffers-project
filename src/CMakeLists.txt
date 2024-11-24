@@ -6,17 +6,17 @@
 #message( "Found These Flatbuffer Generated Headers: \n${FBHEADERS}" )
 configure_file( entry_point.cpp.in ${CMAKE_CURRENT_SOURCE_DIR}/entry_point.cpp )
 
-target_sources( ${GDE_NAME}
-    PRIVATE
-        entry_point.cpp
-        register_types.cpp
-        register_types.hpp
-        flatbuffer.cpp
-        flatbuffer.hpp
-        flatbufferbuilder.cpp
-        flatbufferbuilder.hpp
-        utils.hpp
+set( SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/entry_point.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/register_types.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/register_types.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/flatbuffer.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/flatbuffer.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/flatbufferbuilder.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/flatbufferbuilder.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils.hpp
         ${FBHEADERS}
+        PARENT_SCOPE
 )
 
 if( GODOT_ENABLE_HOT_RELOAD )

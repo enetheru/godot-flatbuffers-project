@@ -35,7 +35,7 @@ function( godot_executable_name )
     list(APPEND NAME_PARTS "${GDE_TARGET_PLATFORM}")
     list(APPEND NAME_PARTS "editor") # we dont need preset here, we always want the editor
 
-    if(${GODOT_CPP_FLOAT_DOUBLE})
+    if(${GODOT_FLOAT_DOUBLE})
         list(APPEND NAME_PARTS "double")
     endif ()
 
@@ -69,17 +69,17 @@ function( gde_names_gdextension )
 
     list(APPEND NAME_PARTS "${GDE_TARGET_PLATFORM}")
 
-    if( ${GODOT_CPP_TOOLS_ENABLED} )
+    if( ${GODOT_TOOLS_ENABLED} )
         list(APPEND NAME_PARTS "editor")
     else()
         list(APPEND NAME_PARTS "template")
     endif()
 
-    if( GODOT_CPP_DEV_BUILD )
+    if( GODOT_DEV_BUILD )
         list(APPEND NAME_PARTS "dev")
     endif()
 
-    if (${GODOT_CPP_FLOAT_DOUBLE})
+    if (${GODOT_FLOAT_DOUBLE})
         list(APPEND NAME_PARTS "double")
     endif ()
 
