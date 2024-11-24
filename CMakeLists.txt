@@ -2,23 +2,6 @@ cmake_minimum_required(VERSION 3.28)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-if( is_multi_config )
-    set( CMAKE_CONFIGURATION_TYPES "template_debug;template_release;editor;dev_build")
-#    set( CMAKE_DEFAULT_CONFIGS "template_debug;template_release;editor;dev_build" )
-#    if( NOT MSVC )
-#        set( CMAKE_DEFAULT_BUILD_TYPE "template_release" )
-#    endif ()
-#    set( CMAKE_CROSS_CONFIGS "all" )
-elseif (CMAKE_CONFIG_TYPE STREQUAL "")
-    set( CMAKE_CONFIG_TYPE "template_release" )
-endif ()
-
-set( CMAKE_MAP_IMPORTED_CONFIG_dev_build Debug )
-set( CMAKE_MAP_IMPORTED_CONFIG_editor Debug )
-set( CMAKE_MAP_IMPORTED_CONFIG_template_debug Debug )
-set( CMAKE_MAP_IMPORTED_CONFIG_template_release Release )
-
 # We need git to perform some actions so make sure we have it.
 find_program(GIT_EXECUTABLE NAMES "git" DOC "" NO_CACHE REQUIRED)
 if( NOT EXISTS "${GIT_EXECUTABLE}" )

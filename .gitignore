@@ -78,3 +78,5 @@ src/entry_point.cpp
 /project/scratch.gd
 /project/addons/Todo_Manager
 /project/addons/zylann.editor_debugger
+
+lib/
