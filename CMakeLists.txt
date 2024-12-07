@@ -35,14 +35,25 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Output Directory
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "$<1:${GODOT_PROJECT_PATH}/addons/${GDE_NAME}/bin>" )
 
-### Add Flatbuffers as a sub project
+### Configure and add Flatbuffers as a sub project
+set( FLATBUFFERS_BUILD_FLATHASH     NO )
+set( FLATBUFFERS_BUILD_SHAREDLIB    NO )
+set( FLATBUFFERS_BUILD_TESTS        NO )
+set( FLATBUFFERS_INSTALL            NO )
+set( FLATBUFFERS_STATIC_FLATC      YES )
+set( FLATBUFFERS_BUILD_FLATC       YES )
+
 FetchContent_Declare( FlatBuffers
         GIT_REPOSITORY "https://github.com/enetheru/flatbuffers.git"
         GIT_TAG "gdscript"
         SOURCE_DIR "${PROJECT_SOURCE_DIR}/lib/flatbuffers"
-        UPDATE_DISCONNECTED ON
 )
 FetchContent_MakeAvailable( FlatBuffers )
+
+set_target_properties( flatc
+    PROPERTIES
+        EXCLUDE_FROM_ALL ON
+)
 
 # If we dont want to build the extension then we can stop here
 # This does break any other targets for this configuration
@@ -67,18 +78,11 @@ FetchContent_MakeAvailable( godot-cpp )
 add_subdirectory( src )
 
 ### separate CMakeLists for our gdextension sources.
-foreach ( TARGET_TYPE ${GDE_TARGETS} )
-    if( TARGET_TYPE STREQUAL "template_debug" )
-        set( TARGET_ABBREV "_td" )
-    elseif (TARGET_TYPE STREQUAL "template_release")
-        set( TARGET_ABBREV "_tr" )
-    elseif (TARGET_TYPE STREQUAL "editor")
-        set( TARGET_ABBREV "_e" )
-    endif ()
+foreach ( TARGET_TYPE template_debug template_release editor )
 
-    set( LIBNAME "${GDE_NAME}${TARGET_ABBREV}" )
+    set( LIBNAME "${GDE_NAME}.${TARGET_TYPE}" )
 
-    add_library( ${LIBNAME} SHARED )
+    add_library( ${LIBNAME} SHARED EXCLUDE_FROM_ALL )
 
     target_sources( ${LIBNAME}
         PRIVATE
@@ -102,5 +106,4 @@ foreach ( TARGET_TYPE ${GDE_TARGETS} )
             # godot.<platform>.<target>[.dev][.double].<arch>[.custom_suffix][.console].exe
             OUTPUT_NAME "${GDE_NAME}.${GODOT_PLATFORM}.${GODOT_TARGET}${DOUBLE}.${GODOT_ARCH}"
     )
-
 endforeach ()
