@@ -33,7 +33,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Output Directory
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${GODOT_PROJECT_PATH}/addons/${GDE_NAME}/bin )
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "$<1:${GODOT_PROJECT_PATH}/addons/${GDE_NAME}/bin>" )
 
 ### Add Flatbuffers as a sub project
 FetchContent_Declare( FlatBuffers
