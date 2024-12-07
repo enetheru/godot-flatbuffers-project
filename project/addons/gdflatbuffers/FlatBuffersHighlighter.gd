@@ -64,18 +64,18 @@ func _init():
 		save_stack(l, 0)
 	)
 	#FIXME reader.endfile.connect( save_stack )
+	if editor_settings:
+		colours[TokenType.UNKNOWN] = editor_settings.get_setting("text_editor/theme/highlighting/text_color")
+		colours[TokenType.COMMENT] = editor_settings.get_setting("text_editor/theme/highlighting/comment_color")
+		colours[TokenType.KEYWORD] = editor_settings.get_setting("text_editor/theme/highlighting/keyword_color")
+		colours[TokenType.TYPE] = editor_settings.get_setting("text_editor/theme/highlighting/base_type_color")
+		colours[TokenType.STRING] = editor_settings.get_setting("text_editor/theme/highlighting/string_color")
+		colours[TokenType.PUNCT] = editor_settings.get_setting("text_editor/theme/highlighting/text_color")
+		colours[TokenType.IDENT] = editor_settings.get_setting("text_editor/theme/highlighting/symbol_color")
+		colours[TokenType.SCALAR] = editor_settings.get_setting("text_editor/theme/highlighting/number_color")
+		colours[TokenType.META] = editor_settings.get_setting("text_editor/theme/highlighting/text_color")
+		verbose = editor_settings.get_setting( FlatBuffersPlugin.debug_verbosity )
 
-	colours[TokenType.UNKNOWN] = editor_settings.get_setting("text_editor/theme/highlighting/text_color")
-	colours[TokenType.COMMENT] = editor_settings.get_setting("text_editor/theme/highlighting/comment_color")
-	colours[TokenType.KEYWORD] = editor_settings.get_setting("text_editor/theme/highlighting/keyword_color")
-	colours[TokenType.TYPE] = editor_settings.get_setting("text_editor/theme/highlighting/base_type_color")
-	colours[TokenType.STRING] = editor_settings.get_setting("text_editor/theme/highlighting/string_color")
-	colours[TokenType.PUNCT] = editor_settings.get_setting("text_editor/theme/highlighting/text_color")
-	colours[TokenType.IDENT] = editor_settings.get_setting("text_editor/theme/highlighting/symbol_color")
-	colours[TokenType.SCALAR] = editor_settings.get_setting("text_editor/theme/highlighting/number_color")
-	colours[TokenType.META] = editor_settings.get_setting("text_editor/theme/highlighting/text_color")
-
-	verbose = editor_settings.get_setting( FlatBuffersPlugin.debug_verbosity )
 	#TODO move the regex compilation to the plugin
 	#Regex Compilation
 	# STRING_CONSTANT = \".*?\\"
