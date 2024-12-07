@@ -29,7 +29,6 @@
             "name": "gdextension",
             "hidden": true,
             "inherits": [
-                "godot",
                 "godot-cpp",
                 "flatbuffers"
             ],

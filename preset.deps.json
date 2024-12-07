@@ -8,14 +8,6 @@
     "configurePresets": [
         {
             "hidden": true,
-            "name": "godot",
-            "cacheVariables": {
-                "GODOT_EXECUTABLE": "C:\\godot\\src\\godot\\bin\\godot.windows.editor.x86_64.exe",
-                "GODOT_GDEXTENSION_DIR": "${sourceDir}/gdextension"
-            }
-        },
-        {
-            "hidden": true,
             "name": "flatbuffers",
             "cacheVariables": {
                 "FLATBUFFERS_BUILD_FLATHASH": false,
