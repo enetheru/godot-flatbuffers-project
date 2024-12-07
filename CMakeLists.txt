@@ -103,5 +103,6 @@ foreach ( TARGET_TYPE template_debug template_release editor )
             RUNTIME_OUTPUT_DIRECTORY "$<1:${CMAKE_RUNTIME_OUTPUT_DIRECTORY}>"
             # godot.<platform>.<target>[.dev][.double].<arch>[.custom_suffix][.console].exe
             OUTPUT_NAME "${GDE_NAME}.${GODOT_PLATFORM}.${GODOT_TARGET}${DOUBLE}.${GODOT_ARCH}"
+            PREFIX "lib"
     )
 endforeach ()
