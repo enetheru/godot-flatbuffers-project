@@ -12,13 +12,7 @@ CMakeUserPresets.json
 CTestTestfile.cmake
 _deps
 cmake-build*/
-build/
 .cmake/
-
-# FetchContent and generated files
-/gdextension/
-/godot-cpp/
-/flatbuffers/
 
 # Prerequisites
 *.d
@@ -79,4 +73,5 @@ src/entry_point.cpp
 /project/addons/Todo_Manager
 /project/addons/zylann.editor_debugger
 
-lib/
+lib/*/
+*.uid

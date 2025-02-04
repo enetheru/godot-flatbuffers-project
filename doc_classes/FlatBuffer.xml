@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="FlatBuffer" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="GetAABB" qualifiers="const">
+			<return type="AABB" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="GetBasis" qualifiers="const">
+			<return type="Basis" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="GetColor" qualifiers="const">
+			<return type="Color" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="GetPlane" qualifiers="const">
+			<return type="Plane" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="GetProjection" qualifiers="const">
+			<return type="Projection" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="GetQuaternion" qualifiers="const">
+			<return type="Quaternion" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="GetRect2" qualifiers="const">
+			<return type="Rect2" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="GetRect2i" qualifiers="const">
+			<return type="Rect2i" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="GetTransform2D" qualifiers="const">
+			<return type="Transform2D" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="GetTransform3D" qualifiers="const">
+			<return type="Transform3D" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="GetVector2" qualifiers="const">
+			<return type="Vector2" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="GetVector2i" qualifiers="const">
+			<return type="Vector2i" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="GetVector3" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="GetVector3i" qualifiers="const">
+			<return type="Vector3i" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="GetVector4" qualifiers="const">
+			<return type="Vector4" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="GetVector4i" qualifiers="const">
+			<return type="Vector4i" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_PackedByteArray" qualifiers="const">
+			<return type="PackedByteArray" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_PackedFloat32Array" qualifiers="const">
+			<return type="PackedFloat32Array" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_PackedFloat64Array" qualifiers="const">
+			<return type="PackedFloat64Array" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_PackedInt32Array" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_PackedInt64Array" qualifiers="const">
+			<return type="PackedInt64Array" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_PackedStringArray" qualifiers="const">
+			<return type="PackedStringArray" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_String" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_array_element_start" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="array_start" type="int" />
+			<param index="1" name="idx" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_array_size" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="vtable_offset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_field_offset" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="vtable_offset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_field_start" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="field_offset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_memory_address" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="bytes" type="PackedByteArray" setter="set_bytes" getter="get_bytes" default="PackedByteArray()">
+		</member>
+		<member name="start" type="int" setter="set_start" getter="get_start" default="0">
+		</member>
+	</members>
+</class>
