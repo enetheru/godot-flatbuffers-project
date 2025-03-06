@@ -59,7 +59,6 @@ FetchContent_Declare( FlatBuffers
         GIT_TAG         "${FLATBUFFERS_GIT_TAG}"
         SOURCE_DIR      "${CMAKE_CURRENT_SOURCE_DIR}/lib/flatbuffers"
         SYSTEM
-        EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable( FlatBuffers )
 
@@ -74,9 +73,9 @@ if( NOT BUILD_EXTENSION )
 endif ()
 
 #[============[ godot-cpp ]============]
-set( GODOTCPP_GIT_URL "https://github.com/enetheru/godot-cpp.git" CACHE STRING "Location of the godot-cpp git repository" )
+set( GODOTCPP_GIT_URL "https://github.com/godotengine/godot-cpp.git" CACHE STRING "Location of the godot-cpp git repository" )
 set( GODOTCPP_GIT_TAG "master" CACHE STRING "git hash, branch or tag to fetch" )
-set( GODOT_BUILD_PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/lib/godot-cpp.build_profile.json" )
+set( GODOTCPP_BUILD_PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/lib/godot-cpp.build_profile.json" )
 
 #if( GODOT_GIT_TAG STREQUAL "" )
 #    include( godot-cpp-git-tag )
@@ -102,42 +101,30 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Output Directory
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "$<1:${CMAKE_CURRENT_SOURCE_DIR}/addons/${GDE_NAME}/bin>" )
-
 add_subdirectory( src )
 
 ### separate CMakeLists for our gdextension sources.
 foreach ( TARGET_TYPE template_debug template_release editor )
     set( LIBNAME "${GDE_NAME}.${TARGET_TYPE}" )
 
-    add_library( ${LIBNAME} SHARED EXCLUDE_FROM_ALL )
+    add_library( ${LIBNAME} SHARED )
 
     target_sources( ${LIBNAME}
         PRIVATE
             ${SOURCES}
     )
 
-    target_link_libraries( ${LIBNAME} PRIVATE godot-cpp::${TARGET_TYPE} FlatBuffers::FlatBuffers )
+    target_link_libraries( ${LIBNAME} PRIVATE godot-cpp.${TARGET_TYPE} FlatBuffers::FlatBuffers )
 
     ### Get useful properties of the library
-    get_target_property( GODOT_PLATFORM godot-cpp::${TARGET_TYPE} GODOT_PLATFORM )
-    get_target_property( GODOT_TARGET godot-cpp::${TARGET_TYPE} GODOT_TARGET )
-    get_target_property( GODOT_ARCH godot-cpp::${TARGET_TYPE} GODOT_ARCH )
-
-    string( CONCAT OUTPUT_NAME "${GDE_NAME}"
-            ".${GODOT_PLATFORM}"
-            ".${GODOT_TARGET}"
-            $<$<STREQUAL:double,${GODOT_PRECISION}>:".double">
-            ".${GODOT_ARCH}"
-    )
+    get_target_property( GODOTCPP_SUFFIX godot-cpp.${TARGET_TYPE} GODOTCPP_SUFFIX )
 
     set_target_properties( ${LIBNAME}
             PROPERTIES
             FOLDER "gdflatbuffers"
             #The generator expression here prevents a subdir from being created.
-            RUNTIME_OUTPUT_DIRECTORY "$<1:${CMAKE_RUNTIME_OUTPUT_DIRECTORY}>"
-            OUTPUT_NAME "${OUTPUT_NAME}"
+            RUNTIME_OUTPUT_DIRECTORY "$<1:${CMAKE_CURRENT_SOURCE_DIR}/addons/${GDE_NAME}/bin>"
+            OUTPUT_NAME "${GDE_NAME}${GODOTCPP_SUFFIX}"
             PREFIX "lib"
     )
 endforeach ()
