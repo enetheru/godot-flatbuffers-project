@@ -61,11 +61,16 @@ FetchContent_Declare( FlatBuffers
         GIT_TAG         "${FLATBUFFERS_GIT_TAG}"
         SOURCE_DIR      "${CMAKE_CURRENT_SOURCE_DIR}/lib/flatbuffers"
         SYSTEM
+        EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable( FlatBuffers )
 
-set_target_properties( flatc PROPERTIES EXCLUDE_FROM_ALL ON )
-set_target_properties( flatbuffers PROPERTIES EXCLUDE_FROM_ALL ON )
+set_target_properties(
+        flatc
+        PROPERTIES
+        EXCLUDE_FROM_ALL OFF
+        RUNTIME_OUTPUT_DIRECTORY "$<1:${CMAKE_CURRENT_SOURCE_DIR}/project/addons/${GDE_NAME}/bin>"
+)
 
 # If we dont want to build the extension then we can stop here
 # This does break any other targets for this configuration
