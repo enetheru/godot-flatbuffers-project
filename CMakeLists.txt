@@ -125,8 +125,8 @@ foreach ( TARGET_TYPE template_debug template_release editor )
             PROPERTIES
             FOLDER "gdflatbuffers"
             #The generator expression here prevents a subdir from being created.
-            RUNTIME_OUTPUT_DIRECTORY "$<1:${CMAKE_CURRENT_SOURCE_DIR}/addons/${GDE_NAME}/bin>"
-            OUTPUT_NAME "${GDE_NAME}${GODOTCPP_SUFFIX}"
+            RUNTIME_OUTPUT_DIRECTORY "$<1:${CMAKE_CURRENT_SOURCE_DIR}/project/addons/${GDE_NAME}/bin>"
+            OUTPUT_NAME "${GDE_NAME}${GODOTCPP_SUFFIX}$<$<CONFIG:Debug,RelWithDebInfo>:.$<LOWER_CASE:$<CONFIG>>>"
             PREFIX "lib"
     )
 endforeach ()
