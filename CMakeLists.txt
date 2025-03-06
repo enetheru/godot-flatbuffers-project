@@ -69,6 +69,7 @@ set_target_properties(
         flatc
         PROPERTIES
         EXCLUDE_FROM_ALL OFF
+        OUTPUT_NAME "flatc$<$<CONFIG:Debug,RelWithDebInfo>:.$<LOWER_CASE:$<CONFIG>>>"
         RUNTIME_OUTPUT_DIRECTORY "$<1:${CMAKE_CURRENT_SOURCE_DIR}/project/addons/${GDE_NAME}/bin>"
 )
 
