@@ -5,6 +5,8 @@ if( CMAKE_C_COMPILER )
     #Do nothing, just shut up the build because clion adds this from the toolchain
 endif ()
 
+set( FETCHCONTENT_UPDATES_DISCONNECTED OFF CACHE BOOL "Stop updating every configure")
+
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 ### Cmake options to expose
@@ -73,8 +75,8 @@ if( NOT BUILD_EXTENSION )
 endif ()
 
 #[============[ godot-cpp ]============]
-set( GODOTCPP_GIT_URL "https://github.com/godotengine/godot-cpp.git" CACHE STRING "Location of the godot-cpp git repository" )
-set( GODOTCPP_GIT_TAG "master" CACHE STRING "git hash, branch or tag to fetch" )
+set( GODOTCPP_GIT_URL "https://github.com/enetheru/godot-cpp.git" CACHE STRING "Location of the godot-cpp git repository" )
+set( GODOTCPP_GIT_TAG "c2712bb0ab03618443a8942f079481b315988253" CACHE STRING "git hash, branch or tag to fetch" )
 set( GODOTCPP_BUILD_PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/lib/godot-cpp.build_profile.json" )
 
 #if( GODOT_GIT_TAG STREQUAL "" )
