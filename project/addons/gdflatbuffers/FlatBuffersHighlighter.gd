@@ -347,23 +347,41 @@ var regex_boolean_constant : RegEx # = true | false
 # ██   ██ ███████ ██   ██ ██████  ███████ ██   ██
 
 class Reader:
-	static var parent = load('res://addons/gdflatbuffers/FlatBuffersHighlighter.gd').new()
+	## This static parent object is to provide access to type information.
+	## It might be better off being replaced by a separate object to remove this weird structure.
+	static var parent : FlatBuffersHighlighter = load('res://addons/gdflatbuffers/FlatBuffersHighlighter.gd').new()
 
 	signal new_token( token : Dictionary )
 	signal newline( ln, p )
 	signal endfile( ln, p )
 
+	## A list of word separation characters
 	var word_separation : Array = [' ', '\t', '\n', '{','}', ':', ';', ',',
 	'(', ')', '[', ']' ]
+
+	## A list of whitespace characters
 	var whitespace : Array = [' ', '\t', '\n']
+
+	## A list of punctuation characters
 	var punc : Array = [',', '.', ':', ';', '[', ']', '{', '}', '(', ')', '=']
 
-	var text : String					# The text to parse
-	var line_index : Array[int] = [0]	# cursor position for each line start
-	var cursor_p : int = 0				# Cursor position in file
-	var cursor_lp : int = 0				# Cursor position in line
-	var line_n : int = 0				# Current line number
-	var line_start : int				# When updating chunks of a larger source file, what line does this chunk start on.
+	## The text to parse
+	var text : String
+
+	## cursor position for each line start
+	var line_index : Array[int] = [0]
+
+	## Cursor position in file
+	var cursor_p : int = 0
+
+	## Cursor position in line
+	var cursor_lp : int = 0
+
+	## Current line number
+	var line_n : int = 0
+
+	## When updating chunks of a larger source file, what line does this chunk start on.
+	var line_start : int
 
 	var token : Dictionary
 
@@ -1041,6 +1059,11 @@ func parse_field_decl( token : Dictionary ):
 	syntax_error(token, "reached end of parse_type_decl(...)")
 	return end_frame()
 
+#   ██████  ██████   ██████         ██████  ███████  ██████ ██
+#   ██   ██ ██   ██ ██              ██   ██ ██      ██      ██
+#   ██████  ██████  ██              ██   ██ █████   ██      ██
+#   ██   ██ ██      ██              ██   ██ ██      ██      ██
+#   ██   ██ ██       ██████ ███████ ██████  ███████  ██████ ███████
 
 func parse_rpc_decl( token : Dictionary ):
 	var this_frame = stack.back()
@@ -1048,11 +1071,23 @@ func parse_rpc_decl( token : Dictionary ):
 	reader.next_line()
 	return end_frame()
 
+#   ██████  ██████   ██████         ███    ███ ███████ ████████ ██   ██
+#   ██   ██ ██   ██ ██              ████  ████ ██         ██    ██   ██
+#   ██████  ██████  ██              ██ ████ ██ █████      ██    ███████
+#   ██   ██ ██      ██              ██  ██  ██ ██         ██    ██   ██
+#   ██   ██ ██       ██████ ███████ ██      ██ ███████    ██    ██   ██
+
 func parse_rpc_method( token : Dictionary ):
 	var this_frame = stack.back()
 	syntax_warning( token, "Unimplemented")
 	reader.next_line()
 	return end_frame()
+
+#   ████████ ██    ██ ██████  ███████
+#      ██     ██  ██  ██   ██ ██
+#      ██      ████   ██████  █████
+#      ██       ██    ██      ██
+#      ██       ██    ██      ███████
 
 func parse_type( token : Dictionary ):
 	var this_frame = stack.back()
@@ -1235,17 +1270,35 @@ func parse_commasep( token : Dictionary ):
 	syntax_error(token, "Reached the end of parse_commasep(...)")
 	return end_frame()
 
+#   ███████ ██ ██      ███████    ███████ ██   ██ ████████
+#   ██      ██ ██      ██         ██       ██ ██     ██
+#   █████   ██ ██      █████      █████     ███      ██
+#   ██      ██ ██      ██         ██       ██ ██     ██
+#   ██      ██ ███████ ███████ ██ ███████ ██   ██    ██
+
 func parse_file_extension_decl( token : Dictionary ):
 	var this_frame = stack.back()
 	syntax_warning( token, "Unimplemented")
 	reader.next_line()
 	return end_frame()
 
+#   ███████ ██ ██      ███████
+#   ██      ██ ██      ██
+#   █████   ██ ██      █████
+#   ██      ██ ██      ██
+#   ██      ██ ███████ ███████
+
 func parse_file_identifier_decl( token : Dictionary ):
 	var this_frame = stack.back()
 	syntax_warning( token, "Unimplemented")
 	reader.next_line()
 	return end_frame()
+
+#   ███████ ████████ ██████  ██ ███    ██  ██████
+#   ██         ██    ██   ██ ██ ████   ██ ██
+#   ███████    ██    ██████  ██ ██ ██  ██ ██   ███
+#        ██    ██    ██   ██ ██ ██  ██ ██ ██    ██
+#   ███████    ██    ██   ██ ██ ██   ████  ██████
 
 func parse_string_constant( token : Dictionary ):
 	var frame = stack.back()
@@ -1254,6 +1307,12 @@ func parse_string_constant( token : Dictionary ):
 		return end_frame( token )
 	syntax_error(token, "wanted filename as string")
 	end_frame()
+
+#   ██ ██████  ███████ ███    ██ ████████
+#   ██ ██   ██ ██      ████   ██    ██
+#   ██ ██   ██ █████   ██ ██  ██    ██
+#   ██ ██   ██ ██      ██  ██ ██    ██
+#   ██ ██████  ███████ ██   ████    ██
 
 func parse_ident( token : Dictionary ):
 	#ident = [a-zA-Z_][a-zA-Z0-9_]*
@@ -1279,6 +1338,11 @@ func parse_ident( token : Dictionary ):
 	syntax_error( token, "ident = [a-zA-Z_][a-zA-Z0-9_]*" )
 	end_frame()
 
+#   ██ ███    ██ ████████
+#   ██ ████   ██    ██
+#   ██ ██ ██  ██    ██
+#   ██ ██  ██ ██    ██
+#   ██ ██   ████    ██
 
 func parse_integer_constant( token : Dictionary ):
 	# INTEGER_CONSTANT = dec_integer_constant | hex_integer_constant
