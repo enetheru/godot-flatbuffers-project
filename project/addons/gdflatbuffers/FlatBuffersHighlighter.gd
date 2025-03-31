@@ -11,8 +11,8 @@ var verbose : int = 0
 # ██   ██ ██ ██    ██ ██   ██ ██      ██ ██    ██ ██   ██    ██    ██      ██   ██
 # ██   ██ ██  ██████  ██   ██ ███████ ██  ██████  ██   ██    ██    ███████ ██   ██
 
-enum TokenType { UNKNOWN, COMMENT, KEYWORD, TYPE, STRING, PUNCT, IDENT, SCALAR,
-				META, EOL, EOF }
+enum TokenType { NULL, COMMENT, KEYWORD, TYPE, STRING, PUNCT, IDENT, SCALAR,
+				META, EOL, EOF, UNKNOWN }
 
 var colours : Dictionary = {
 	TokenType.UNKNOWN : Color.GREEN,
@@ -406,7 +406,7 @@ class Reader:
 		cursor_lp = 0
 		line_start = line_i
 		line_n = line_i
-		token = peek_token()
+		token = { 'line':0, 'col': 0, 'type': TokenType.NULL, 't':'' }
 
 	func at_end() -> bool:
 		if cursor_p >= text.length(): return true
@@ -552,26 +552,33 @@ class Reader:
 		if result: return true
 		return false
 
+	func identify_token() -> TokenType:
+		if at_end(): return TokenType.EOF
+		var _char = peek_char()
+		if _char == '\n': return TokenType.EOL
+		if _char == '/' and peek_char(1) == '/': return TokenType.COMMENT
+		if _char in punc: return TokenType.PUNCT
+		if _char == '"': return TokenType.STRING
+		return TokenType.UNKNOWN
 
 	func next_token() -> Dictionary:
-		token = { 'line':line_n, 'col': cursor_lp, 'type':TokenType.UNKNOWN, 't':peek_char() }
-		if at_end(): token.type = TokenType.EOF
-		while not at_end():
-			token['line'] = line_n
-			token['col'] =  cursor_lp
-			token['t'] = peek_char()
-			if peek_char() == '\n': token['type'] = TokenType.EOL
-			if peek_char() in whitespace: adv(); continue
-			if peek_char() == '/' and peek_char(1) == '/':
-				token = get_comment();
-				break
-			if peek_char() in punc:
-				token['type'] = TokenType.PUNCT
-				token['t'] = get_char()
-				break
-			if peek_char() == '"':
-				token = get_string(); break
-			token = get_word(); break
+		while peek_char() in whitespace:
+			adv()
+			if at_end(): break;
+		var type = identify_token()
+
+		token = { 'line':line_n, 'col': cursor_lp, 'type': type, 't':peek_char() }
+		match type:
+			TokenType.EOF: pass
+			TokenType.COMMENT:
+				token = get_comment()
+			TokenType.PUNCT:
+				token.t = get_char()
+			TokenType.STRING:
+				token = get_string()
+			_:
+				token = get_word()
+
 		new_token.emit( token )
 		return token
 
@@ -579,6 +586,7 @@ class Reader:
 		skip_whitespace()
 		while true:
 			if token.type == TokenType.COMMENT: next_token(); continue
+			if token.type == TokenType.NULL: next_token(); continue
 			break
 		return token
 
@@ -1394,12 +1402,13 @@ func quick_scan_file( filename : String ) -> bool:
 	return true
 
 func quick_scan_text( text : String ):
-	if verbose > 1: print_rich( "[b]quick_scan_text( ... )[/b]")
+	if verbose > 1: print_rich( "[b]quick_scan_text( FIX GODOT, Unable to get filenames )[/b]")
 	# I need a function which scans the source fast to pick up names before the main scan happens.
 	qreader.reset( text )
 
 	while not qreader.at_end():
 		var token = qreader.get_token()
+		if token.type == TokenType.NULL: continue
 
 		if token.type != TokenType.KEYWORD:
 			qreader.next_line()
