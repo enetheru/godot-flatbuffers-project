@@ -19,7 +19,7 @@ set( SOURCES
         PARENT_SCOPE
 )
 
-if( GODOT_USE_HOT_RELOAD )
+if( GODOTCPP_USE_HOT_RELOAD )
     set( HOT_RELOAD_REPL "reloadable = true")
 endif ()
 
