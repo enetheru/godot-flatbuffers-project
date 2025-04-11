@@ -1,6 +1,8 @@
 @tool
 class_name FlatBuffersPlugin extends EditorPlugin
 
+const FlatBuffersHighlighter = preload('res://addons/gdflatbuffers/FlatBuffersHighlighter.gd')
+
 const EDITOR_SETTINGS_BASE := &"plugin/FlatBuffers/"
 const debug_verbosity := EDITOR_SETTINGS_BASE + &"fbs_debug_verbosity"
 const flatc_path := EDITOR_SETTINGS_BASE + &"flatc_path"
@@ -14,11 +16,9 @@ var fbs := EditorInterface.get_file_system_dock()
 var fbs_rcm : PopupMenu
 var fbs_tree : Tree
 
-var highlighter : FlatBuffersHighlighter
+var highlighter : EditorSyntaxHighlighter
 
 func _enter_tree() -> void:
-	highlighter = FlatBuffersHighlighter.new()
-
 	change_editor_settings()
 	enable_syntax_highlighter()
 	enable_changes_to_fbs()
@@ -53,6 +53,7 @@ func disconnect_from_output_meta() -> void:
 
 
 func enable_syntax_highlighter() -> void:
+	highlighter = FlatBuffersHighlighter.new()
 	script_editor.register_syntax_highlighter( highlighter )
 
 
@@ -162,7 +163,11 @@ static func flatc_generate( path : String ) -> Variant:
 	var output_path : String = source_path.get_base_dir()
 
 	var args : PackedStringArray = []
+
+	#-I PATH                Search for includes in the specified path.
 	for include in include_paths: args.append_array(["-I", include])
+
+	#--gdscript             Generate GDScript files for tables/structs
 	args.append_array([ "--gdscript",  "-o", output_path, source_path, ])
 
 	var result : Dictionary = {
@@ -182,8 +187,7 @@ static func flatc_generate( path : String ) -> Variant:
 	return result
 
 func print_results( result : Dictionary ):
-	if result.retcode:
-		var output = result.get('output')
-		result.erase('output')
-		printerr( "flatc_generate result: ", JSON.stringify( result, '\t', false ) )
-		for o in output: print( o )
+	var output = result.get('output')
+	result.erase('output')
+	printerr( "flatc_generate result: ", JSON.stringify( result, '\t', false ) )
+	for o in output: print( o )

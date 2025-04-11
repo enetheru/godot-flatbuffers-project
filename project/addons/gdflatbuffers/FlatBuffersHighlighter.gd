@@ -1,5 +1,8 @@
 @tool
-class_name FlatBuffersHighlighter extends EditorSyntaxHighlighter
+extends EditorSyntaxHighlighter
+
+static var Regex = preload('res://addons/gdflatbuffers/scripts/regex.gd').new()
+const Reader = preload('res://addons/gdflatbuffers/scripts/reader.gd')
 
 var editor_settings : EditorSettings
 var verbose : int = 0
@@ -11,37 +14,58 @@ var verbose : int = 0
 # ██   ██ ██ ██    ██ ██   ██ ██      ██ ██    ██ ██   ██    ██    ██      ██   ██
 # ██   ██ ██  ██████  ██   ██ ███████ ██  ██████  ██   ██    ██    ███████ ██   ██
 
-enum TokenType { NULL, COMMENT, KEYWORD, TYPE, STRING, PUNCT, IDENT, SCALAR,
-				META, EOL, EOF, UNKNOWN }
-
 var colours : Dictionary = {
-	TokenType.UNKNOWN : Color.GREEN,
-	TokenType.COMMENT : Color.DIM_GRAY,
-	TokenType.KEYWORD : Color.SALMON,
-	TokenType.TYPE : Color.GREEN,
-	TokenType.STRING : Color.GREEN,
-	TokenType.PUNCT : Color.GREEN,
-	TokenType.IDENT : Color.GREEN,
-	TokenType.SCALAR : Color.GREEN,
-	TokenType.META : Color.GREEN,
-	TokenType.EOF : Color.GREEN,
+	Reader.TokenType.UNKNOWN : Color.GREEN,
+	Reader.TokenType.COMMENT : Color.DIM_GRAY,
+	Reader.TokenType.KEYWORD : Color.SALMON,
+	Reader.TokenType.TYPE : Color.GREEN,
+	Reader.TokenType.STRING : Color.GREEN,
+	Reader.TokenType.PUNCT : Color.GREEN,
+	Reader.TokenType.IDENT : Color.GREEN,
+	Reader.TokenType.SCALAR : Color.GREEN,
+	Reader.TokenType.META : Color.GREEN,
+	Reader.TokenType.EOF : Color.GREEN,
 }
 var error_color : Color = Color.FIREBRICK
 
+## The current resource file
+## FIXME relies on patch and not used otherwise.
 var resource : Resource
-var file_location : String
-var reader : Reader				# the main reader
-var qreader : Reader			# for scanning alternate files
-var dict : Dictionary
-var line_dict : Dictionary
-var error_flag : bool = false 	# This is to indicate not to save the stack to the next line
 
-var user_types : Dictionary = {}
+## The location of the file, only works for absolute names that are included
+## FIXME relies on the resource patch
+var file_location : String
+
+## The main Reader object for this file.
+var reader : Reader				# the main reader
+
+## The Reader object when performing a quick scan through the file for identifiers
+var qreader : Reader
+
+## per line stack information, key is line number, value is line dictionary
+var dict : Dictionary[int, Dictionary]
+
+## current line dictionary, key is column number
+var line_dict : Dictionary[int,Dictionary]
+
+## This is to indicate not to save the stack to the next line
+var error_flag : bool = false
+
+## Dictionary of user types retrieved from scanning document.
+var user_types : Dictionary[String, int] = {}
+
+## Dictionary of user enum values, TODO might be useful to have them named
 var user_enum_vals : Dictionary = {}
 
+## A block of false data which is used to expand on the stack index
 var new_index_chunk : Array[bool]
-var stack_index : Array[bool]		= [false]	# array index = index in stack list
-var stack_list : Dictionary			= {}	# saved stacks
+
+## array index = index in stack list
+## for each line in the document a flag to tell if a stack exists.
+var stack_index : Array[bool] = [false]
+
+## saved stacks, key is line number
+var stack_list : Dictionary[int, Array] = {}
 
 func _init():
 	new_index_chunk.resize(10)
@@ -49,8 +73,8 @@ func _init():
 	editor_settings = EditorInterface.get_editor_settings()
 	error_color = Color.RED
 
-	reader = Reader.new()
-	qreader = Reader.new()
+	reader = Reader.new(self)
+	qreader = Reader.new(self)
 
 	reader.new_token.connect(func( token ):
 		if verbose > 1:
@@ -65,54 +89,17 @@ func _init():
 	)
 	#FIXME reader.endfile.connect( save_stack )
 	if editor_settings:
-		colours[TokenType.UNKNOWN] = editor_settings.get_setting("text_editor/theme/highlighting/text_color")
-		colours[TokenType.COMMENT] = editor_settings.get_setting("text_editor/theme/highlighting/comment_color")
-		colours[TokenType.KEYWORD] = editor_settings.get_setting("text_editor/theme/highlighting/keyword_color")
-		colours[TokenType.TYPE] = editor_settings.get_setting("text_editor/theme/highlighting/base_type_color")
-		colours[TokenType.STRING] = editor_settings.get_setting("text_editor/theme/highlighting/string_color")
-		colours[TokenType.PUNCT] = editor_settings.get_setting("text_editor/theme/highlighting/text_color")
-		colours[TokenType.IDENT] = editor_settings.get_setting("text_editor/theme/highlighting/symbol_color")
-		colours[TokenType.SCALAR] = editor_settings.get_setting("text_editor/theme/highlighting/number_color")
-		colours[TokenType.META] = editor_settings.get_setting("text_editor/theme/highlighting/text_color")
+		colours[Reader.TokenType.UNKNOWN] = editor_settings.get_setting("text_editor/theme/highlighting/text_color")
+		colours[Reader.TokenType.COMMENT] = editor_settings.get_setting("text_editor/theme/highlighting/comment_color")
+		colours[Reader.TokenType.KEYWORD] = editor_settings.get_setting("text_editor/theme/highlighting/keyword_color")
+		colours[Reader.TokenType.TYPE] = editor_settings.get_setting("text_editor/theme/highlighting/base_type_color")
+		colours[Reader.TokenType.STRING] = editor_settings.get_setting("text_editor/theme/highlighting/string_color")
+		colours[Reader.TokenType.PUNCT] = editor_settings.get_setting("text_editor/theme/highlighting/text_color")
+		colours[Reader.TokenType.IDENT] = editor_settings.get_setting("text_editor/theme/highlighting/symbol_color")
+		colours[Reader.TokenType.SCALAR] = editor_settings.get_setting("text_editor/theme/highlighting/number_color")
+		colours[Reader.TokenType.META] = editor_settings.get_setting("text_editor/theme/highlighting/text_color")
 		verbose = editor_settings.get_setting( FlatBuffersPlugin.debug_verbosity )
 
-	#TODO move the regex compilation to the plugin
-	#Regex Compilation
-	# STRING_CONSTANT = \".*?\\"
-	regex_string_constant = RegEx.new()
-	regex_string_constant.compile("^\\\".*?\\\\\"$")
-
-	# IDENT = [a-zA-Z_][a-zA-Z0-9_]*
-	regex_ident = RegEx.new()
-	regex_ident.compile("^[a-zA-Z_][a-zA-Z0-9_]*$")
-
-	# DIGIT [:digit:] = [0-9]
-	regex_digit = RegEx.new()
-	regex_digit.compile("^[0-9]$")
-
-	# XDIGIT [:xdigit:] = [0-9a-fA-F]
-	regex_xdigit = RegEx.new()
-	regex_xdigit.compile("^[0-9a-fA-F]$")
-
-	# DEC_INTEGER_CONSTANT = [-+]?[:digit:]+
-	regex_dec_integer_constant = RegEx.new()
-	regex_dec_integer_constant.compile("^[-+]?[0-9]+$")
-
-	# HEX_INTEGER_CONSTANT = [-+]?0[xX][:xdigit:]+
-	regex_hex_integer_constant = RegEx.new()
-	regex_hex_integer_constant.compile("^[-+]?0[xX][0-9a-fA-F]+$")
-
-	# DEC_FLOAT_CONSTANT = [-+]?(([.][:digit:]+)|([:digit:]+[.][:digit:]*)|([:digit:]+))([eE][-+]?[:digit:]+)?
-	regex_dec_float_constant = RegEx.new()
-	regex_dec_float_constant.compile("^[-+]?(([.][0-9]+)|([0-9]+[.][0-9]*)|([0-9]+))([eE][-+]?[0-9]+)?$")
-
-	# HEX_FLOAT_CONSTANT = [-+]?0[xX](([.][:xdigit:]+)|([:xdigit:]+[.][:xdigit:]*)|([:xdigit:]+))([pP][-+]?[:digit:]+)
-	regex_hex_float_constant = RegEx.new()
-	regex_hex_float_constant.compile("^[-+]?0[xX](([.][[+-]?[0-9a-fA-F]+]+)|([[+-]?[0-9a-fA-F]+]+[.][[+-]?[0-9a-fA-F]+]*)|([[+-]?[0-9a-fA-F]+]+))([pP][+-]?[0-9]+)$")
-
-	# SPECIAL_FLOAT_CONSTANT = [-+]?(nan|inf|infinity)
-	regex_special_float_constant = RegEx.new()
-	regex_special_float_constant.compile("^[-+]?(nan|inf|infinity)$")
 	if verbose > 1: print_rich("[b]FlatBuffersHighlighter._init() - Completed[/b]")
 
 # Override methods for EditorSyntaxHighlighter
@@ -167,7 +154,6 @@ func _get_line_syntax_highlighting ( line_num : int ) -> Dictionary:
 		return line_dict
 	if reader.peek_char() == '\n': return {}
 
-
 	# get the previous stack save, skip lines with empty stacks.
 	# FIXME This part takes forever.
 	while stack_index.size() < line_num: stack_index.append_array(new_index_chunk)
@@ -209,11 +195,11 @@ func _update_cache ( ):
 	error_color = Color.RED
 
 func highlight( token : Dictionary ):
-	if token.type in [TokenType.EOF, TokenType.UNKNOWN]: return
+	if token.type in [Reader.TokenType.EOF, Reader.TokenType.UNKNOWN]: return
 	line_dict[token.col] = { 'color':colours[token.type] }
 
 func syntax_warning( token : Dictionary, reason = "" ):
-	line_dict[token.col] = { 'color':colours[TokenType.COMMENT] }
+	line_dict[token.col] = { 'color':colours[Reader.TokenType.COMMENT] }
 	if verbose > 0:
 		var padding = "".lpad(stack.size(), '\t') if verbose > 1 else ""
 		var colour = Color.ORANGE.to_html()
@@ -321,316 +307,6 @@ var array_types: Array = [
 	"NodePath", ]
 #endregion
 
-#region Regex
-# ██████  ███████  ██████  ███████ ██   ██
-# ██   ██ ██      ██       ██       ██ ██
-# ██████  █████   ██   ███ █████     ███
-# ██   ██ ██      ██    ██ ██       ██ ██
-# ██   ██ ███████  ██████  ███████ ██   ██
-var regex_string_constant : RegEx # = \".*?\\"
-var regex_ident : RegEx # = [a-zA-Z_][a-zA-Z0-9_]*
-var regex_digit : RegEx # [:digit:] = [0-9]
-var regex_xdigit : RegEx # [:xdigit:] = [0-9a-fA-F]
-var regex_dec_integer_constant : RegEx # = [-+]?[:digit:]+
-var regex_hex_integer_constant : RegEx # = [-+]?0[xX][:xdigit:]+
-var regex_dec_float_constant : RegEx # = [-+]?(([.][:digit:]+)|([:digit:]+[.][:digit:]*)|([:digit:]+))([eE][-+]?[:digit:]+)?
-var regex_hex_float_constant : RegEx # = [-+]?0[xX](([.][:xdigit:]+)|([:xdigit:]+[.][:xdigit:]*)|([:xdigit:]+))([pP][-+]?[:digit:]+)
-var regex_special_float_constant : RegEx # = [-+]?(nan|inf|infinity)
-var regex_boolean_constant : RegEx # = true | false
-#endregion
-
-#region Reader
-# ██████  ███████  █████  ██████  ███████ ██████
-# ██   ██ ██      ██   ██ ██   ██ ██      ██   ██
-# ██████  █████   ███████ ██   ██ █████   ██████
-# ██   ██ ██      ██   ██ ██   ██ ██      ██   ██
-# ██   ██ ███████ ██   ██ ██████  ███████ ██   ██
-
-class Reader:
-	## This static parent object is to provide access to type information.
-	## It might be better off being replaced by a separate object to remove this weird structure.
-	static var parent : FlatBuffersHighlighter = load('res://addons/gdflatbuffers/FlatBuffersHighlighter.gd').new()
-
-	signal new_token( token : Dictionary )
-	signal newline( ln, p )
-	signal endfile( ln, p )
-
-	## A list of word separation characters
-	var word_separation : Array = [' ', '\t', '\n', '{','}', ':', ';', ',',
-	'(', ')', '[', ']' ]
-
-	## A list of whitespace characters
-	var whitespace : Array = [' ', '\t', '\n']
-
-	## A list of punctuation characters
-	var punc : Array = [',', '.', ':', ';', '[', ']', '{', '}', '(', ')', '=']
-
-	## The text to parse
-	var text : String
-
-	## cursor position for each line start
-	var line_index : Array[int] = [0]
-
-	## Cursor position in file
-	var cursor_p : int = 0
-
-	## Cursor position in line
-	var cursor_lp : int = 0
-
-	## Current line number
-	var line_n : int = 0
-
-	## When updating chunks of a larger source file, what line does this chunk start on.
-	var line_start : int
-
-	var token : Dictionary
-
-	func _to_string() -> String:
-		return JSON.stringify({
-			'text': text,
-			'line_index':line_index,
-			'cursor_p': cursor_p,
-			'cursor_lp': cursor_lp,
-			'line_n': line_n,
-			'line_start': line_start,
-			'token': token,
-		},'\t', false)
-
-	func length() -> int:
-		return text.length()
-
-	func reset( text_ : String, line_i : int = 0 ):
-		text = text_
-		line_index = [0]
-		cursor_p = 0
-		cursor_lp = 0
-		line_start = line_i
-		line_n = line_i
-		token = { 'line':0, 'col': 0, 'type': TokenType.NULL, 't':'' }
-
-	func at_end() -> bool:
-		if cursor_p >= text.length(): return true
-		return false
-
-	func peek_char( offset : int = 0 ) -> String:
-		return text[cursor_p + offset] if cursor_p + offset < text.length() else '\n'
-
-	func get_char() -> String:
-		adv(); return text[cursor_p - 1]
-
-	func adv( dist : int = 1 ):
-		if cursor_p >= text.length(): return # dont advance further than length
-		for i in dist:
-			cursor_p += 1
-			cursor_lp += 1
-			if not cursor_p < text.length():
-				endfile.emit( line_n + 1, cursor_p )
-				return;
-			if peek_char( ) != '\n': continue
-			line_index.append( cursor_p )
-			cursor_lp = 0
-			line_n = line_index.size() -1
-			newline.emit( line_n, cursor_p )
-			break
-
-	func next_line():
-		adv( text.length() ) # adv automatically stops on a line break.
-		next_token()
-
-	func get_string() -> Dictionary:
-		var start := cursor_p
-		var token : Dictionary = {
-			'line':line_n,
-			'col':cursor_lp,
-			'type':TokenType.STRING
-		}
-		adv()
-		while true:
-			if peek_char() == '"' and peek_char(-1) !='\\':
-				adv()
-				break
-			if peek_char() == '\n':
-				token['error'] = "reached end of line before \""
-				break
-			adv()
-		token['t'] = text.substr( start, cursor_p - start )
-		return token
-
-	func get_comment() -> Dictionary:
-		var token : Dictionary = {
-			'line':line_n,
-			'col': cursor_lp,
-			'type':TokenType.COMMENT,
-		}
-		var start := cursor_p
-		while peek_char() != '\n': adv()
-		token['t'] = text.substr( start, start + 2 )
-
-		return token
-
-	func get_word() -> Dictionary:
-		var token : Dictionary = {
-			'line':line_n,
-			'col': cursor_lp,
-			'type':TokenType.UNKNOWN,
-		}
-		var start := cursor_p
-		while not peek_char() in word_separation: adv()
-		# return the substring
-		token['t'] = text.substr( start, cursor_p - start )
-		if is_type( token.get('t') ): token['type'] = TokenType.TYPE
-		elif is_keyword(token.get('t')): token['type'] = TokenType.KEYWORD
-		elif is_scalar( token.get('t') ): token['type'] = TokenType.SCALAR
-		elif is_ident(token.get('t')): token['type'] = TokenType.IDENT
-		return token
-
-	func is_type( word : String )-> bool:
-		# TYPE = bool | byte | ubyte | short | ushort | int | uint | float |
-		# long | ulong | double | int8 | uint8 | int16 | uint16 | int32 |
-		# uint32| int64 | uint64 | float32 | float64 | string | [ type ] |
-		# ident
-		if word in parent.scalar_types: return true
-		if word in parent.struct_types: return true
-		if word in parent.table_types: return true
-		if word in parent.array_types: return true
-		return false
-
-	func is_keyword( word : String ) -> bool:
-		if word in parent.keywords: return true
-		return false
-
-	func is_ident( word : String ) -> bool:
-		#ident = [a-zA-Z_][a-zA-Z0-9_]*
-		var ident_start : String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-		var ident_end : String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
-		# verify first character
-		if not ident_start.contains(word[0]) : return false
-		# verify the remaining
-		for i in range( 1, word.length() ):
-			if not ident_end.contains(word[i]): return false
-		return true
-
-	func is_scalar( word : String ) -> bool:
-		#scalar = boolean_constant | integer_constant | float_constant
-		if is_boolean( word ): return true
-		if is_integer( word ): return true
-		if is_float( word ): return true
-		return false
-
-	func is_boolean( word : String ) -> bool:
-		if word in ['true', 'false']: return true
-		return false
-
-	func is_integer( word : String ) -> bool:
-		#integer_constant = dec_integer_constant | hex_integer_constant
-		var regex = RegEx.new()
-		#dec_integer_constant = [-+]?[:digit:]+
-		regex.compile("^[-+]?[0-9]+$")
-		var result = regex.search( word )
-		if result: return true
-		#hex_integer_constant = [-+]?0[xX][:xdigit:]+
-		regex = RegEx.new()
-		regex.compile("^[-+]?0[xX][0-9a-fA-F]+$")
-		result = regex.search( word )
-		if result: return true
-		return false
-
-	func is_float( word : String ) -> bool:
-		#float_constant = dec_float_constant | hex_float_constant | special_float_constant
-		var regex = RegEx.new()
-		#dec_float_constant = [-+]?(([.][:digit:]+)|([:digit:]+[.][:digit:]*)|([:digit:]+))([eE][-+]?[:digit:]+)?
-		regex.compile("^[-+]?(([.][0-9]+)|([0-9]+[.][0-9]*)|([0-9]+))([eE][-+]?[0-9]+)?$")
-		var result = regex.search( word )
-		if result: return true
-		#hex_float_constant = [-+]?0[xX](([.][:xdigit:]+)|([:xdigit:]+[.][:xdigit:]*)|([:xdigit:]+))([pP][-+]?[:digit:]+)
-		regex.compile("^[-+]?0[xX](([.][[+-]?[0-9a-fA-F]+]+)|([[+-]?[0-9a-fA-F]+]+[.][[+-]?[0-9a-fA-F]+]*)|([[+-]?[0-9a-fA-F]+]+))([pP][+-]?[0-9]+)$")
-		result = regex.search( word )
-		if result: return true
-		#special_float_constant = [-+]?(nan|inf|infinity)
-		regex.compile("^[-+]?(nan|inf|infinity)$")
-		result = regex.search( word )
-		if result: return true
-		return false
-
-	func identify_token() -> TokenType:
-		if at_end(): return TokenType.EOF
-		var _char = peek_char()
-		if _char == '\n': return TokenType.EOL
-		if _char == '/' and peek_char(1) == '/': return TokenType.COMMENT
-		if _char in punc: return TokenType.PUNCT
-		if _char == '"': return TokenType.STRING
-		return TokenType.UNKNOWN
-
-	func next_token() -> Dictionary:
-		while peek_char() in whitespace:
-			adv()
-			if at_end(): break;
-		var type = identify_token()
-
-		token = { 'line':line_n, 'col': cursor_lp, 'type': type, 't':peek_char() }
-		match type:
-			TokenType.EOF: pass
-			TokenType.COMMENT:
-				token = get_comment()
-			TokenType.PUNCT:
-				token.t = get_char()
-			TokenType.STRING:
-				token = get_string()
-			_:
-				token = get_word()
-
-		new_token.emit( token )
-		return token
-
-	func get_token() -> Dictionary:
-		skip_whitespace()
-		while true:
-			if token.type == TokenType.COMMENT: next_token(); continue
-			if token.type == TokenType.NULL: next_token(); continue
-			break
-		return token
-
-	func skip_whitespace():
-		while not at_end():
-			if peek_char() in [' ','\t']: adv(); continue
-			break;
-
-	func peek_token() -> Dictionary:
-		skip_whitespace()
-		var p_token = { 'line':line_n, 'col': cursor_lp, 'type':TokenType.UNKNOWN, 't':peek_char() }
-		if at_end(): p_token.type = TokenType.EOF
-		if peek_char() == '\n': p_token.type = TokenType.EOL
-		return p_token
-
-
-	func get_integer_constant() -> Dictionary:
-		# Verify Starting position.
-		var p_token = peek_token()
-		if p_token.type != TokenType.UNKNOWN:
-			return p_token
-
-		#DIGIT, # [:digit:] = [0-9]
-		#XDIGIT, # [:xdigit:] = [0-9a-fA-F]
-		#DEC_INTEGER_CONSTANT, # = [-+]?[:digit:]+
-		#HEX_INTEGER_CONSTANT, # = [-+]?0[xX][:xdigit:]+
-		#INTEGER_CONSTANT, # = dec_integer_constant | hex_integer_constant
-		var first_char : String = "-+0123456789abcdefABCDEF"
-		var valid_chars = "xX0123456789abcdefABCDEF"
-		if peek_char() not in first_char: return p_token
-		token = p_token
-		token.type = TokenType.SCALAR
-		# seek to the end and return our valid integer constant
-		var start : int = cursor_p
-		while not at_end():
-			adv()
-			if peek_char() in valid_chars: continue
-			break
-
-		token.t = text.substr( start, cursor_p - start )
-		new_token.emit( token )
-		return token
-#endregion
-
 #region Parser
 # ██████   █████  ██████  ███████ ███████ ██████
 # ██   ██ ██   ██ ██   ██ ██      ██      ██   ██
@@ -735,7 +411,6 @@ func save_stack( line_num : int, cursor_pos : int = 0 ):
 	#dict[line_num] = this_dict
 	#if verbose > 1: print_rich( "[b]Line %s |Saved: %s[/b]" % [line_num+1, sstack( dict.get(line_num, {'stack':[]})['stack'] )] )
 
-
 	if stack_index.size() < line_num: stack_index.append_array( new_index_chunk )
 	stack_list[line_num] = copy_stack( stack )
 	stack_index[line_num] = true
@@ -743,7 +418,7 @@ func save_stack( line_num : int, cursor_pos : int = 0 ):
 
 func stoken( token : Dictionary ) -> String:
 	var t : String = token.t
-	var type : String = TokenType.keys()[token.type]
+	var type : String = Reader.TokenType.keys()[token.type]
 	var coord := Vector2i(token.line+1, token.col+1) # +1 is because the editor counts from 1
 	return "%s | %s | '%s'" % [coord, type, t.c_escape() ]
 
@@ -769,13 +444,10 @@ func parse():
 	while stack.size() > 0 or not reader.at_end():
 		loop_detection += 1
 		if loop_detection > 10: break
-		var frame = stack.back()
 		var token = reader.get_token()
-		if token.type == TokenType.EOF: if verbose > 1: print("EOF"); break
-		start_frame( token )
+		if token.type == Reader.TokenType.EOF: if verbose > 1: print("EOF"); break
+		var frame = start_frame( token )
 		parse_funcs[ frame.type ].call( token )
-
-
 
 	save_stack(reader.line_n, 0 )
 
@@ -791,10 +463,10 @@ func parse_schema( token : Dictionary ):
 	#					 | attribute_decl | rpc_decl | object )*
 	var frame : StackFrame = stack.back()
 
-	if token.type == TokenType.EOF: return# end_frame()
+	if token.type == Reader.TokenType.EOF: return# end_frame()
 
-	if token.type != TokenType.KEYWORD:
-		syntax_error( token, "Wanted TokenType.KEYWORD" )
+	if token.type != Reader.TokenType.KEYWORD:
+		syntax_error( token, "Wanted Reader.TokenType.KEYWORD" )
 		reader.next_line()
 		return
 
@@ -889,8 +561,8 @@ func parse_attribute_decl( token : Dictionary ):
 			return end_frame()
 		reader.next_token()
 		token = reader.get_token()
-		if token.type == TokenType.IDENT: push_stack( FrameType.IDENT )
-		elif token.type == TokenType.STRING: push_stack( FrameType.STRING_CONSTANT )
+		if token.type == Reader.TokenType.IDENT: push_stack( FrameType.IDENT )
+		elif token.type == Reader.TokenType.STRING: push_stack( FrameType.STRING_CONSTANT )
 		frame.data['next'] = ';'
 		return
 	if frame.data.get('next') == ';':
@@ -910,6 +582,9 @@ func parse_type_decl( token : Dictionary ):
 	#type_decl = ( table | struct ) ident [metadata] { field_decl+ }\
 	var frame : StackFrame = stack.back()
 
+	print( "parse_type_decl( token: %s)" % token )
+	print( "frame: %s" % frame )
+
 	if frame.data.get('next') == null:
 		if token.t not in ['table','struct']:
 			syntax_error(token, "wanted ( table | struct )")
@@ -919,9 +594,9 @@ func parse_type_decl( token : Dictionary ):
 		frame.data['next'] = 'add_ident'
 		return
 	if frame.data.get('next') == 'add_ident':
-		var type_name = frame.data.get('return')
-		if type_name:
-			user_types[(frame.data.get('return'))] = OK
+		var type_decl = frame.data.get('return')
+		if type_decl:
+			user_types[type_decl.t] = OK
 			frame.data.erase('return')
 		frame.data['next'] = 'meta'
 		return
@@ -935,7 +610,7 @@ func parse_type_decl( token : Dictionary ):
 			return
 		return end_frame()
 	if frame.data.get('next') == 'fields':
-		if token.type == TokenType.EOF: return
+		if token.type == Reader.TokenType.EOF: return
 		if check_token_t(token, '}'): return end_frame()
 		return push_stack( FrameType.FIELD_DECL )
 
@@ -961,7 +636,7 @@ func parse_enum_decl( token : Dictionary ):
 		frame.data['next'] = 'ident'
 		return
 	if frame.data.get('next') == 'ident':
-		if not regex_ident.search(token.t):
+		if not Regex.ident.search(token.t):
 			syntax_error(token, "wanted ident")
 			return end_frame()
 		reader.next_token()
@@ -993,7 +668,7 @@ func parse_enum_decl( token : Dictionary ):
 		if frame.data['keyword'] == 'union':
 			var ident = frame.data.get('return')
 			if ident:
-				ident.type = TokenType.TYPE
+				ident.type = Reader.TokenType.TYPE
 				highlight(token)
 		if check_token_t(token, '}'): return end_frame()
 		if check_token_t(token, ','):
@@ -1138,7 +813,7 @@ func parse_type( token : Dictionary ):
 			is_fixed = true
 			# Look for the size
 			fixed_size = reader.get_integer_constant()
-			if fixed_size.type != TokenType.SCALAR:
+			if fixed_size.type != Reader.TokenType.SCALAR:
 				syntax_error(fixed_size, "did not find integer constant")
 			# we have a fixed array, and much check the type against scalar and struct.
 			if type.t in struct_types || type.t in scalar_types: pass
@@ -1150,7 +825,7 @@ func parse_type( token : Dictionary ):
 			syntax_error(end, "missing matching brace '['")
 
 	if is_type:
-		type.type = TokenType.TYPE
+		type.type = Reader.TokenType.TYPE
 		highlight( type )
 		reader.next_token()
 		return end_frame(type.t)
@@ -1166,12 +841,12 @@ func parse_type( token : Dictionary ):
 
 func parse_enumval_decl( token : Dictionary ):
 	# ENUMVAL_DECL = ident [ = integer_constant ]
-	if token.type == TokenType.EOF: return
+	if token.type == Reader.TokenType.EOF: return
 	var frame = stack.back()
 
 	if frame.data.get('next') == null:
 		if token.t == '}': return end_frame() # trailing comma
-		if not regex_ident.search(token.t):
+		if not Regex.ident.search(token.t):
 			syntax_error(token, "wanted ident") #
 			return end_frame()
 		reader.next_token()
@@ -1214,15 +889,15 @@ func parse_metadata( token : Dictionary ):
 func parse_scalar( token : Dictionary ):
 	# SCALAR = boolean_constant | integer_constant | float_constant
 	var this_frame = stack.back()
-	if token.type == TokenType.SCALAR:
+	if token.type == Reader.TokenType.SCALAR:
 		reader.next_token()
 		return end_frame()
 	if token.t in user_enum_vals:
-		token.type = TokenType.SCALAR
+		token.type = Reader.TokenType.SCALAR
 		highlight( token )
 		reader.next_token()
 		return end_frame()
-	syntax_error( token, "Wanted TokenType.SCALAR" )
+	syntax_error( token, "Wanted Reader.TokenType.SCALAR" )
 	reader.next_line()
 	end_frame()
 	return false
@@ -1260,8 +935,8 @@ func parse_commasep( token : Dictionary ):
 		syntax_error(token, "commasep needs an argument")
 		return end_frame()
 
-	if token.type == TokenType.EOF: return
-	if not (token.type == TokenType.IDENT || token.t == ','):
+	if token.type == Reader.TokenType.EOF: return
+	if not (token.type == Reader.TokenType.IDENT || token.t == ','):
 		return end_frame()
 
 	if frame.data.get('next') == null:
@@ -1310,7 +985,7 @@ func parse_file_identifier_decl( token : Dictionary ):
 
 func parse_string_constant( token : Dictionary ):
 	var frame = stack.back()
-	if token.get('type') == TokenType.STRING:
+	if token.get('type') == Reader.TokenType.STRING:
 		reader.next_token()
 		return end_frame( token )
 	syntax_error(token, "wanted filename as string")
@@ -1339,7 +1014,7 @@ func parse_ident( token : Dictionary ):
 		break
 
 	if is_ident:
-		token.type == TokenType.IDENT
+		token.type == Reader.TokenType.IDENT
 		reader.next_token()
 		return end_frame( token )
 
@@ -1358,8 +1033,8 @@ func parse_integer_constant( token : Dictionary ):
 
 	var ok : bool = true
 	while true:
-		if regex_dec_integer_constant.search( token.t ): break
-		if regex_hex_integer_constant.search( token.t ): break
+		if Regex.dec_integer_constant.search( token.t ): break
+		if Regex.hex_integer_constant.search( token.t ): break
 		ok = false; break
 	if ok:
 		reader.next_token()
@@ -1408,22 +1083,22 @@ func quick_scan_text( text : String ):
 
 	while not qreader.at_end():
 		var token = qreader.get_token()
-		if token.type == TokenType.NULL: continue
+		if token.type == Reader.TokenType.NULL: continue
 
-		if token.type != TokenType.KEYWORD:
+		if token.type != Reader.TokenType.KEYWORD:
 			qreader.next_line()
 			continue
 
 		if token.t == 'include':
 			var filename : String = qreader.next_token().t
-			if regex_string_constant.search(filename):
+			if Regex.string_constant.search(filename):
 				quick_scan_file( filename.substr( 1, filename.length() - 2 ) )
 			qreader.next_line()
 			continue
 
 		if token.t in ['struct', 'table', 'enum', 'union']:
 			var ident = qreader.next_token()
-			if regex_ident.search(ident.t):
+			if Regex.ident.search(ident.t):
 				user_types[ident.t] = OK
 
 			if token.t == 'enum':
