@@ -4,21 +4,67 @@
 # ██   ██ ██      ██   ██ ██   ██ ██      ██   ██
 # ██   ██ ███████ ██   ██ ██████  ███████ ██   ██
 
+
+## The reader class steps through a string, pulling out tokens as it goes.
+
+## Types of token that the reader knows about
+enum TokenType {
+	NULL,
+	COMMENT,
+	KEYWORD,
+	TYPE,
+	STRING,
+	PUNCT,
+	IDENT,
+	SCALAR,
+	META,
+	EOL,
+	EOF,
+	UNKNOWN
+}
+
+## Token class helps with static typing to catch and fix bugs.
 class Token:
-	var line : int = 0
-	var col : int = 0
-	var type : TokenType = TokenType.NULL
-	var t : String = ""
+	## Default Values
+	static var defs : Dictionary = {
+		&"line":0, &"col":0, &"type":TokenType.NULL, &"t":"String"
+	}
+	## properties
+	var line : int
+	var col : int
+	var type : TokenType
+	var t : String
 
-enum TokenType { NULL, COMMENT, KEYWORD, TYPE, STRING, PUNCT, IDENT, SCALAR,
-				META, EOL, EOF, UNKNOWN }
+	## Constructor
+	func _init( line_or_dict = 0, _col : int = 0, _type : TokenType = TokenType.NULL, _t : String = "" ) -> void:
+		if line_or_dict is int:
+			line = line_or_dict; col = _col; type = _type; t = _t
+		elif line_or_dict is Dictionary:
+			from_dict( line_or_dict )
+		else:
+			var typename = type_string(typeof(line_or_dict))
+			assert(false, "Token._init( '%s', ... ) is not an int or dict" % typename )
 
-func _init( _parent ) -> void:
-	parent = _parent
+	## assignment from dictionary
+	func from_dict( value : Dictionary ):
+		# Validate and Assign
+		for key in defs.keys():
+			# Missing keys are not an error, assigning default
+			if not key in value: set(key, defs[key])
+			# different types is an error.
+			if typeof(defs[key]) != typeof(value[key]):
+				var typename = type_string(typeof(defs[key]))
+				assert( false, "Invalid type '%s:%s' " % [key, typename ])
+				set(key, defs[key])
+			# value[key] passed validation.
+			set(key, value[key])
+
+	func _to_string() -> String:
+		return "Token{ line:%d, col:%d, type:%s, t:'%s' }" % [line, col, TokenType.keys()[type], t]
 
 var parent
 
-signal new_token( token : Dictionary )
+signal new_token( token : Token )
 signal newline( ln, p )
 signal endfile( ln, p )
 
@@ -50,7 +96,11 @@ var line_n : int = 0
 ## When updating chunks of a larger source file, what line does this chunk start on.
 var line_start : int
 
-var token : Dictionary
+## current Token
+var token : Token
+
+func _init( _parent ) -> void:
+	parent = _parent
 
 func _to_string() -> String:
 	return JSON.stringify({
@@ -60,7 +110,7 @@ func _to_string() -> String:
 		'cursor_lp': cursor_lp,
 		'line_n': line_n,
 		'line_start': line_start,
-		'token': token,
+		'token': str(token),
 	},'\t', false)
 
 func length() -> int:
@@ -73,7 +123,7 @@ func reset( text_ : String, line_i : int = 0 ):
 	cursor_lp = 0
 	line_start = line_i
 	line_n = line_i
-	token = { 'line':0, 'col': 0, 'type': TokenType.NULL, 't':'' }
+	token = Token.new()
 
 func at_end() -> bool:
 	if cursor_p >= text.length(): return true
@@ -104,52 +154,44 @@ func next_line():
 	adv( text.length() ) # adv automatically stops on a line break.
 	next_token()
 
-func get_string() -> Dictionary:
+func get_string() -> Token:
 	var start := cursor_p
-	var token : Dictionary = {
+	var p_token = Token.new({
 		'line':line_n,
 		'col':cursor_lp,
 		'type':TokenType.STRING
-	}
+	})
 	adv()
 	while true:
 		if peek_char() == '"' and peek_char(-1) !='\\':
 			adv()
 			break
 		if peek_char() == '\n':
-			token['error'] = "reached end of line before \""
+			# FIXME, this error string is literally never used.
+			p_token['error'] = "reached end of line before \""
 			break
 		adv()
-	token['t'] = text.substr( start, cursor_p - start )
-	return token
+	p_token.t = text.substr( start, cursor_p - start )
+	return p_token
 
-func get_comment() -> Dictionary:
-	var token : Dictionary = {
-		'line':line_n,
-		'col': cursor_lp,
-		'type':TokenType.COMMENT,
-	}
+func get_comment() -> Token:
+	var p_token = Token.new( line_n, cursor_lp, TokenType.COMMENT )
 	var start := cursor_p
 	while peek_char() != '\n': adv()
-	token['t'] = text.substr( start, start + 2 )
+	p_token.t = text.substr( start, start + 2 )
+	return p_token
 
-	return token
-
-func get_word() -> Dictionary:
-	var token : Dictionary = {
-		'line':line_n,
-		'col': cursor_lp,
-		'type':TokenType.UNKNOWN,
-	}
+func get_word() -> Token:
+	var p_token = Token.new( line_n, cursor_lp, TokenType.UNKNOWN )
 	var start := cursor_p
 	while not peek_char() in word_separation: adv()
 	# return the substring
-	token['t'] = text.substr( start, cursor_p - start )
-	if is_type( token.get('t') ): token['type'] = TokenType.TYPE
-	elif is_keyword(token.get('t')): token['type'] = TokenType.KEYWORD
-	elif is_scalar( token.get('t') ): token['type'] = TokenType.SCALAR
-	elif is_ident(token.get('t')): token['type'] = TokenType.IDENT
-	return token
+	p_token.t = text.substr( start, cursor_p - start )
+	if is_type( p_token.t ): p_token.type = TokenType.TYPE
+	elif is_keyword(p_token.t): p_token.type = TokenType.KEYWORD
+	elif is_scalar( p_token.t ): p_token.type = TokenType.SCALAR
+	elif is_ident(p_token.t): p_token.type = TokenType.IDENT
+	return p_token
 
 func is_type( word : String )-> bool:
 	# TYPE = bool | byte | ubyte | short | ushort | int | uint | float |
@@ -228,14 +270,13 @@ func identify_token() -> TokenType:
 	if _char == '"': return TokenType.STRING
 	return TokenType.UNKNOWN
 
-func next_token() -> Dictionary:
+func next_token() -> Token:
 	while peek_char() in whitespace:
 		adv()
 		if at_end(): break;
-	var type = identify_token()
 
-	token = { 'line':line_n, 'col': cursor_lp, 'type': type, 't':peek_char() }
-	match type:
+	token = Token.new( line_n, cursor_lp, identify_token(), peek_char() )
+	match token.type:
 		TokenType.EOF: pass
 		TokenType.COMMENT:
 			token = get_comment()
@@ -249,7 +290,8 @@ func next_token() -> Dictionary:
 	new_token.emit( token )
 	return token
 
-func get_token() -> Dictionary:
+
+func get_token() -> Token:
 	skip_whitespace()
 	while true:
 		if token.type == TokenType.COMMENT: next_token(); continue
@@ -257,20 +299,22 @@ func get_token() -> Dictionary:
 		break
 	return token
 
+
 func skip_whitespace():
 	while not at_end():
 		if peek_char() in [' ','\t']: adv(); continue
 		break;
 
-func peek_token() -> Dictionary:
+
+func peek_token() -> Token:
 	skip_whitespace()
-	var p_token = { 'line':line_n, 'col': cursor_lp, 'type':TokenType.UNKNOWN, 't':peek_char() }
+	var p_token := Token.new(line_n, cursor_lp, TokenType.UNKNOWN, peek_char() )
 	if at_end(): p_token.type = TokenType.EOF
 	if peek_char() == '\n': p_token.type = TokenType.EOL
 	return p_token
 
 
-func get_integer_constant() -> Dictionary:
+func get_integer_constant() -> Token:
 	# Verify Starting position.
 	var p_token = peek_token()
 	if p_token.type != TokenType.UNKNOWN:

@@ -194,11 +194,11 @@ func _update_cache ( ):
 	quick_scan_text( get_text_edit().text )
 	error_color = Color.RED
 
-func highlight( token : Dictionary ):
+func highlight( token : Reader.Token ):
 	if token.type in [Reader.TokenType.EOF, Reader.TokenType.UNKNOWN]: return
 	line_dict[token.col] = { 'color':colours[token.type] }
 
-func syntax_warning( token : Dictionary, reason = "" ):
+func syntax_warning( token : Reader.Token, reason = "" ):
 	line_dict[token.col] = { 'color':colours[Reader.TokenType.COMMENT] }
 	if verbose > 0:
 		var padding = "".lpad(stack.size(), '\t') if verbose > 1 else ""
@@ -207,7 +207,7 @@ func syntax_warning( token : Dictionary, reason = "" ):
 		print_rich( padding + "[color=%s]%s:Warning in: %s - %s[/color]" % [colour, frame_type, stoken( token ), reason] )
 		if verbose > 1: print_rich( "[color=%s]%s[/color]\n" % [colour,sstack()] )
 
-func syntax_error( token : Dictionary, reason = "" ):
+func syntax_error( token : Reader.Token, reason = "" ):
 	error_flag = true
 	if line_dict.has(token.col): line_dict.erase(token.col)
 	line_dict[token.col] = { 'color':error_color }
@@ -383,7 +383,7 @@ func copy_stack( _stack ) -> Array:
 func push_stack( type : FrameType, args = null ):
 	stack.append( StackFrame.new( type, {'args': args } if args else {} ) )
 
-func start_frame( token : Dictionary ) -> StackFrame:
+func start_frame( token : Reader.Token ) -> StackFrame:
 	var frame : StackFrame = stack.back()
 	if verbose > 1:
 		var padding = "".lpad(stack.size()-1, '\t')
@@ -416,7 +416,7 @@ func save_stack( line_num : int, cursor_pos : int = 0 ):
 	stack_index[line_num] = true
 
 
-func stoken( token : Dictionary ) -> String:
+func stoken( token : Reader.Token ) -> String:
 	var t : String = token.t
 	var type : String = Reader.TokenType.keys()[token.type]
 	var coord := Vector2i(token.line+1, token.col+1) # +1 is because the editor counts from 1
@@ -429,7 +429,7 @@ func sstack( _stack : Array = stack ):
 		stack_string += "/%s%s" % [ FrameType.keys()[frame.type], data ]
 	return stack_string
 
-func check_token_t( token : Dictionary, t : String, msg : String = "" ) -> bool:
+func check_token_t( token : Reader.Token, t : String, msg : String = "" ) -> bool:
 	if token.get('t') == t:
 		reader.next_token()
 		return true
@@ -457,13 +457,13 @@ func parse():
 #      ██ ██      ██   ██ ██      ██  ██  ██ ██   ██
 # ███████  ██████ ██   ██ ███████ ██      ██ ██   ██
 
-func parse_schema( token : Dictionary ):
+func parse_schema( token : Reader.Token ):
 	#schema # = include* ( namespace_decl | type_decl | enum_decl | root_decl
 	#					 | file_extension_decl | file_identifier_decl
 	#					 | attribute_decl | rpc_decl | object )*
 	var frame : StackFrame = stack.back()
 
-	if token.type == Reader.TokenType.EOF: return# end_frame()
+	if token.type == Reader.TokenType.EOF: return # end_frame()
 
 	if token.type != Reader.TokenType.KEYWORD:
 		syntax_error( token, "Wanted Reader.TokenType.KEYWORD" )
@@ -487,7 +487,7 @@ func parse_schema( token : Dictionary ):
 # ██ ██  ██ ██ ██      ██      ██    ██ ██   ██ ██
 # ██ ██   ████  ██████ ███████  ██████  ██████  ███████
 
-func parse_include( token : Dictionary ):
+func parse_include( token : Reader.Token ):
 	# INCLUDE = include string_constant ;
 	var frame = stack.back()
 
@@ -523,7 +523,7 @@ func parse_include( token : Dictionary ):
 # ██  ██ ██ ██   ██ ██  ██  ██ ██           ██ ██      ██   ██ ██      ██
 # ██   ████ ██   ██ ██      ██ ███████ ███████ ██      ██   ██  ██████ ███████
 
-func parse_namespace_decl( token : Dictionary ):
+func parse_namespace_decl( token : Reader.Token ):
 	#NAMESPACE_DECL = namespace ident ( . ident )* ;
 	var frame = stack.back()
 
@@ -551,7 +551,7 @@ func parse_namespace_decl( token : Dictionary ):
 # ██   ██    ██       ██    ██   ██ ██ ██   ██ ██    ██    ██    ██
 # ██   ██    ██       ██    ██   ██ ██ ██████   ██████     ██    ███████
 
-func parse_attribute_decl( token : Dictionary ):
+func parse_attribute_decl( token : Reader.Token ):
 	# ATTRIBUTE_DECL = attribute ident | "</tt>ident<tt>" ;
 	var frame = stack.back()
 
@@ -578,7 +578,7 @@ func parse_attribute_decl( token : Dictionary ):
 #    ██       ██    ██      ██              ██   ██ ██      ██      ██
 #    ██       ██    ██      ███████ ███████ ██████  ███████  ██████ ███████
 
-func parse_type_decl( token : Dictionary ):
+func parse_type_decl( token : Reader.Token ):
 	#type_decl = ( table | struct ) ident [metadata] { field_decl+ }\
 	var frame : StackFrame = stack.back()
 
@@ -623,7 +623,7 @@ func parse_type_decl( token : Dictionary ):
 # ██      ██  ██ ██ ██    ██ ██  ██  ██         ██   ██ ██      ██      ██
 # ███████ ██   ████  ██████  ██      ██ ███████ ██████  ███████  ██████ ███████
 
-func parse_enum_decl( token : Dictionary ):
+func parse_enum_decl( token : Reader.Token ):
 	#enum_decl = ( enum ident : type | union ident ) metadata { commasep( enumval_decl ) }
 	var frame : StackFrame = stack.back()
 
@@ -685,7 +685,7 @@ func parse_enum_decl( token : Dictionary ):
 # ██   ██ ██    ██ ██    ██    ██         ██   ██ ██      ██      ██
 # ██   ██  ██████   ██████     ██ ███████ ██████  ███████  ██████ ███████
 
-func parse_root_decl( token : Dictionary ):
+func parse_root_decl( token : Reader.Token ):
 	# ROOT_DECL = root_type ident ;
 	var frame = stack.back()
 
@@ -712,7 +712,7 @@ func parse_root_decl( token : Dictionary ):
 # ██      ██ ██      ██      ██   ██         ██   ██ ██      ██      ██
 # ██      ██ ███████ ███████ ██████  ███████ ██████  ███████  ██████ ███████
 
-func parse_field_decl( token : Dictionary ):
+func parse_field_decl( token : Reader.Token ):
 	# field_decl = ident : type [ = scalar ] metadata;
 	var frame : StackFrame = stack.back()
 
@@ -748,7 +748,7 @@ func parse_field_decl( token : Dictionary ):
 #   ██   ██ ██      ██              ██   ██ ██      ██      ██
 #   ██   ██ ██       ██████ ███████ ██████  ███████  ██████ ███████
 
-func parse_rpc_decl( token : Dictionary ):
+func parse_rpc_decl( token : Reader.Token ):
 	var this_frame = stack.back()
 	syntax_warning( token, "Unimplemented")
 	reader.next_line()
@@ -760,7 +760,7 @@ func parse_rpc_decl( token : Dictionary ):
 #   ██   ██ ██      ██              ██  ██  ██ ██         ██    ██   ██
 #   ██   ██ ██       ██████ ███████ ██      ██ ███████    ██    ██   ██
 
-func parse_rpc_method( token : Dictionary ):
+func parse_rpc_method( token : Reader.Token ):
 	var this_frame = stack.back()
 	syntax_warning( token, "Unimplemented")
 	reader.next_line()
@@ -772,7 +772,7 @@ func parse_rpc_method( token : Dictionary ):
 #      ██       ██    ██      ██
 #      ██       ██    ██      ███████
 
-func parse_type( token : Dictionary ):
+func parse_type( token : Reader.Token ):
 	var this_frame = stack.back()
 	# TYPE = bool | byte | ubyte | short | ushort | int | uint | float |
 	# long | ulong | double | int8 | uint8 | int16 | uint16 | int32 |
@@ -839,7 +839,7 @@ func parse_type( token : Dictionary ):
 # ██      ██  ██ ██ ██    ██ ██  ██  ██  ██  ██  ██   ██ ██
 # ███████ ██   ████  ██████  ██      ██   ████   ██   ██ ███████
 
-func parse_enumval_decl( token : Dictionary ):
+func parse_enumval_decl( token : Reader.Token ):
 	# ENUMVAL_DECL = ident [ = integer_constant ]
 	if token.type == Reader.TokenType.EOF: return
 	var frame = stack.back()
@@ -868,7 +868,7 @@ func parse_enumval_decl( token : Dictionary ):
 # ██  ██  ██ ██         ██    ██   ██ ██   ██ ██   ██    ██    ██   ██
 # ██      ██ ███████    ██    ██   ██ ██████  ██   ██    ██    ██   ██
 
-func parse_metadata( token : Dictionary ):
+func parse_metadata( token : Reader.Token ):
 	#metadata = [ ( commasep( ident [ : single_value ] ) ) ]
 	var frame : StackFrame = stack.back()
 
@@ -886,7 +886,7 @@ func parse_metadata( token : Dictionary ):
 	return end_frame()
 
 
-func parse_scalar( token : Dictionary ):
+func parse_scalar( token : Reader.Token ):
 	# SCALAR = boolean_constant | integer_constant | float_constant
 	var this_frame = stack.back()
 	if token.type == Reader.TokenType.SCALAR:
@@ -902,20 +902,20 @@ func parse_scalar( token : Dictionary ):
 	end_frame()
 	return false
 
-func parse_object( token : Dictionary ):
+func parse_object( token : Reader.Token ):
 	var this_frame = stack.back()
 	syntax_warning( token, "unimplemented" )
 	reader.next_line()
 	return end_frame()
 
-func parse_single_value( token : Dictionary ):
+func parse_single_value( token : Reader.Token ):
 	var this_frame = stack.back()
 	syntax_warning( token, "unimplemented" )
 	reader.next_line()
 	end_frame()
 	return false
 
-func parse_value( token : Dictionary ):
+func parse_value( token : Reader.Token ):
 	var this_frame = stack.back()
 	syntax_warning( token, "unimplemented" )
 	reader.next_line()
@@ -927,7 +927,7 @@ func parse_value( token : Dictionary ):
 # ██      ██    ██ ██  ██  ██ ██  ██  ██ ██   ██      ██ ██      ██
 #  ██████  ██████  ██      ██ ██      ██ ██   ██ ███████ ███████ ██
 
-func parse_commasep( token : Dictionary ):
+func parse_commasep( token : Reader.Token ):
 	# COMMASEP(x) = [ x ( , x )* ]
 	var frame = stack.back()
 	var arg_type = frame.data.get('args')
@@ -959,7 +959,7 @@ func parse_commasep( token : Dictionary ):
 #   ██      ██ ██      ██         ██       ██ ██     ██
 #   ██      ██ ███████ ███████ ██ ███████ ██   ██    ██
 
-func parse_file_extension_decl( token : Dictionary ):
+func parse_file_extension_decl( token : Reader.Token ):
 	var this_frame = stack.back()
 	syntax_warning( token, "Unimplemented")
 	reader.next_line()
@@ -971,7 +971,7 @@ func parse_file_extension_decl( token : Dictionary ):
 #   ██      ██ ██      ██
 #   ██      ██ ███████ ███████
 
-func parse_file_identifier_decl( token : Dictionary ):
+func parse_file_identifier_decl( token : Reader.Token ):
 	var this_frame = stack.back()
 	syntax_warning( token, "Unimplemented")
 	reader.next_line()
@@ -983,7 +983,7 @@ func parse_file_identifier_decl( token : Dictionary ):
 #        ██    ██    ██   ██ ██ ██  ██ ██ ██    ██
 #   ███████    ██    ██   ██ ██ ██   ████  ██████
 
-func parse_string_constant( token : Dictionary ):
+func parse_string_constant( token : Reader.Token ):
 	var frame = stack.back()
 	if token.get('type') == Reader.TokenType.STRING:
 		reader.next_token()
@@ -997,13 +997,13 @@ func parse_string_constant( token : Dictionary ):
 #   ██ ██   ██ ██      ██  ██ ██    ██
 #   ██ ██████  ███████ ██   ████    ██
 
-func parse_ident( token : Dictionary ):
+func parse_ident( token : Reader.Token ):
 	#ident = [a-zA-Z_][a-zA-Z0-9_]*
 	#FIXME use regex?
 	var ident_start : String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"
 	var ident_end : String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
 
-	var word : String = token.get('t', ' ')
+	var word : String = token.t
 	var is_ident : bool = true
 	while is_ident:
 		# verify first character
@@ -1027,7 +1027,7 @@ func parse_ident( token : Dictionary ):
 #   ██ ██  ██ ██    ██
 #   ██ ██   ████    ██
 
-func parse_integer_constant( token : Dictionary ):
+func parse_integer_constant( token : Reader.Token ):
 	# INTEGER_CONSTANT = dec_integer_constant | hex_integer_constant
 	var frame : StackFrame = stack.back()
 
