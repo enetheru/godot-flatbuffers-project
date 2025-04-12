@@ -1,11 +1,21 @@
+
+const REGEX = preload('res://addons/gdflatbuffers/scripts/regex.gd')
+static var Regex
+
 # ██████  ███████  █████  ██████  ███████ ██████
 # ██   ██ ██      ██   ██ ██   ██ ██      ██   ██
 # ██████  █████   ███████ ██   ██ █████   ██████
 # ██   ██ ██      ██   ██ ██   ██ ██      ██   ██
 # ██   ██ ███████ ██   ██ ██████  ███████ ██   ██
 
-
 ## The reader class steps through a string, pulling out tokens as it goes.
+
+# MARK: Token
+#  _____    _
+# |_   _|__| |_____ _ _
+#   | |/ _ \ / / -_) ' \
+#   |_|\___/_\_\___|_||_|
+# ------------------------
 
 ## Types of token that the reader knows about
 enum TokenType {
@@ -62,11 +72,27 @@ class Token:
 	func _to_string() -> String:
 		return "Token{ line:%d, col:%d, type:%s, t:'%s' }" % [line, col, TokenType.keys()[type], t]
 
-var parent
+# MARK: Signals
+#   ___ _                _
+#  / __(_)__ _ _ _  __ _| |___
+#  \__ \ / _` | ' \/ _` | (_-<
+#  |___/_\__, |_||_\__,_|_/__/
+# -------|___/-----------------
 
 signal new_token( token : Token )
 signal newline( ln, p )
 signal endfile( ln, p )
+
+# MARK: Properties
+#   ___                       _   _
+#  | _ \_ _ ___ _ __  ___ _ _| |_(_)___ ___
+#  |  _/ '_/ _ \ '_ \/ -_) '_|  _| / -_|_-<
+#  |_| |_| \___/ .__/\___|_|  \__|_\___/__/
+# -------------|_|--------------------------
+
+## The parent object is where the reader draws some information from
+## If I can I should move as much out of the reader into the "parent" as possible
+var parent
 
 ## A list of word separation characters
 var word_separation : Array = [' ', '\t', '\n', '{','}', ':', ';', ',',
@@ -99,8 +125,11 @@ var line_start : int
 ## current Token
 var token : Token
 
+
 func _init( _parent ) -> void:
 	parent = _parent
+	if not Regex: Regex = REGEX.new()
+
 
 func _to_string() -> String:
 	return JSON.stringify({
@@ -113,8 +142,6 @@ func _to_string() -> String:
 		'token': str(token),
 	},'\t', false)
 
-func length() -> int:
-	return text.length()
 
 func reset( text_ : String, line_i : int = 0 ):
 	text = text_
@@ -125,17 +152,42 @@ func reset( text_ : String, line_i : int = 0 ):
 	line_n = line_i
 	token = Token.new()
 
+
 func at_end() -> bool:
 	if cursor_p >= text.length(): return true
 	return false
 
+# MARK: peek_
+#                 _
+#   _ __  ___ ___| |__
+#  | '_ \/ -_) -_) / /
+#  | .__/\___\___|_\_\ ___
+# -|_|----------------|___|-
+
 func peek_char( offset : int = 0 ) -> String:
 	return text[cursor_p + offset] if cursor_p + offset < text.length() else '\n'
 
-func get_char() -> String:
-	adv(); return text[cursor_p - 1]
 
-func adv( dist : int = 1 ):
+func peek_line( offset : int = 0 ) -> String:
+	var eol = text.find('\n', cursor_p + offset)
+	return text.substr(cursor_p, eol - cursor_p) if eol != -1 else '\n'
+
+
+func peek_token() -> Token:
+	adv_whitespace()
+	var p_token := Token.new(line_n, cursor_lp, TokenType.UNKNOWN, peek_char() )
+	if at_end(): p_token.type = TokenType.EOF
+	if peek_char() == '\n': p_token.type = TokenType.EOL
+	return p_token
+
+# MARK: adv_
+#           _
+#   __ _ __| |_ __
+#  / _` / _` \ V /
+#  \__,_\__,_|\_/ ___
+# ---------------|___|-
+
+func adv( dist : int = 1 ) -> void:
 	if cursor_p >= text.length(): return # dont advance further than length
 	for i in dist:
 		cursor_p += 1
@@ -150,9 +202,35 @@ func adv( dist : int = 1 ):
 		newline.emit( line_n, cursor_p )
 		break
 
-func next_line():
+
+func adv_line() -> void:
 	adv( text.length() ) # adv automatically stops on a line break.
 	next_token()
+
+
+func adv_whitespace():
+	while peek_char() in whitespace and not at_end():
+		adv()
+
+# MARK: get_
+#            _
+#   __ _ ___| |_
+#  / _` / -_)  _|
+#  \__, \___|\__| ___
+# -|___/---------|___|-
+
+func get_char() -> String:
+	adv(); return text[cursor_p - 1]
+
+
+func get_token() -> Token:
+	adv_whitespace()
+	while true:
+		if token.type == TokenType.COMMENT: next_token(); continue
+		if token.type == TokenType.NULL: next_token(); continue
+		break
+	return token
+
 
 func get_string() -> Token:
 	var start := cursor_p
@@ -167,12 +245,13 @@ func get_string() -> Token:
 			adv()
 			break
 		if peek_char() == '\n':
-			# FIXME, this error string is literally never used.
-			p_token['error'] = "reached end of line before \""
+			# This is a syntax error as multi-line strings are not supported
+			p_token.type = TokenType.UNKNOWN
 			break
 		adv()
 	p_token.t = text.substr( start, cursor_p - start )
 	return p_token
+
 
 func get_comment() -> Token:
 	var p_token = Token.new( line_n, cursor_lp, TokenType.COMMENT )
@@ -180,6 +259,7 @@ func get_comment() -> Token:
 	while peek_char() != '\n': adv()
 	p_token.t = text.substr( start, start + 2 )
 	return p_token
+
 
 func get_word() -> Token:
 	var p_token = Token.new( line_n, cursor_lp, TokenType.UNKNOWN )
@@ -193,73 +273,49 @@ func get_word() -> Token:
 	elif is_ident(p_token.t): p_token.type = TokenType.IDENT
 	return p_token
 
+# MARK: query
+#   __ _ _  _ ___ _ _ _  _
+#  / _` | || / -_) '_| || |
+#  \__, |\_,_\___|_|  \_, |
+# ----|_|-------------|__/--
+
 func is_type( word : String )-> bool:
-	# TYPE = bool | byte | ubyte | short | ushort | int | uint | float |
-	# long | ulong | double | int8 | uint8 | int16 | uint16 | int32 |
-	# uint32| int64 | uint64 | float32 | float64 | string | [ type ] |
-	# ident
 	if word in parent.scalar_types: return true
 	if word in parent.struct_types: return true
 	if word in parent.table_types: return true
 	if word in parent.array_types: return true
 	return false
 
+
 func is_keyword( word : String ) -> bool:
-	if word in parent.keywords: return true
-	return false
+	return word in parent.keywords
+
 
 func is_ident( word : String ) -> bool:
-	#ident = [a-zA-Z_][a-zA-Z0-9_]*
-	var ident_start : String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	var ident_end : String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
-	# verify first character
-	if not ident_start.contains(word[0]) : return false
-	# verify the remaining
-	for i in range( 1, word.length() ):
-		if not ident_end.contains(word[i]): return false
-	return true
+	return Regex.ident.search(word)
 
+
+#scalar = boolean_constant | integer_constant | float_constant
 func is_scalar( word : String ) -> bool:
-	#scalar = boolean_constant | integer_constant | float_constant
-	if is_boolean( word ): return true
-	if is_integer( word ): return true
-	if is_float( word ): return true
-	return false
+	return is_boolean( word ) or is_integer( word ) or is_float( word )
+
 
 func is_boolean( word : String ) -> bool:
-	if word in ['true', 'false']: return true
-	return false
+	return word in ['true', 'false']
 
+
+# integer_constant = dec_integer_constant | hex_integer_constant
 func is_integer( word : String ) -> bool:
-	#integer_constant = dec_integer_constant | hex_integer_constant
-	var regex = RegEx.new()
-	#dec_integer_constant = [-+]?[:digit:]+
-	regex.compile("^[-+]?[0-9]+$")
-	var result = regex.search( word )
-	if result: return true
-	#hex_integer_constant = [-+]?0[xX][:xdigit:]+
-	regex = RegEx.new()
-	regex.compile("^[-+]?0[xX][0-9a-fA-F]+$")
-	result = regex.search( word )
-	if result: return true
-	return false
+	return (Regex.dec_integer_constant.search(word)
+		or Regex.hex_integer_constant.search(word))
 
+
+#float_constant = dec_float_constant | hex_float_constant | special_float_constant
 func is_float( word : String ) -> bool:
-	#float_constant = dec_float_constant | hex_float_constant | special_float_constant
-	var regex = RegEx.new()
-	#dec_float_constant = [-+]?(([.][:digit:]+)|([:digit:]+[.][:digit:]*)|([:digit:]+))([eE][-+]?[:digit:]+)?
-	regex.compile("^[-+]?(([.][0-9]+)|([0-9]+[.][0-9]*)|([0-9]+))([eE][-+]?[0-9]+)?$")
-	var result = regex.search( word )
-	if result: return true
-	#hex_float_constant = [-+]?0[xX](([.][:xdigit:]+)|([:xdigit:]+[.][:xdigit:]*)|([:xdigit:]+))([pP][-+]?[:digit:]+)
-	regex.compile("^[-+]?0[xX](([.][[+-]?[0-9a-fA-F]+]+)|([[+-]?[0-9a-fA-F]+]+[.][[+-]?[0-9a-fA-F]+]*)|([[+-]?[0-9a-fA-F]+]+))([pP][+-]?[0-9]+)$")
-	result = regex.search( word )
-	if result: return true
-	#special_float_constant = [-+]?(nan|inf|infinity)
-	regex.compile("^[-+]?(nan|inf|infinity)$")
-	result = regex.search( word )
-	if result: return true
-	return false
+	return (Regex.dec_float_constant.search( word )
+		or Regex.hex_float_constant.search( word )
+		or Regex.special_float_constant.search( word ))
+
 
 func identify_token() -> TokenType:
 	if at_end(): return TokenType.EOF
@@ -270,10 +326,9 @@ func identify_token() -> TokenType:
 	if _char == '"': return TokenType.STRING
 	return TokenType.UNKNOWN
 
+
 func next_token() -> Token:
-	while peek_char() in whitespace:
-		adv()
-		if at_end(): break;
+	adv_whitespace()
 
 	token = Token.new( line_n, cursor_lp, identify_token(), peek_char() )
 	match token.type:
@@ -291,40 +346,20 @@ func next_token() -> Token:
 	return token
 
 
-func get_token() -> Token:
-	skip_whitespace()
-	while true:
-		if token.type == TokenType.COMMENT: next_token(); continue
-		if token.type == TokenType.NULL: next_token(); continue
-		break
-	return token
-
-
-func skip_whitespace():
-	while not at_end():
-		if peek_char() in [' ','\t']: adv(); continue
-		break;
-
-
-func peek_token() -> Token:
-	skip_whitespace()
-	var p_token := Token.new(line_n, cursor_lp, TokenType.UNKNOWN, peek_char() )
-	if at_end(): p_token.type = TokenType.EOF
-	if peek_char() == '\n': p_token.type = TokenType.EOL
-	return p_token
-
-
 func get_integer_constant() -> Token:
 	# Verify Starting position.
 	var p_token = peek_token()
 	if p_token.type != TokenType.UNKNOWN:
 		return p_token
 
-	#DIGIT, # [:digit:] = [0-9]
-	#XDIGIT, # [:xdigit:] = [0-9a-fA-F]
-	#DEC_INTEGER_CONSTANT, # = [-+]?[:digit:]+
-	#HEX_INTEGER_CONSTANT, # = [-+]?0[xX][:xdigit:]+
 	#INTEGER_CONSTANT, # = dec_integer_constant | hex_integer_constant
+
+	#DEC_INTEGER_CONSTANT, # = [-+]?[:digit:]+
+	#DIGIT, # [:digit:] = [0-9]
+
+	#HEX_INTEGER_CONSTANT, # = [-+]?0[xX][:xdigit:]+
+	#XDIGIT, # [:xdigit:] = [0-9a-fA-F]
+
 	var first_char : String = "-+0123456789abcdefABCDEF"
 	var valid_chars = "xX0123456789abcdefABCDEF"
 	if peek_char() not in first_char: return p_token

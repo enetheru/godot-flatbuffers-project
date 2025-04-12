@@ -1,13 +1,14 @@
 @tool
 extends EditorSyntaxHighlighter
 
-static var Regex = preload('res://addons/gdflatbuffers/scripts/regex.gd').new()
+const REGEX = preload('res://addons/gdflatbuffers/scripts/regex.gd')
+static var Regex
+
 const Reader = preload('res://addons/gdflatbuffers/scripts/reader.gd')
 
 var editor_settings : EditorSettings
 var verbose : int = 0
 
-#region Highlighter
 # ██   ██ ██  ██████  ██   ██ ██      ██  ██████  ██   ██ ████████ ███████ ██████
 # ██   ██ ██ ██       ██   ██ ██      ██ ██       ██   ██    ██    ██      ██   ██
 # ███████ ██ ██   ███ ███████ ██      ██ ██   ███ ███████    ██    █████   ██████
@@ -68,6 +69,7 @@ var stack_index : Array[bool] = [false]
 var stack_list : Dictionary[int, Array] = {}
 
 func _init():
+	if not Regex: Regex = REGEX.new()
 	new_index_chunk.resize(10)
 	new_index_chunk.fill(false)
 	editor_settings = EditorInterface.get_editor_settings()
@@ -146,7 +148,7 @@ func _get_line_syntax_highlighting ( line_num : int ) -> Dictionary:
 	# reset the reader
 	reader.reset( line, line_num )
 	# skip whitespace, comments and empty lines
-	reader.skip_whitespace()
+	reader.adv_whitespace()
 	if verbose > 2: print( "peek_char() = '%s'" % reader.peek_char().c_escape() )
 	if reader.peek_char() == '/' and reader.peek_char(1) == '/':
 		highlight(reader.next_token())
@@ -467,13 +469,13 @@ func parse_schema( token : Reader.Token ):
 
 	if token.type != Reader.TokenType.KEYWORD:
 		syntax_error( token, "Wanted Reader.TokenType.KEYWORD" )
-		reader.next_line()
+		reader.adv_line()
 		return
 
 	if token.t == 'include':
 		if frame.data.has('no_includes'):
 			syntax_error( token, "Trying to use include mid file" )
-			reader.next_line()
+			reader.adv_line()
 			return
 		push_stack( FrameType.INCLUDE )
 		return
@@ -723,7 +725,7 @@ func parse_field_decl( token : Reader.Token ):
 	if frame.data.get('next') == ':':
 		if token.t != ':':
 			syntax_error(token, "wanted ':'")
-			reader.next_line()
+			reader.adv_line()
 			return end_frame()
 		reader.next_token()
 		push_stack( FrameType.TYPE )
@@ -751,7 +753,7 @@ func parse_field_decl( token : Reader.Token ):
 func parse_rpc_decl( token : Reader.Token ):
 	var this_frame = stack.back()
 	syntax_warning( token, "Unimplemented")
-	reader.next_line()
+	reader.adv_line()
 	return end_frame()
 
 #   ██████  ██████   ██████         ███    ███ ███████ ████████ ██   ██
@@ -763,7 +765,7 @@ func parse_rpc_decl( token : Reader.Token ):
 func parse_rpc_method( token : Reader.Token ):
 	var this_frame = stack.back()
 	syntax_warning( token, "Unimplemented")
-	reader.next_line()
+	reader.adv_line()
 	return end_frame()
 
 #   ████████ ██    ██ ██████  ███████
@@ -898,27 +900,27 @@ func parse_scalar( token : Reader.Token ):
 		reader.next_token()
 		return end_frame()
 	syntax_error( token, "Wanted Reader.TokenType.SCALAR" )
-	reader.next_line()
+	reader.adv_line()
 	end_frame()
 	return false
 
 func parse_object( token : Reader.Token ):
 	var this_frame = stack.back()
 	syntax_warning( token, "unimplemented" )
-	reader.next_line()
+	reader.adv_line()
 	return end_frame()
 
 func parse_single_value( token : Reader.Token ):
 	var this_frame = stack.back()
 	syntax_warning( token, "unimplemented" )
-	reader.next_line()
+	reader.adv_line()
 	end_frame()
 	return false
 
 func parse_value( token : Reader.Token ):
 	var this_frame = stack.back()
 	syntax_warning( token, "unimplemented" )
-	reader.next_line()
+	reader.adv_line()
 	return end_frame()
 
 #  ██████  ██████  ███    ███ ███    ███  █████  ███████ ███████ ██████
@@ -962,7 +964,7 @@ func parse_commasep( token : Reader.Token ):
 func parse_file_extension_decl( token : Reader.Token ):
 	var this_frame = stack.back()
 	syntax_warning( token, "Unimplemented")
-	reader.next_line()
+	reader.adv_line()
 	return end_frame()
 
 #   ███████ ██ ██      ███████
@@ -974,7 +976,7 @@ func parse_file_extension_decl( token : Reader.Token ):
 func parse_file_identifier_decl( token : Reader.Token ):
 	var this_frame = stack.back()
 	syntax_warning( token, "Unimplemented")
-	reader.next_line()
+	reader.adv_line()
 	return end_frame()
 
 #   ███████ ████████ ██████  ██ ███    ██  ██████
@@ -1086,14 +1088,14 @@ func quick_scan_text( text : String ):
 		if token.type == Reader.TokenType.NULL: continue
 
 		if token.type != Reader.TokenType.KEYWORD:
-			qreader.next_line()
+			qreader.adv_line()
 			continue
 
 		if token.t == 'include':
 			var filename : String = qreader.next_token().t
 			if Regex.string_constant.search(filename):
 				quick_scan_file( filename.substr( 1, filename.length() - 2 ) )
-			qreader.next_line()
+			qreader.adv_line()
 			continue
 
 		if token.t in ['struct', 'table', 'enum', 'union']:
@@ -1103,7 +1105,7 @@ func quick_scan_text( text : String ):
 
 			if token.t == 'enum':
 				pass # TODO get the enum names
-		qreader.next_line()
+		qreader.adv_line()
 
 	if verbose > 1: print( "user_types: ", user_types.keys())
 	if verbose > 1: print( "user_enum_vals: ", user_enum_vals.keys())
