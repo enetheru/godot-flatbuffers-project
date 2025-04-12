@@ -1,6 +1,10 @@
 
 const REGEX = preload('res://addons/gdflatbuffers/scripts/regex.gd')
-static var Regex
+static var Regex :
+	get():
+		if Regex == null:
+			Regex = REGEX.new()
+		return Regex
 
 # ██████  ███████  █████  ██████  ███████ ██████
 # ██   ██ ██      ██   ██ ██   ██ ██      ██   ██
@@ -70,7 +74,8 @@ class Token:
 			set(key, value[key])
 
 	func _to_string() -> String:
-		return "Token{ line:%d, col:%d, type:%s, t:'%s' }" % [line, col, TokenType.keys()[type], t]
+		# Line numbers in the editor gutter start at 1
+		return "Token{ line:%d, col:%d, type:%s, t:'%s' }" % [line+1, col, TokenType.keys()[type], t]
 
 # MARK: Signals
 #   ___ _                _
@@ -222,7 +227,8 @@ func adv_whitespace():
 func get_char() -> String:
 	adv(); return text[cursor_p - 1]
 
-
+## will return the current token from the reader
+## skips whitespace, comments and null
 func get_token() -> Token:
 	adv_whitespace()
 	while true:
@@ -292,7 +298,7 @@ func is_keyword( word : String ) -> bool:
 
 
 func is_ident( word : String ) -> bool:
-	return Regex.ident.search(word)
+	return Regex.ident.search(word) or false
 
 
 #scalar = boolean_constant | integer_constant | float_constant

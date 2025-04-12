@@ -394,12 +394,14 @@ func start_frame( token : Reader.Token ) -> StackFrame:
 		print( padding + head + " %s | {Token:%s} | Data:%s" % [frame_name, stoken( token ), frame.data] )
 	return frame
 
+## end_frame() pops the last stackframe from the stack
+## if retval is not null, the top stack frame will have 'return' = retval added
 func end_frame( retval = null ) -> bool:
 	var type_name : String = FrameType.keys()[stack.back().type] if stack.size() else "empty"
 	if verbose > 1:
 		var padding = "".lpad(stack.size()-1, '\t')
-		var result = "" if retval else "ret:%s" % retval
-		print( padding + "⮶End %s | %s" % [type_name, result] )
+		var result = " | ret:%s" % retval if retval else ""
+		print( padding + "⮶End %s%s" % [type_name, result] )
 	stack.pop_back()
 	if stack.size() && retval: stack.back().data['return'] = retval
 	return true
@@ -775,15 +777,33 @@ func parse_rpc_method( token : Reader.Token ):
 #      ██       ██    ██      ███████
 
 func parse_type( token : Reader.Token ):
-	var this_frame = stack.back()
+	var frame = stack.back()
+
+	if frame.data.get('next') == null:
+		if token.t == '[':
+			print( frame )
+			print( token )
+		pass
 	# TYPE = bool | byte | ubyte | short | ushort | int | uint | float |
 	# long | ulong | double | int8 | uint8 | int16 | uint16 | int32 |
 	# uint32| int64 | uint64 | float32 | float64 | string
 	# | [ type ]
 	# | ident
 
-	# NOTE TYPE can also be [type:integer] to denote a fixed type array
-	# however in this case the type must be a scalar or struct
+
+	# TODO Array Syntax
+	# [struct/scalar type?:integer_constant]
+	# Arrays are a convenience short-hand for a fixed-length collection of elements.
+	# Arrays allow the following syntax, while maintaining binary equivalency.
+	# Arrays are currently only supported in a struct.
+
+	# Normal Syntax     # Array Syntax
+	# struct Vec3 {     # struct Vec3 {
+	#   x:float;        #   v:[float:3];
+	#   y:float;        # }
+	#   z:float;
+	# }
+
 	var types: Array = [ "bool", "byte", "ubyte", "short", "ushort", "int",
 	"uint", "float", "long", "ulong", "double", "int8", "uint8", "int16",
 	"uint16", "int32", "uint32", "int64", "uint64", "float32", "float64",
@@ -1085,7 +1105,7 @@ func quick_scan_text( text : String ):
 
 	while not qreader.at_end():
 		var token = qreader.get_token()
-		if token.type == Reader.TokenType.NULL: continue
+		print( token )
 
 		if token.type != Reader.TokenType.KEYWORD:
 			qreader.adv_line()
@@ -1101,10 +1121,14 @@ func quick_scan_text( text : String ):
 		if token.t in ['struct', 'table', 'enum', 'union']:
 			var ident = qreader.next_token()
 			if Regex.ident.search(ident.t):
+				print("Adding '%s' to user types" % ident.t)
 				user_types[ident.t] = OK
+			else:
+				print("identity invalid '%s'" % ident.t)
 
-			if token.t == 'enum':
-				pass # TODO get the enum names
+		if token.t == 'enum':
+			pass # TODO get the enum names
+
 		qreader.adv_line()
 
 	if verbose > 1: print( "user_types: ", user_types.keys())
