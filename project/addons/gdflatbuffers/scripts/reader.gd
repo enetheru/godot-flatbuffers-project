@@ -75,7 +75,7 @@ class Token:
 
 	func _to_string() -> String:
 		# Line numbers in the editor gutter start at 1
-		return "Token{ line:%d, col:%d, type:%s, t:'%s' }" % [line+1, col, TokenType.keys()[type], t]
+		return "Token{ line:%d, col:%d, type:%s, t:'%s' }" % [line+1, col+1, TokenType.keys()[type], t.c_escape()]
 
 # MARK: Signals
 #   ___ _                _
@@ -127,10 +127,6 @@ var line_n : int = 0
 ## When updating chunks of a larger source file, what line does this chunk start on.
 var line_start : int
 
-## current Token
-var token : Token
-
-
 func _init( _parent ) -> void:
 	parent = _parent
 	if not Regex: Regex = REGEX.new()
@@ -144,7 +140,7 @@ func _to_string() -> String:
 		'cursor_lp': cursor_lp,
 		'line_n': line_n,
 		'line_start': line_start,
-		'token': str(token),
+		'token': str(peek_token()),
 	},'\t', false)
 
 
@@ -155,35 +151,7 @@ func reset( text_ : String, line_i : int = 0 ):
 	cursor_lp = 0
 	line_start = line_i
 	line_n = line_i
-	token = Token.new()
 
-
-func at_end() -> bool:
-	if cursor_p >= text.length(): return true
-	return false
-
-# MARK: peek_
-#                 _
-#   _ __  ___ ___| |__
-#  | '_ \/ -_) -_) / /
-#  | .__/\___\___|_\_\ ___
-# -|_|----------------|___|-
-
-func peek_char( offset : int = 0 ) -> String:
-	return text[cursor_p + offset] if cursor_p + offset < text.length() else '\n'
-
-
-func peek_line( offset : int = 0 ) -> String:
-	var eol = text.find('\n', cursor_p + offset)
-	return text.substr(cursor_p, eol - cursor_p) if eol != -1 else '\n'
-
-
-func peek_token() -> Token:
-	adv_whitespace()
-	var p_token := Token.new(line_n, cursor_lp, TokenType.UNKNOWN, peek_char() )
-	if at_end(): p_token.type = TokenType.EOF
-	if peek_char() == '\n': p_token.type = TokenType.EOL
-	return p_token
 
 # MARK: adv_
 #           _
@@ -210,12 +178,78 @@ func adv( dist : int = 1 ) -> void:
 
 func adv_line() -> void:
 	adv( text.length() ) # adv automatically stops on a line break.
-	next_token()
 
 
 func adv_whitespace():
 	while peek_char() in whitespace and not at_end():
 		adv()
+
+func adv_token( token : Token ):
+	adv( token.t.length() )
+
+# MARK: peek_
+#                 _
+#   _ __  ___ ___| |__
+#  | '_ \/ -_) -_) / /
+#  | .__/\___\___|_\_\ ___
+# -|_|----------------|___|-
+
+func peek_char( offset : int = 0 ) -> String:
+	if cursor_p + offset < text.length():
+		return text[cursor_p + offset]
+	else:
+		return '\n'
+
+
+func peek_word() -> String:
+	adv_whitespace()
+	var length : int = 0
+	while not peek_char(length) in word_separation:
+		length += 1
+	return text.substr( cursor_p, length )
+
+
+func peek_line( offset : int = 0 ) -> String:
+	var eol = text.find('\n', cursor_p + offset)
+	return text.substr(cursor_p, eol - cursor_p)
+
+
+func peek_token( skip : bool = true ) -> Token:
+	var p_token : Token
+	while true:
+		adv_whitespace()
+		# end of file
+		p_token = Token.new(line_n, cursor_lp, TokenType.EOF, peek_char() )
+		if at_end(): break
+
+		p_token.type = TokenType.UNKNOWN
+
+		# char based tokens
+		if p_token.t == '/' and peek_char(1) == '/':
+			if skip: adv_line(); continue
+			p_token.type = TokenType.COMMENT
+			p_token.t = peek_line()
+		elif p_token.t == '\n':
+			p_token.type = TokenType.EOL
+		elif p_token.t in punc:
+			p_token.type = TokenType.PUNCT
+		elif p_token.t == '"':
+			p_token.type = TokenType.STRING
+			# TODO p_token.t = peek_string()
+
+		if p_token.type != TokenType.UNKNOWN:
+			break
+
+		# word based token
+		p_token.t = peek_word()
+		if is_type( p_token.t ): p_token.type = TokenType.TYPE
+		elif is_keyword(p_token.t): p_token.type = TokenType.KEYWORD
+		elif is_scalar( p_token.t ): p_token.type = TokenType.SCALAR
+		elif is_ident(p_token.t): p_token.type = TokenType.IDENT
+
+		break
+
+	return p_token
 
 # MARK: get_
 #            _
@@ -224,27 +258,34 @@ func adv_whitespace():
 #  \__, \___|\__| ___
 # -|___/---------|___|-
 
+# the set of get functions grabs the next item and moves the cursor forward.
+
 func get_char() -> String:
 	adv(); return text[cursor_p - 1]
 
-## will return the current token from the reader
-## skips whitespace, comments and null
-func get_token() -> Token:
+
+func get_word() -> String:
 	adv_whitespace()
-	while true:
-		if token.type == TokenType.COMMENT: next_token(); continue
-		if token.type == TokenType.NULL: next_token(); continue
-		break
+	var start : int = cursor_p
+	while not peek_char() in word_separation: adv()
+	return text.substr( start, cursor_p - start )
+
+
+func get_line( offset : int = 0 ) -> String:
+	var start : int = cursor_p
+	adv_line()
+	return text.substr( start, cursor_p - start )
+
+
+func get_token( skip : bool = true ) -> Token:
+	var token = peek_token( skip )
+	adv_token(token)
+	new_token.emit( token )
 	return token
 
 
-func get_string() -> Token:
+func get_string() -> String:
 	var start := cursor_p
-	var p_token = Token.new({
-		'line':line_n,
-		'col':cursor_lp,
-		'type':TokenType.STRING
-	})
 	adv()
 	while true:
 		if peek_char() == '"' and peek_char(-1) !='\\':
@@ -252,38 +293,50 @@ func get_string() -> Token:
 			break
 		if peek_char() == '\n':
 			# This is a syntax error as multi-line strings are not supported
-			p_token.type = TokenType.UNKNOWN
 			break
 		adv()
+	return text.substr( start, cursor_p - start )
+
+func get_integer_constant() -> Token:
+	# Verify Starting position.
+	var p_token = peek_token()
+	if p_token.type != TokenType.UNKNOWN:
+		return p_token
+
+	#INTEGER_CONSTANT, # = dec_integer_constant | hex_integer_constant
+
+	#DEC_INTEGER_CONSTANT, # = [-+]?[:digit:]+
+	#DIGIT, # [:digit:] = [0-9]
+
+	#HEX_INTEGER_CONSTANT, # = [-+]?0[xX][:xdigit:]+
+	#XDIGIT, # [:xdigit:] = [0-9a-fA-F]
+
+	var first_char : String = "-+0123456789abcdefABCDEF"
+	var valid_chars = "xX0123456789abcdefABCDEF"
+	if peek_char() not in first_char: return p_token
+	p_token.type = TokenType.SCALAR
+	# seek to the end and return our valid integer constant
+	var start : int = cursor_p
+	while not at_end():
+		adv()
+		if peek_char() in valid_chars: continue
+		break
+
 	p_token.t = text.substr( start, cursor_p - start )
+	new_token.emit( p_token )
 	return p_token
 
-
-func get_comment() -> Token:
-	var p_token = Token.new( line_n, cursor_lp, TokenType.COMMENT )
-	var start := cursor_p
-	while peek_char() != '\n': adv()
-	p_token.t = text.substr( start, start + 2 )
-	return p_token
-
-
-func get_word() -> Token:
-	var p_token = Token.new( line_n, cursor_lp, TokenType.UNKNOWN )
-	var start := cursor_p
-	while not peek_char() in word_separation: adv()
-	# return the substring
-	p_token.t = text.substr( start, cursor_p - start )
-	if is_type( p_token.t ): p_token.type = TokenType.TYPE
-	elif is_keyword(p_token.t): p_token.type = TokenType.KEYWORD
-	elif is_scalar( p_token.t ): p_token.type = TokenType.SCALAR
-	elif is_ident(p_token.t): p_token.type = TokenType.IDENT
-	return p_token
 
 # MARK: query
 #   __ _ _  _ ___ _ _ _  _
 #  / _` | || / -_) '_| || |
 #  \__, |\_,_\___|_|  \_, |
 # ----|_|-------------|__/--
+
+func at_end() -> bool:
+	if cursor_p >= text.length(): return true
+	return false
+
 
 func is_type( word : String )-> bool:
 	if word in parent.scalar_types: return true
@@ -298,7 +351,9 @@ func is_keyword( word : String ) -> bool:
 
 
 func is_ident( word : String ) -> bool:
-	return Regex.ident.search(word) or false
+	if Regex.ident.search(word):
+		return true
+	return false
 
 
 #scalar = boolean_constant | integer_constant | float_constant
@@ -321,63 +376,3 @@ func is_float( word : String ) -> bool:
 	return (Regex.dec_float_constant.search( word )
 		or Regex.hex_float_constant.search( word )
 		or Regex.special_float_constant.search( word ))
-
-
-func identify_token() -> TokenType:
-	if at_end(): return TokenType.EOF
-	var _char = peek_char()
-	if _char == '\n': return TokenType.EOL
-	if _char == '/' and peek_char(1) == '/': return TokenType.COMMENT
-	if _char in punc: return TokenType.PUNCT
-	if _char == '"': return TokenType.STRING
-	return TokenType.UNKNOWN
-
-
-func next_token() -> Token:
-	adv_whitespace()
-
-	token = Token.new( line_n, cursor_lp, identify_token(), peek_char() )
-	match token.type:
-		TokenType.EOF: pass
-		TokenType.COMMENT:
-			token = get_comment()
-		TokenType.PUNCT:
-			token.t = get_char()
-		TokenType.STRING:
-			token = get_string()
-		_:
-			token = get_word()
-
-	new_token.emit( token )
-	return token
-
-
-func get_integer_constant() -> Token:
-	# Verify Starting position.
-	var p_token = peek_token()
-	if p_token.type != TokenType.UNKNOWN:
-		return p_token
-
-	#INTEGER_CONSTANT, # = dec_integer_constant | hex_integer_constant
-
-	#DEC_INTEGER_CONSTANT, # = [-+]?[:digit:]+
-	#DIGIT, # [:digit:] = [0-9]
-
-	#HEX_INTEGER_CONSTANT, # = [-+]?0[xX][:xdigit:]+
-	#XDIGIT, # [:xdigit:] = [0-9a-fA-F]
-
-	var first_char : String = "-+0123456789abcdefABCDEF"
-	var valid_chars = "xX0123456789abcdefABCDEF"
-	if peek_char() not in first_char: return p_token
-	token = p_token
-	token.type = TokenType.SCALAR
-	# seek to the end and return our valid integer constant
-	var start : int = cursor_p
-	while not at_end():
-		adv()
-		if peek_char() in valid_chars: continue
-		break
-
-	token.t = text.substr( start, cursor_p - start )
-	new_token.emit( token )
-	return token

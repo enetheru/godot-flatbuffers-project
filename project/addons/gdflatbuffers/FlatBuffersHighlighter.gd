@@ -81,7 +81,7 @@ func _init():
 	reader.new_token.connect(func( token ):
 		if verbose > 1:
 			var colour : Color = colours[token.type]
-			if verbose > 1: print_rich("next: [color=%s]%s[/color]" % [colour.to_html(), stoken( token )] )
+			if verbose > 1: print_rich("[color=%s]%s[/color]" % [colour.to_html(), token] )
 		loop_detection = 0
 		highlight( token )
 	)
@@ -147,14 +147,22 @@ func _get_line_syntax_highlighting ( line_num : int ) -> Dictionary:
 
 	# reset the reader
 	reader.reset( line, line_num )
-	# skip whitespace, comments and empty lines
+
+	# skip whitespace
 	reader.adv_whitespace()
-	if verbose > 2: print( "peek_char() = '%s'" % reader.peek_char().c_escape() )
-	if reader.peek_char() == '/' and reader.peek_char(1) == '/':
-		highlight(reader.next_token())
-		dict[line_num] = line_dict
-		return line_dict
-	if reader.peek_char() == '\n': return {}
+
+	# easy tokens
+	var token := reader.peek_token(false)
+	print(token)
+	match token.type:
+		Reader.TokenType.COMMENT:
+			highlight(token)
+			dict[line_num] = line_dict
+			return line_dict
+		Reader.TokenType.EOL:
+			return {}
+		Reader.TokenType.EOF:
+			return {}
 
 	# get the previous stack save, skip lines with empty stacks.
 	# FIXME This part takes forever.
@@ -206,7 +214,7 @@ func syntax_warning( token : Reader.Token, reason = "" ):
 		var padding = "".lpad(stack.size(), '\t') if verbose > 1 else ""
 		var colour = Color.ORANGE.to_html()
 		var frame_type = FrameType.keys()[stack.back().type] if stack.size() else '#'
-		print_rich( padding + "[color=%s]%s:Warning in: %s - %s[/color]" % [colour, frame_type, stoken( token ), reason] )
+		print_rich( padding + "[color=%s]%s:Warning in: %s - %s[/color]" % [colour, frame_type, token, reason] )
 		if verbose > 1: print_rich( "[color=%s]%s[/color]\n" % [colour,sstack()] )
 
 func syntax_error( token : Reader.Token, reason = "" ):
@@ -217,7 +225,7 @@ func syntax_error( token : Reader.Token, reason = "" ):
 		var padding = "".lpad(stack.size(), '\t') if verbose > 1 else ""
 		var colour = error_color.to_html()
 		var frame_type = FrameType.keys()[stack.back().type] if stack.size() else '#'
-		print_rich( padding + "[color=%s]%s:Error in: %s - %s[/color]" % [colour, frame_type, stoken( token ), reason] )
+		print_rich( padding + "[color=%s]%s:Error in: %s - %s[/color]" % [colour, frame_type, token, reason] )
 		if verbose > 1: print_rich( "[color=%s]%s[/color]\n" % [colour,sstack()] )
 
 #endregion
@@ -371,8 +379,14 @@ class StackFrame:
 	var type : FrameType
 	var data : Dictionary
 
+	func _to_string() -> String:
+		return "/%s%s" % [ FrameType.keys()[type], JSON.stringify( data ) ]
+
 var prev_stack : Array = []
 var stack : Array = []
+
+func lpad( val : String = "" ) -> String:
+	return val.lpad(stack.size()-1, '\t')
 
 func copy_stack( _stack ) -> Array:
 	var new_stack : Array
@@ -383,32 +397,24 @@ func copy_stack( _stack ) -> Array:
 	return new_stack
 
 func push_stack( type : FrameType, args = null ):
-	stack.append( StackFrame.new( type, {'args': args } if args else {} ) )
-
-func start_frame( token : Reader.Token ) -> StackFrame:
-	var frame : StackFrame = stack.back()
-	if verbose > 1:
-		var padding = "".lpad(stack.size()-1, '\t')
-		var head = "⮱Start" if frame.data.is_empty() else " Con.."
-		var frame_name = FrameType.keys()[frame.type] if stack.size() else "empty"
-		print( padding + head + " %s | {Token:%s} | Data:%s" % [frame_name, stoken( token ), frame.data] )
-	return frame
+	var new_frame = StackFrame.new( type, {'args': args } if args else {} )
+	print( lpad(), "Pushing: ", new_frame )
+	stack.append( new_frame )
 
 ## end_frame() pops the last stackframe from the stack
 ## if retval is not null, the top stack frame will have 'return' = retval added
 func end_frame( retval = null ) -> bool:
 	var type_name : String = FrameType.keys()[stack.back().type] if stack.size() else "empty"
 	if verbose > 1:
-		var padding = "".lpad(stack.size()-1, '\t')
 		var result = " | ret:%s" % retval if retval else ""
-		print( padding + "⮶End %s%s" % [type_name, result] )
+		print( lpad() + "⮶End %s%s" % [type_name, result] )
 	stack.pop_back()
 	if stack.size() && retval: stack.back().data['return'] = retval
 	return true
 
 func save_stack( line_num : int, cursor_pos : int = 0 ):
 	if stack.size() == prev_stack.size(): return # FIXME
-	if verbose > 2: print( "Stack saved to line %s | " % [line_num+1], sstack( stack ) )
+	if verbose > 2: print( lpad(), "Stack saved to line %s | " % [line_num+1], sstack( stack ) )
 
 	#var this_dict = dict.get( line_num, {} )
 	#this_dict['stack'] = copy_stack( stack )
@@ -419,13 +425,6 @@ func save_stack( line_num : int, cursor_pos : int = 0 ):
 	stack_list[line_num] = copy_stack( stack )
 	stack_index[line_num] = true
 
-
-func stoken( token : Reader.Token ) -> String:
-	var t : String = token.t
-	var type : String = Reader.TokenType.keys()[token.type]
-	var coord := Vector2i(token.line+1, token.col+1) # +1 is because the editor counts from 1
-	return "%s | %s | '%s'" % [coord, type, t.c_escape() ]
-
 func sstack( _stack : Array = stack ):
 	var stack_string : String = "#"
 	for frame in _stack:
@@ -435,7 +434,7 @@ func sstack( _stack : Array = stack ):
 
 func check_token_t( token : Reader.Token, t : String, msg : String = "" ) -> bool:
 	if token.get('t') == t:
-		reader.next_token()
+		reader.get_token()
 		return true
 	if not msg.is_empty(): syntax_error( token, "wanted '%s'" % t )
 	return false
@@ -444,13 +443,21 @@ var loop_detection : int = 0
 func parse():
 	if not stack.size(): push_stack(FrameType.SCHEMA)
 	loop_detection = 0
-	reader.next_token()
 	while stack.size() > 0 or not reader.at_end():
 		loop_detection += 1
-		if loop_detection > 10: break
-		var token = reader.get_token()
+		assert(loop_detection < 10, "Loop Detected")
+
+		# Break on end of file
+		var token = reader.peek_token()
 		if token.type == Reader.TokenType.EOF: if verbose > 1: print("EOF"); break
-		var frame = start_frame( token )
+		if token.type == Reader.TokenType.EOL: if verbose > 1: print("EOL"); break
+
+		var frame : StackFrame = stack.back()
+		if verbose > 1:
+			var head = "⮱Start" if frame.data.is_empty() else " Con.."
+			var frame_name = FrameType.keys()[frame.type] if stack.size() else "empty"
+			print( lpad() + head + " %s | {%s} | Data:%s" % [frame_name, token, frame.data] )
+
 		parse_funcs[ frame.type ].call( token )
 
 	save_stack(reader.line_n, 0 )
@@ -467,7 +474,7 @@ func parse_schema( token : Reader.Token ):
 	#					 | attribute_decl | rpc_decl | object )*
 	var frame : StackFrame = stack.back()
 
-	if token.type == Reader.TokenType.EOF: return # end_frame()
+	token = reader.peek_token()
 
 	if token.type != Reader.TokenType.KEYWORD:
 		syntax_error( token, "Wanted Reader.TokenType.KEYWORD" )
@@ -501,7 +508,7 @@ func parse_include( token : Reader.Token ):
 			return end_frame()
 		push_stack( FrameType.STRING_CONSTANT )
 		frame.data['next'] = 'parse'
-		reader.next_token();
+		reader.get_token();
 		return
 	if frame.data.get('next') == 'parse':
 		var string_constant = frame.data.get('return')
@@ -535,11 +542,11 @@ func parse_namespace_decl( token : Reader.Token ):
 		if token.t != 'namespace':
 			syntax_error(token, "wanted 'namespace'")
 			return end_frame()
-		reader.next_token()
+		reader.get_token()
 		frame.data['next'] = 'ident'
 		return
 	if frame.data.get('next') == 'ident':
-		reader.next_token() # FIXME the reader only gets the whole thing right now.
+		reader.get_token() # FIXME the reader only gets the whole thing right now.
 		frame.data['next'] = ';'
 		return
 	if frame.data.get('next') == ';':
@@ -563,7 +570,7 @@ func parse_attribute_decl( token : Reader.Token ):
 		if token.t != 'attribute':
 			syntax_error(token, "wanted 'attribute'")
 			return end_frame()
-		reader.next_token()
+		reader.get_token()
 		token = reader.get_token()
 		if token.type == Reader.TokenType.IDENT: push_stack( FrameType.IDENT )
 		elif token.type == Reader.TokenType.STRING: push_stack( FrameType.STRING_CONSTANT )
@@ -586,14 +593,12 @@ func parse_type_decl( token : Reader.Token ):
 	#type_decl = ( table | struct ) ident [metadata] { field_decl+ }\
 	var frame : StackFrame = stack.back()
 
-	print( "parse_type_decl( token: %s)" % token )
-	print( "frame: %s" % frame )
-
 	if frame.data.get('next') == null:
 		if token.t not in ['table','struct']:
 			syntax_error(token, "wanted ( table | struct )")
 			return end_frame()
-		reader.next_token()
+
+		reader.get_token()
 		push_stack( FrameType.IDENT )
 		frame.data['next'] = 'add_ident'
 		return
@@ -636,14 +641,14 @@ func parse_enum_decl( token : Reader.Token ):
 			syntax_error(token, "wanted ( enum | union )")
 			return end_frame()
 		frame.data['keyword'] = token.t
-		reader.next_token()
+		reader.get_token()
 		frame.data['next'] = 'ident'
 		return
 	if frame.data.get('next') == 'ident':
 		if not Regex.ident.search(token.t):
 			syntax_error(token, "wanted ident")
 			return end_frame()
-		reader.next_token()
+		reader.get_token()
 		user_types[ token.t ] = OK
 		if frame.data['keyword'] == 'enum': frame.data['next'] = 'enum'
 		else: frame.data['next'] = 'meta'
@@ -700,7 +705,7 @@ func parse_root_decl( token : Reader.Token ):
 			return end_frame()
 		push_stack( FrameType.TYPE )
 		frame.data['next'] = ';'
-		reader.next_token();
+		reader.get_token();
 		return
 	if frame.data.get('next') == ';':
 		check_token_t(token, ';', "wanted semicolon" )
@@ -729,7 +734,7 @@ func parse_field_decl( token : Reader.Token ):
 			syntax_error(token, "wanted ':'")
 			reader.adv_line()
 			return end_frame()
-		reader.next_token()
+		reader.get_token()
 		push_stack( FrameType.TYPE )
 		frame.data['next'] = '='
 		return
@@ -819,7 +824,7 @@ func parse_type( token : Reader.Token ):
 	var end
 	if start.t == '[':
 		is_array = true
-		type = reader.next_token()
+		type = reader.get_token()
 	else: type = start
 
 	# Check type as it stands currently, it can be any type.
@@ -830,7 +835,7 @@ func parse_type( token : Reader.Token ):
 		break
 
 	if is_array:
-		end = reader.next_token()
+		end = reader.get_token()
 		if end.t == ':':
 			is_fixed = true
 			# Look for the size
@@ -840,7 +845,7 @@ func parse_type( token : Reader.Token ):
 			# we have a fixed array, and much check the type against scalar and struct.
 			if type.t in struct_types || type.t in scalar_types: pass
 			else: syntax_error(type,"cannot have a fixed sized array with anything but scalar | struct")
-			end = reader.next_token()
+			end = reader.get_token()
 
 		if end.t != ']':
 			syntax_error(start, "missing matching brace ']'")
@@ -849,7 +854,7 @@ func parse_type( token : Reader.Token ):
 	if is_type:
 		type.type = Reader.TokenType.TYPE
 		highlight( type )
-		reader.next_token()
+		reader.get_token()
 		return end_frame(type.t)
 
 	syntax_error( type, "Unknown Type" )
@@ -871,7 +876,7 @@ func parse_enumval_decl( token : Reader.Token ):
 		if not Regex.ident.search(token.t):
 			syntax_error(token, "wanted ident") #
 			return end_frame()
-		reader.next_token()
+		reader.get_token()
 		frame.data['ident'] = token
 		frame.data['next'] = '='
 		return
@@ -912,12 +917,12 @@ func parse_scalar( token : Reader.Token ):
 	# SCALAR = boolean_constant | integer_constant | float_constant
 	var this_frame = stack.back()
 	if token.type == Reader.TokenType.SCALAR:
-		reader.next_token()
+		reader.get_token()
 		return end_frame()
 	if token.t in user_enum_vals:
 		token.type = Reader.TokenType.SCALAR
 		highlight( token )
-		reader.next_token()
+		reader.get_token()
 		return end_frame()
 	syntax_error( token, "Wanted Reader.TokenType.SCALAR" )
 	reader.adv_line()
@@ -968,7 +973,7 @@ func parse_commasep( token : Reader.Token ):
 	if frame.data.get('next') == ',':
 		frame.data.erase('return')
 		if token.t != ',': return end_frame()
-		reader.next_token()
+		reader.get_token()
 		frame.data['next'] = null
 		return
 
@@ -1008,7 +1013,7 @@ func parse_file_identifier_decl( token : Reader.Token ):
 func parse_string_constant( token : Reader.Token ):
 	var frame = stack.back()
 	if token.get('type') == Reader.TokenType.STRING:
-		reader.next_token()
+		reader.get_token()
 		return end_frame( token )
 	syntax_error(token, "wanted filename as string")
 	end_frame()
@@ -1037,7 +1042,7 @@ func parse_ident( token : Reader.Token ):
 
 	if is_ident:
 		token.type == Reader.TokenType.IDENT
-		reader.next_token()
+		reader.get_token()
 		return end_frame( token )
 
 	syntax_error( token, "ident = [a-zA-Z_][a-zA-Z0-9_]*" )
@@ -1059,7 +1064,7 @@ func parse_integer_constant( token : Reader.Token ):
 		if Regex.hex_integer_constant.search( token.t ): break
 		ok = false; break
 	if ok:
-		reader.next_token()
+		reader.get_token()
 		return end_frame()
 	syntax_error( token, "Wanted ( dec_integer_constant | hex_integer_constant )" )
 	return end_frame()
@@ -1105,21 +1110,20 @@ func quick_scan_text( text : String ):
 
 	while not qreader.at_end():
 		var token = qreader.get_token()
-		print( token )
 
 		if token.type != Reader.TokenType.KEYWORD:
 			qreader.adv_line()
 			continue
 
 		if token.t == 'include':
-			var filename : String = qreader.next_token().t
+			var filename : String = qreader.get_token().t
 			if Regex.string_constant.search(filename):
 				quick_scan_file( filename.substr( 1, filename.length() - 2 ) )
 			qreader.adv_line()
 			continue
 
 		if token.t in ['struct', 'table', 'enum', 'union']:
-			var ident = qreader.next_token()
+			var ident = qreader.get_token()
 			if Regex.ident.search(ident.t):
 				print("Adding '%s' to user types" % ident.t)
 				user_types[ident.t] = OK
