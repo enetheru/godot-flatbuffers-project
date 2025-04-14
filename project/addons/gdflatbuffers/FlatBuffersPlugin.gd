@@ -11,7 +11,15 @@ var script_editor := EditorInterface.get_script_editor()
 static var settings := EditorInterface.get_editor_settings()
 
 var highlighter : EditorSyntaxHighlighter
-var file_menu : MyFileMenu
+var context_menus : Dictionary[EditorContextMenuPlugin.ContextMenuSlot,EditorContextMenuPlugin]
+
+func _init() -> void:
+	context_menus = {
+		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM: MyFileMenu.new(),
+		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM_CREATE:MyFileCreateMenu.new(),
+		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_SCRIPT_EDITOR:MyScriptTabMenu.new(),
+		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_SCRIPT_EDITOR_CODE:MyCodeEditMenu.new(),
+	}
 
 func _get_plugin_name() -> String:
 	return "flatbuffers"
@@ -30,14 +38,15 @@ func _enter_tree() -> void:
 	highlighter = FlatBuffersHighlighter.new()
 	script_editor.register_syntax_highlighter( highlighter )
 
-	# Context menu of FileSystem dock.
-	file_menu = MyFileMenu.new()
-	add_context_menu_plugin( EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM, file_menu)
+	# Context menus
+	for key in context_menus.keys():
+		add_context_menu_plugin( key, context_menus[key] )
 
 
 func _exit_tree() -> void:
 	script_editor.unregister_syntax_highlighter( highlighter )
-	remove_context_menu_plugin( file_menu )
+	for menu in context_menus.values():
+		remove_context_menu_plugin( menu )
 
 
 func change_editor_settings() -> void:
@@ -133,11 +142,13 @@ static func print_results( result : Dictionary ):
 # filesystem context menu
 # EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM
 class MyFileMenu extends EditorContextMenuPlugin:
-	# This event is triggered when the menu is opened.
 	# _popup_menu() and option callback will be called with list of paths of the
 	# currently selected files.
 	func _popup_menu(paths):
-		add_context_menu_item("flatc --gdscript", call_flatc_on_paths )#, icon )
+		for path in paths:
+			if path.get_extension() == 'fbs':
+				add_context_menu_item("flatc --gdscript", call_flatc_on_paths )#, icon )
+				return
 
 	func call_flatc_on_paths( paths ) -> void:
 		for path : String in paths:
@@ -147,24 +158,30 @@ class MyFileMenu extends EditorContextMenuPlugin:
 				results = FlatBuffersPlugin.flatc_generate( abs_path )
 				if results.retcode: FlatBuffersPlugin.print_results( results )
 
-## ContextMenuSlot
-# CONTEXT_SLOT_SCRIPT_EDITOR
-# Context menu of Script editor's script tabs.
-# _popup_menu() will be called with the path to the currently edited script,
-# while option callback will receive reference to that script.
-
 # CONTEXT_SLOT_FILESYSTEM_CREATE
 # The "Create..." submenu of FileSystem dock's context menu.
-# _popup_menu() and option callback will be called with list of paths of the
-# currently selected files.
+class MyFileCreateMenu extends EditorContextMenuPlugin:
+	# _popup_menu() and option callback will be called with list of paths of the
+	# currently selected files.
+	func _popup_menu(paths):
+		print( paths )
+		add_context_menu_item("script_tab_context_menu_test", func(thing): print( thing ) )#, icon )
+
+# CONTEXT_SLOT_SCRIPT_EDITOR
+# Context menu of Script editor's script tabs.
+class MyScriptTabMenu extends EditorContextMenuPlugin:
+	# _popup_menu() will be called with the path to the currently edited script,
+	# while option callback will receive reference to that script.
+	func _popup_menu(paths):
+		print( paths )
+		add_context_menu_item("script_tab_context_menu_test", func(thing): print( thing ) )#, icon )
 
 # CONTEXT_SLOT_SCRIPT_EDITOR_CODE
 # Context menu of Script editor's code editor.
-# _popup_menu() will be called with the path to the CodeEdit node.
-# You can fetch it using this code:
-#
-# func _popup_menu(paths):
-# 	var code_edit = Engine.get_main_loop().root.get_node(paths[0]);
-#
-# The option callback will receive reference to that node.
-# You can use CodeEdit methods to perform symbol lookups etc.
+class MyCodeEditMenu extends EditorContextMenuPlugin:
+	# _popup_menu() will be called with the path to the CodeEdit node.
+	# The option callback will receive reference to that node.
+	func _popup_menu(paths):
+		print( paths )
+		var code_edit = Engine.get_main_loop().root.get_node(paths[0]);
+		add_context_menu_item("code_edit_context_menu_test", func(thing): print( thing ) )#, icon )
