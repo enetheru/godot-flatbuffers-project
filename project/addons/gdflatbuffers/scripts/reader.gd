@@ -49,6 +49,9 @@ class Token:
 	var type : TokenType
 	var t : String
 
+	func eof() -> bool: return type == TokenType.EOF
+	func eol() -> bool: return type == TokenType.EOL
+
 	## Constructor
 	func _init( line_or_dict = 0, _col : int = 0, _type : TokenType = TokenType.NULL, _t : String = "" ) -> void:
 		if line_or_dict is int:
@@ -242,9 +245,9 @@ func peek_token( skip : bool = true ) -> Token:
 
 		# word based token
 		p_token.t = peek_word()
-		if is_type( p_token.t ): p_token.type = TokenType.TYPE
-		elif is_keyword(p_token.t): p_token.type = TokenType.KEYWORD
+		if is_keyword(p_token.t): p_token.type = TokenType.KEYWORD
 		elif is_scalar( p_token.t ): p_token.type = TokenType.SCALAR
+		elif is_type( p_token.t ): p_token.type = TokenType.TYPE
 		elif is_ident(p_token.t): p_token.type = TokenType.IDENT
 
 		break
@@ -267,7 +270,10 @@ func get_char() -> String:
 func get_word() -> String:
 	adv_whitespace()
 	var start : int = cursor_p
-	while not peek_char() in word_separation: adv()
+	var separators = word_separation
+	if not is_integer(peek_char()): separators = separators + ['.']
+
+	while not peek_char() in separators: adv()
 	return text.substr( start, cursor_p - start )
 
 
@@ -339,11 +345,7 @@ func at_end() -> bool:
 
 
 func is_type( word : String )-> bool:
-	if word in parent.scalar_types: return true
-	if word in parent.struct_types: return true
-	if word in parent.table_types: return true
-	if word in parent.array_types: return true
-	return false
+	return word in parent.scalar_types
 
 
 func is_keyword( word : String ) -> bool:
