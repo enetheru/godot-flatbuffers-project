@@ -6,6 +6,9 @@ static var Regex :
 			Regex = REGEX.new()
 		return Regex
 
+func print_bright( _value ):
+	print_rich( "[b][color=yellow]%s[/color][/b]" % [_value] )
+
 # ██████  ███████  █████  ██████  ███████ ██████
 # ██   ██ ██      ██   ██ ██   ██ ██      ██   ██
 # ██████  █████   ███████ ██   ██ █████   ██████
@@ -103,7 +106,7 @@ signal endfile( ln, p )
 var parent
 
 ## A list of word separation characters
-var word_separation : Array = [' ', '\t', '\n', '{','}', ':', ';', ',',
+var word_separation : Array = [' ', '\t', '\n', '{','}', ':', ';', ',','=',
 '(', ')', '[', ']' ]
 
 ## A list of whitespace characters
@@ -206,11 +209,30 @@ func peek_char( offset : int = 0 ) -> String:
 
 func peek_word() -> String:
 	adv_whitespace()
+	# include . if not starting with a number
+	var separators = word_separation
+	if not is_integer(peek_char()): separators = separators + ['.']
+
 	var length : int = 0
-	while not peek_char(length) in word_separation:
+	while not peek_char(length) in separators:
 		length += 1
 	return text.substr( cursor_p, length )
 
+
+func peek_string() -> String:
+	if peek_char() != '"': return '' # fail if not start with quotes.
+	var length : int = 0
+	while true:
+		length += 1
+		if peek_char(length) == '\n': return '"' # fail on eol or eof
+		if (peek_char(length) == '"'
+			and peek_char(length-1) != '\\'):
+				length += 1
+				break
+	return text.substr( cursor_p, length )
+
+	print_bright( peek_char() )
+	return peek_line()
 
 func peek_line( offset : int = 0 ) -> String:
 	var eol = text.find('\n', cursor_p + offset)
@@ -237,8 +259,10 @@ func peek_token( skip : bool = true ) -> Token:
 		elif p_token.t in punc:
 			p_token.type = TokenType.PUNCT
 		elif p_token.t == '"':
-			p_token.type = TokenType.STRING
-			# TODO p_token.t = peek_string()
+			p_token.t = peek_string()
+			if p_token.t.length() > 2:
+				p_token.type = TokenType.STRING
+
 
 		if p_token.type != TokenType.UNKNOWN:
 			break
@@ -269,12 +293,9 @@ func get_char() -> String:
 
 func get_word() -> String:
 	adv_whitespace()
-	var start : int = cursor_p
-	var separators = word_separation
-	if not is_integer(peek_char()): separators = separators + ['.']
-
-	while not peek_char() in separators: adv()
-	return text.substr( start, cursor_p - start )
+	var word = peek_word()
+	adv( word.length() )
+	return word
 
 
 func get_line( offset : int = 0 ) -> String:
@@ -291,17 +312,10 @@ func get_token( skip : bool = true ) -> Token:
 
 
 func get_string() -> String:
-	var start := cursor_p
-	adv()
-	while true:
-		if peek_char() == '"' and peek_char(-1) !='\\':
-			adv()
-			break
-		if peek_char() == '\n':
-			# This is a syntax error as multi-line strings are not supported
-			break
-		adv()
-	return text.substr( start, cursor_p - start )
+	var string = peek_string()
+	adv( string.length() )
+	return string
+
 
 func get_integer_constant() -> Token:
 	# Verify Starting position.

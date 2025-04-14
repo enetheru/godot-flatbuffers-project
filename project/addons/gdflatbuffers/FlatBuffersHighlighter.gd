@@ -9,6 +9,9 @@ const Reader = preload('res://addons/gdflatbuffers/scripts/reader.gd')
 var editor_settings : EditorSettings
 var verbose : int = 0
 
+func print_bright( _value ):
+	print_rich( "[b][color=yellow]%s[/color][/b]" % [_value] )
+
 #  ██████  ██████   █████  ███    ███ ███    ███  █████  ██████
 # ██       ██   ██ ██   ██ ████  ████ ████  ████ ██   ██ ██   ██
 # ██   ███ ██████  ███████ ██ ████ ██ ██ ████ ██ ███████ ██████
@@ -410,9 +413,6 @@ var stack : Array = []
 func lpad( extra : int = 0 ) -> String:
 	return "".lpad( stack.size() -1 + extra, '\t' )
 
-func print_bright( _value ):
-	print_rich( "[b][color=yellow]%s[/color][/b]" % [_value] )
-
 func push_stack( type : FrameType, bindings : Dictionary = {} ):
 	var new_frame = StackFrame.new( type )
 	new_frame.bindings = bindings
@@ -542,34 +542,19 @@ func parse_include( p_token : Reader.Token ):
 	# INCLUDE = include string_constant ;
 	var frame = stack.back()
 
+	var token = reader.get_token()
+	check_token_t(token, 'include')
 
-	if frame.data.get('next') == null:
-		var token = reader.get_token()
-		if token.get('t') != 'include':
-			syntax_error( token, "wanted include" )
-			return end_frame()
-		push_stack( FrameType.STRING_CONSTANT )
-		frame.data['next'] = 'parse'
-		reader.get_token();
-		return
-	if frame.data.get('next') == 'parse':
-		var string_constant = frame.data.get('return')
-		frame.data.erase('return')
-		if not string_constant:
-			return end_frame()
-		var filestring : String= string_constant.t
-		if not quick_scan_file( filestring.substr(1, filestring.length() -2 ) ):
-			syntax_error( string_constant, "Unable to scan filename")
-		frame.data['next'] = ';'
-		return
-	if frame.data.get('next') == ';':
-		var token = reader.get_token()
-		check_token_t(token, ';')
-		return end_frame()
+	token = reader.get_token()
+	if check_token_type(token, Reader.TokenType.STRING ):
+		var filename = token.t.substr(1, token.t.length() -2)
+		if not FileAccess.file_exists( filename ):
+			syntax_error(token, "Unable to locate file: %s" % filename )
 
-	# what else?
-	syntax_error( p_token, "we shouldnt be here." )
+	token = reader.get_token()
+	check_token_t(token, ';')
 	return end_frame()
+
 
 # ███    ██  █████  ███    ███ ███████ ███████ ██████   █████   ██████ ███████
 # ████   ██ ██   ██ ████  ████ ██      ██      ██   ██ ██   ██ ██      ██
