@@ -2,8 +2,7 @@
 const REGEX = preload('res://addons/gdflatbuffers/scripts/regex.gd')
 static var Regex :
 	get():
-		if Regex == null:
-			Regex = REGEX.new()
+		if Regex == null: Regex = REGEX.new()
 		return Regex
 
 func print_bright( _value ):

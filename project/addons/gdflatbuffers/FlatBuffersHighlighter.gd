@@ -2,7 +2,10 @@
 extends EditorSyntaxHighlighter
 
 const REGEX = preload('res://addons/gdflatbuffers/scripts/regex.gd')
-static var Regex
+static var Regex :
+	get():
+		if Regex == null: Regex = REGEX.new()
+		return Regex
 
 const Reader = preload('res://addons/gdflatbuffers/scripts/reader.gd')
 
@@ -63,27 +66,27 @@ enum FrameType {
 	#BOOLEAN_CONSTANT, # = true | false
 }
 
-var keywords : Array = [
-	'include', 'namespace', 'table', 'struct', 'enum',
-	'union', 'root_type', 'file_extension', 'file_identifier', 'attribute',
-	'rpc_service']
+var keywords : Array[StringName] = [
+	&'include', &'namespace', &'table', &'struct', &'enum',
+	&'union', &'root_type', &'file_extension', &'file_identifier', &'attribute',
+	&'rpc_service']
 
-var integer_types : Array = [
-	"byte", "ubyte", "short", "ushort", "int", "uint", "long", "ulong",
-	"int8", "uint8", "int16", "uint16", "int32", "uint32", "int64", "uint64"]
+var integer_types : Array[StringName] = [
+	&"byte", &"ubyte", &"short", &"ushort", &"int", &"uint", &"long", &"ulong",
+	&"int8", &"uint8", &"int16", &"uint16", &"int32", &"uint32", &"int64", &"uint64"]
 
-var float_types : Array = ["float", "double", "float32", "float64"]
+var float_types : Array[StringName] = [&"float", &"double", &"float32", &"float64"]
 
-var boolean_types : Array = ["bool"]
+var boolean_types : Array[StringName] = [&"bool"]
 
 ## NEEDS TO BE SET IN _INIT()
-var scalar_types: Array # integer_types + float_types + boolean_types
+var scalar_types: Array[StringName] # integer_types + float_types + boolean_types
 
 var enum_types : Dictionary = {}
 
-var union_types : Array = []
+var union_types : Array[StringName] = []
 
-var struct_types: Array = []
+var struct_types: Array[StringName] = []
 	#"Vector2",
 	#"Vector2i",
 	#"Rect2",
@@ -101,13 +104,13 @@ var struct_types: Array = []
 	#"Projection",
 	#"Color", ]
 
-var table_types: Array = []
+var table_types: Array[StringName] = []
 
-var array_types: Array = [
-	"string",
-	"String",
-	"StringName",
-	"NodePath", ]
+var array_types: Array[StringName] = [
+	&"string",
+	&"String",
+	&"StringName",
+	&"NodePath", ]
 
 
 # ██   ██ ██  ██████  ██   ██ ██      ██  ██████  ██   ██ ████████ ███████ ██████
@@ -116,7 +119,7 @@ var array_types: Array = [
 # ██   ██ ██ ██    ██ ██   ██ ██      ██ ██    ██ ██   ██    ██    ██      ██   ██
 # ██   ██ ██  ██████  ██   ██ ███████ ██  ██████  ██   ██    ██    ███████ ██   ██
 
-var colours : Dictionary = {
+var colours : Dictionary[Reader.TokenType, Color] = {
 	Reader.TokenType.UNKNOWN : Color.GREEN,
 	Reader.TokenType.COMMENT : Color.DIM_GRAY,
 	Reader.TokenType.KEYWORD : Color.SALMON,
@@ -186,7 +189,7 @@ func _init():
 	qreader = Reader.new(self)
 
 	# This saves us from having to highlight everything manually.
-	reader.new_token.connect(func( token ):
+	reader.new_token.connect(func( token : Reader.Token ):
 		loop_detection = 0
 		highlight( token )
 		if verbose > 1:
@@ -295,7 +298,8 @@ func _get_line_syntax_highlighting ( line_num : int ) -> Dictionary:
 		#if not line_dict.has('stack'): continue
 		#prev_stack = line_dict.get( 'stack' )
 #
-	stack = prev_stack.duplicate(true) if prev_stack else []
+	if prev_stack: stack = prev_stack.duplicate(true)
+	else: stack = Array([], TYPE_OBJECT, &"RefCounted", StackFrame)
 
 	if verbose > 1:
 		print( "Using stack from line %s" % [stack_line+1] )
@@ -309,7 +313,10 @@ func _get_line_syntax_highlighting ( line_num : int ) -> Dictionary:
 
 func _update_cache ( ):
 	# Get settings
-	verbose = editor_settings.get_setting( FlatBuffersPlugin.debug_verbosity )
+	if editor_settings:
+		verbose = editor_settings.get_setting( FlatBuffersPlugin.debug_verbosity )
+	else:
+		verbose = 10
 	if verbose > 2: print_rich("[b]_update_cache( )[/b]")
 	quick_scan_text( get_text_edit().text )
 	error_color = Color.RED
@@ -380,19 +387,22 @@ var parse_funcs : Dictionary = {
 	#FrameType.BOOLEAN_CONSTANT : parse_boolean_constant,
 }
 
-var kw_frame_map : Dictionary = {
-	'include' : FrameType.INCLUDE,
-	'namespace' : FrameType.NAMESPACE_DECL,
-	'table' : FrameType.TYPE_DECL,
-	'struct' : FrameType.TYPE_DECL,
-	'enum' : FrameType.ENUM_DECL,
-	'union' : FrameType.ENUM_DECL,
-	'root_type' : FrameType.ROOT_DECL,
-	'file_extension' : FrameType.FILE_EXTENSION_DECL,
-	'file_identifier' : FrameType.FILE_IDENTIFIER_DECL,
-	'attribute' : FrameType.ATTRIBUTE_DECL,
-	'rpc_service' : FrameType.RPC_DECL,
+var kw_frame_map : Dictionary[StringName, FrameType] = {
+	&'include' : FrameType.INCLUDE,
+	&'namespace' : FrameType.NAMESPACE_DECL,
+	&'table' : FrameType.TYPE_DECL,
+	&'struct' : FrameType.TYPE_DECL,
+	&'enum' : FrameType.ENUM_DECL,
+	&'union' : FrameType.ENUM_DECL,
+	&'root_type' : FrameType.ROOT_DECL,
+	&'file_extension' : FrameType.FILE_EXTENSION_DECL,
+	&'file_identifier' : FrameType.FILE_IDENTIFIER_DECL,
+	&'attribute' : FrameType.ATTRIBUTE_DECL,
+	&'rpc_service' : FrameType.RPC_DECL,
 }
+
+var prev_stack : Array[StackFrame] = []
+var stack : Array[StackFrame] = []
 
 class StackFrame:
 	func _init( t : FrameType ) -> void: type = t
@@ -407,17 +417,17 @@ class StackFrame:
 			JSON.stringify( data ) ]
 		return "".join(parts).replace(',',', ').replace('{','{ ').replace('}',' }')
 
-var prev_stack : Array = []
-var stack : Array = []
 
 func lpad( extra : int = 0 ) -> String:
 	return "".lpad( stack.size() -1 + extra, '\t' )
+
 
 func push_stack( type : FrameType, bindings : Dictionary = {} ):
 	var new_frame = StackFrame.new( type )
 	new_frame.bindings = bindings
 	print( lpad(1), "Push: ", new_frame )
 	stack.append( new_frame )
+
 
 ## start_frame() runs the appropriate stack frame function
 func start_frame( frame : StackFrame, args ):
@@ -455,7 +465,7 @@ func save_stack( line_num : int, cursor_pos : int = 0 ):
 	stack_list[line_num] = stack.duplicate(true)
 	stack_index[line_num] = true
 
-func stack_to_string( _stack : Array = stack ):
+func stack_to_string( _stack : Array[StackFrame] = stack ):
 	var strings : Array = ["Stack:"]
 	for frame in _stack:
 		var data = "" if frame.data.is_empty() else frame.data
@@ -463,18 +473,18 @@ func stack_to_string( _stack : Array = stack ):
 	return "\n".join( strings )
 
 ## returns true if token.t == t
-func check_token_t( token : Reader.Token, t : String, msg : String = "" ) -> bool:
-	if token.get('t') == t: return true
-	var error_msg = "'%s' != '%s'" % [ token.get('t'), t ]
+func check_token_t( token : Reader.Token, t : StringName, msg : String = "" ) -> bool:
+	if token.t == t: return true
+	var error_msg = "'%s' != '%s'" % [ token.t, t ]
 	syntax_error( token, error_msg )
 	if not msg.is_empty(): print( lpad() + msg )
 	return false
 
 ## returns true if token.type == type
 func check_token_type( token : Reader.Token, type : Reader.TokenType, msg : String = "" ) -> bool:
-	if token.get('type') == type: return true
+	if token.type == type: return true
 	var error_msg = "'%s' != '%s'" % [
-		Reader.TokenType.find_key(token.get('type')),
+		Reader.TokenType.find_key(token.type),
 		Reader.TokenType.find_key(type)
 	]
 	syntax_error( token, error_msg )
@@ -521,15 +531,15 @@ func parse_schema( p_token : Reader.Token ):
 		reader.adv_line()
 		return
 
-	if p_token.t == 'include':
-		if frame.data.has('no_includes'):
+	if p_token.t == &'include':
+		if frame.data.has(&'no_includes'):
 			syntax_error( p_token, "Trying to use include mid file" )
 			reader.adv_line()
 			return
 		push_stack( FrameType.INCLUDE )
 		return
 
-	frame.data['no_includes'] = true
+	frame.data[&'no_includes'] = true
 	push_stack( kw_frame_map.get( p_token.t ))
 
 # ██ ███    ██  ██████ ██      ██    ██ ██████  ███████
@@ -540,19 +550,19 @@ func parse_schema( p_token : Reader.Token ):
 
 func parse_include( p_token : Reader.Token ):
 	# INCLUDE = include string_constant ;
-	var frame = stack.back()
+	var frame : StackFrame = stack.back()
 
-	var token = reader.get_token()
-	check_token_t(token, 'include')
+	var token : Reader.Token = reader.get_token()
+	check_token_t(token, &'include')
 
 	token = reader.get_token()
 	if check_token_type(token, Reader.TokenType.STRING ):
-		var filename = token.t.substr(1, token.t.length() -2)
+		var filename: String = token.t.substr(1, token.t.length() -2)
 		if not FileAccess.file_exists( filename ):
 			syntax_error(token, "Unable to locate file: %s" % filename )
 
 	token = reader.get_token()
-	check_token_t(token, ';')
+	check_token_t(token, &';')
 	return end_frame()
 
 
@@ -564,25 +574,25 @@ func parse_include( p_token : Reader.Token ):
 
 func parse_namespace_decl( p_token : Reader.Token ):
 	#NAMESPACE_DECL = namespace ident ( . ident )* ;
-	var frame = stack.back()
+	var frame : StackFrame = stack.back()
 
-	if frame.data.get('next') == null:
-		var token = reader.get_token()
-		check_token_t(token, 'namespace')
-		frame.data['next'] = 'ident'
-		return
-	if frame.data.get('next') == 'ident':
-		var token = reader.get_token()
+	var token : Reader.Token = reader.get_token()
+	check_token_t(token, &'namespace')
+
+	while true:
+		token = reader.get_token()
 		check_token_type(token, Reader.TokenType.IDENT)
 
-		token = reader.get_token()
-		if token.t == '.': return
-		check_token_t(token, ';')
-		end_frame()
-		return
+		token = reader.peek_token()
+		if token.t == &'.':
+			reader.get_token()
+			continue
+		else: break
 
-	syntax_error(p_token, "reached end of parse_namespace_decl(...)")
+	token = reader.get_token()
+	check_token_t(token, &';')
 	return end_frame()
+
 
 #  █████  ████████ ████████ ██████  ██ ██████  ██    ██ ████████ ███████
 # ██   ██    ██       ██    ██   ██ ██ ██   ██ ██    ██    ██    ██
@@ -592,25 +602,21 @@ func parse_namespace_decl( p_token : Reader.Token ):
 
 func parse_attribute_decl( p_token : Reader.Token ):
 	# ATTRIBUTE_DECL = attribute ident | "</tt>ident<tt>" ;
-	var frame = stack.back()
+	var frame : StackFrame = stack.back()
 
-	var token = reader.get_token()
-	check_token_t(token, 'attribute')
-
-	token = reader.get_token()
-	if token.type == Reader.TokenType.IDENT:
-		pass
-	elif token.type == Reader.TokenType.STRING:
-		pass
-	else:
-		syntax_error(token, "Wanted 'ident | string_constant'")
+	var token : Reader.Token = reader.get_token()
+	check_token_t(token, &'attribute')
 
 	token = reader.get_token()
-	check_token_t(token, ';')
-	end_frame()
+	match token.type:
+		Reader.TokenType.IDENT: pass
+		Reader.TokenType.STRING:pass
+		_: syntax_error(token, "Wanted 'ident | string_constant'")
 
-	syntax_error(p_token, "reached end of parse_attribute_decl( ... )")
+	token = reader.get_token()
+	check_token_t(token, &';')
 	return end_frame()
+
 
 # ████████ ██    ██ ██████  ███████         ██████  ███████  ██████ ██
 #    ██     ██  ██  ██   ██ ██              ██   ██ ██      ██      ██
@@ -622,46 +628,46 @@ func parse_type_decl( p_token : Reader.Token ):
 	#type_decl = ( table | struct ) ident [metadata] { field_decl+ }\
 	var frame : StackFrame = stack.back()
 
-	var decl_type : String = frame.data.get('decl_type', '')
+	var decl_type : StringName = frame.data.get(&'decl_type', StringName())
 
-	if frame.data.get('next') == null:
+	if frame.data.get(&'next') == null:
 		var token = reader.get_token()
-		if token.t not in ['table','struct']:
+		if token.t not in [&'table',&'struct']:
 			syntax_error(token, "wanted ( table | struct )")
 		else:
 			decl_type = token.t
-			frame.data['decl_type'] = token.t
+			frame.data[&'decl_type'] = token.t
 
 		token = reader.get_token()
 		check_token_type(token, Reader.TokenType.IDENT )
 		# add token to appropriate array
 		match decl_type:
-			"struct": struct_types.append(token.t)
-			"table": table_types.append(token.t)
+			&"struct": struct_types.append(token.t)
+			&"table": table_types.append(token.t)
 
 		# We dont want to consume the next token.
 		token = reader.peek_token()
-		if token.t == '(':
-			frame.data['next'] = '{'
+		if token.t == &'(':
+			frame.data[&'next'] = &'{'
 			push_stack( FrameType.METADATA )
 			return
 
-		frame.data['next'] = '{'
+		frame.data[&'next'] = &'{'
 		# can immediately continue
 
-	if frame.data.get('next') == '{':
+	if frame.data.get(&'next') == &'{':
 		var token = reader.get_token()
 		if token.eof() : return
-		check_token_t( token, '{' )
-		frame.data['next'] = 'field_decl'
+		check_token_t( token, &'{' )
+		frame.data[&'next'] = &'field_decl'
 
 		# update p_token to continue
 		p_token = reader.peek_token()
 
-	if frame.data.get('next') == 'field_decl':
+	if frame.data.get(&'next') == &'field_decl':
 		if p_token.eof() : return
-		if p_token.t != '}':
-			push_stack( FrameType.FIELD_DECL, {'decl_type':decl_type} )
+		if p_token.t != &'}':
+			push_stack( FrameType.FIELD_DECL, {&'decl_type':decl_type} )
 			return
 		reader.get_token() # Consume the }
 		end_frame()
@@ -680,70 +686,74 @@ func parse_enum_decl( p_token : Reader.Token ):
 	#enum_decl = ( enum ident : type | union ident ) metadata { commasep( enumval_decl ) }
 	var frame : StackFrame = stack.back()
 
-	var decl_type : String = frame.data.get('decl_type', '')
-	var decl_name : String = frame.data.get('decl_name', '')
+	var decl_type : StringName = frame.data.get(&'decl_type', StringName())
+	var decl_name : StringName = frame.data.get(&'decl_name', StringName())
 
-	if frame.data.get('next') == null:
-		frame.data['next'] = 'meta'
+	if frame.data.get(&'next') == null:
+		frame.data[&'next'] = &'meta'
 
-		var token = reader.get_token()
-		if not token.t in ['union', 'enum']:
+		var token : Reader.Token = reader.get_token()
+		if not token.t in [&'union', &'enum']:
 			syntax_error(token, "wanted ( enum | union )")
 		else:
 			decl_type = token.t
-			frame.data['decl_type'] = decl_type
+			frame.data[&'decl_type'] = decl_type
 
 		# ident
 		token = reader.get_token()
 		if check_token_type(token, Reader.TokenType.IDENT):
 			match decl_type:
-				"union" :
-					union_types.append(token.t)
-				"enum" :
+				&"union" : union_types.append(token.t)
+				&"enum" :
 					decl_name = token.t
-					frame.data['decl_name'] = decl_name
-					enum_types[ decl_name ] = Array()
+					frame.data[&'decl_name'] = decl_name
+					enum_types[ decl_name ] = Array([], TYPE_STRING_NAME, "", null)
 
 		token = reader.peek_token()
-		if decl_type == 'enum':
-			if token.t == ':':
+		if decl_type == &'enum':
+			if token.t == &':':
 				reader.get_token() # consume token.
-				push_stack( FrameType.TYPE, { 'decl_type':decl_type } )
+				push_stack( FrameType.TYPE, { &'decl_type':decl_type } )
 				return
 
-	if frame.data.get('next') == 'meta':
-		frame.data['next'] = '{'
-		if p_token.t == '(':
+	if frame.data.get(&'next') == &'meta':
+		frame.data[&'next'] = &'{'
+		if p_token.t == &'(':
 			push_stack(FrameType.METADATA)
 			return
 
-	if frame.data.get('next') == '{':
-		frame.data['next'] = 'enumval_decl'
+	if frame.data.get(&'next') == &'{':
 		var token : Reader.Token = reader.get_token()
-		check_token_t(token, '{')
+		if token.eof(): return
+		frame.data[&'next'] = &'enumval_decl'
+		check_token_t(token, &'{')
 		p_token = reader.peek_token()
 
-	if frame.data.get('next') == 'enumval_decl':
-		# we might be here after a previous enumval_decl which returns the name
-		# parsing of the original enum name might have failed, or we are a union.
-		var val_name = frame.data.get('return')
-		if decl_name and val_name:
-			enum_types[decl_name].append( val_name )
-			frame.data.erase( 'return' )
-
+	if frame.data.get(&'next') == &'enumval_decl':
+		# Newlines are ok at the beginning/end
 		if p_token.eof() : return
-		if p_token.t == ',':
-			reader.get_token() # consume comma
-			return
-		if p_token.t != '}':
+		if p_token.t == &'}':
+			reader.get_token() # Consume the }
+			return end_frame()
+
+		if check_token_type( p_token, Reader.TokenType.IDENT ):
+			frame.data[&'next'] = &','
 			match decl_type:
-				'union':
-					push_stack( FrameType.ENUMVAL_DECL, { 'decl_type':decl_type } )
-				'enum':
-					push_stack( FrameType.ENUMVAL_DECL, { 'decl_type':decl_type, 'decl_name':decl_name } )
+				&'union': push_stack( FrameType.ENUMVAL_DECL,
+					{ &'decl_type':decl_type } )
+				&'enum': push_stack( FrameType.ENUMVAL_DECL,
+					{ &'decl_type':decl_type, &'decl_name':decl_name } )
 			return
-		reader.get_token() # Consume the }
-		return end_frame()
+
+		reader.adv_token(p_token) # move on
+		return
+
+	if frame.data.get(&'next') == &',':
+		var token : Reader.Token = reader.get_token()
+		if token.eof() : return
+		match p_token.t:
+			&'}': return end_frame()
+			&',': frame.data[&'next'] = &'enumval_decl'; return
 
 	syntax_error(p_token, "reached end of parse_enum_val( ... )" )
 	return end_frame()
@@ -757,17 +767,16 @@ func parse_enum_decl( p_token : Reader.Token ):
 
 func parse_root_decl( p_token : Reader.Token ):
 	# ROOT_DECL = root_type ident ;
-	var frame = stack.back()
+	var frame : StackFrame = stack.back()
 
-	var token = reader.get_token()
-	check_token_t(token, 'root_type', "token.t != 'root_type'" )
-
-	token = reader.get_token()
-	check_token_type(token, Reader.TokenType.IDENT,
-		"token.type != 'Reader.TokenType.IDENT'" )
+	var token : Reader.Token = reader.get_token()
+	check_token_t(token, &'root_type')
 
 	token = reader.get_token()
-	check_token_t(token, ';', "token.t != ';'" )
+	check_token_type(token, Reader.TokenType.IDENT )
+
+	token = reader.get_token()
+	check_token_t(token, &';')
 	return end_frame()
 
 # ███████ ██ ███████ ██      ██████          ██████  ███████  ██████ ██
@@ -784,14 +793,14 @@ func parse_field_decl( p_token : Reader.Token ):
 	# even on empty lines.
 	if p_token.eof(): return
 
-	var decl_type : String = frame.bindings.get('decl_type', '')
-	var field_name : String = frame.data.get('field_name', '')
+	var decl_type : StringName = frame.bindings.get(&'decl_type', StringName())
+	var field_name : StringName = frame.data.get(&'field_name', StringName())
 
-	if frame.data.get('next') == null:
-		var token = reader.get_token()
+	if frame.data.get(&'next') == null:
+		var token : Reader.Token = reader.get_token()
 		if check_token_type(token, Reader.TokenType.IDENT):
 			field_name = token.t
-			frame.data['field_name'] = token.t
+			frame.data[&'field_name'] = token.t
 
 		# TODO is this token already named in the type_decl?
 		# I would need to fetch the parent frame and check if it is in the named list.
@@ -799,23 +808,23 @@ func parse_field_decl( p_token : Reader.Token ):
 
 		token = reader.get_token()
 		if token.eof() : return
-		check_token_t( token, ':')
+		check_token_t( token, &':')
 
-		frame.data['next'] = 'default'
-		push_stack( FrameType.TYPE, { 'decl_type':decl_type, 'field_name':field_name } )
+		frame.data[&'next'] = &'default'
+		push_stack( FrameType.TYPE, { &'decl_type':decl_type, &'field_name':field_name } )
 		return
 
 	# Handle defaults
 	p_token = reader.peek_token()
-	if frame.data.get('next') == 'default':
-		frame.data['next'] = 'meta'
-		if p_token.t == '=':
+	if frame.data.get(&'next') == &'default':
+		frame.data[&'next'] = &'meta'
+		if p_token.t == &'=':
 			reader.get_token() # consume '='
-			var token = reader.get_token()
-			var return_val : Dictionary = frame.data.get('return')
-			frame.data.erase('return')
-			if return_val.get('field_type') == 'enum':
-				var enum_vals = enum_types.get(return_val.get('field_name'))
+			var token : Reader.Token = reader.get_token()
+			var return_val : Dictionary = frame.data.get(&'return')
+			frame.data.erase(&'return')
+			if return_val.get(&'field_type') == &'enum':
+				var enum_vals : Array[StringName] = enum_types.get(return_val.get(&'field_name'))
 				if not token.t in enum_vals:
 					syntax_error(token, "value not found in enum")
 				else:
@@ -824,16 +833,16 @@ func parse_field_decl( p_token : Reader.Token ):
 				syntax_error(token, "Only Scalar values can have defaults")
 
 	# meta
-	if frame.data.get('next') == 'meta':
-		frame.data['next'] = ';'
-		if p_token.t == '(':
+	if frame.data.get(&'next') == &'meta':
+		frame.data[&'next'] = &';'
+		if p_token.t == &'(':
 			push_stack( FrameType.METADATA )
 			return
 
 	# finish
-	if frame.data.get('next') == ';':
+	if frame.data.get(&'next') == &';':
 		var token : Reader.Token = reader.get_token()
-		check_token_t(token, ';')
+		check_token_t(token, &';')
 		return end_frame()
 
 	syntax_error(p_token, "reached end of parse_type_decl(...)")
@@ -846,8 +855,8 @@ func parse_field_decl( p_token : Reader.Token ):
 #   ██   ██ ██       ██████ ███████ ██████  ███████  ██████ ███████
 
 func parse_rpc_decl( p_token : Reader.Token ):
-	var this_frame = stack.back()
-	syntax_warning( p_token, "Unimplemented")
+	var this_frame : StackFrame = stack.back()
+	syntax_warning( p_token, &"Unimplemented")
 	reader.adv_line()
 	return end_frame()
 
@@ -858,8 +867,8 @@ func parse_rpc_decl( p_token : Reader.Token ):
 #   ██   ██ ██       ██████ ███████ ██      ██ ███████    ██    ██   ██
 
 func parse_rpc_method( p_token : Reader.Token ):
-	var this_frame = stack.back()
-	syntax_warning( p_token, "Unimplemented")
+	var this_frame : StackFrame = stack.back()
+	syntax_warning( p_token, &"Unimplemented")
 	reader.adv_line()
 	return end_frame()
 
@@ -898,10 +907,10 @@ func parse_type( p_token : Reader.Token ):
 	var frame : StackFrame = stack.back()
 
 	# Find the type_decl frame and determine what we are parsing.
-	var decl_type = frame.bindings.get('decl_type', '')
+	var decl_type : StringName = frame.bindings.get(&'decl_type', StringName())
 
 	# Simple parsing for enums
-	if decl_type == "enum":
+	if decl_type == &"enum":
 		var token : Reader.Token = reader.get_token()
 		if not token.t in integer_types:
 			syntax_error( token, "Enum types must be an integral")
@@ -912,28 +921,28 @@ func parse_type( p_token : Reader.Token ):
 	# compled parsing for structs and tables
 	var has_bracket : bool = false
 	var return_val : Dictionary = {
-		'field_type':'',
-		'field_name':''
+		&'field_type':StringName(),
+		&'field_name':StringName()
 	}
 
 	var token : Reader.Token = reader.get_token()
 	# for both table and struct decl '[' is allowed
-	if token.t == '[':
+	if token.t == &'[':
 		# we have either vector or array syntax
 		has_bracket = true
 		token = reader.get_token()
 
 	# we need to know if the field is scalar, for when we deal with defaults.
-	if token.t in scalar_types: return_val['field_type'] = 'scalar'
+	if token.t in scalar_types: return_val[&'field_type'] = &'scalar'
 	elif token.t in enum_types:
-		return_val['field_type'] = 'enum'
-		return_val['field_name'] = token.t
+		return_val[&'field_type'] = &'enum'
+		return_val[&'field_name'] = token.t
 
-	if decl_type == 'struct':
+	if decl_type == &'struct':
 		if not token.t in scalar_types + struct_types + enum_types.keys():
 			syntax_error(token, "struct array/vector fields may only contain scalars or other structs")
 		else: highlight(token, Reader.TokenType.TYPE)
-	elif decl_type == 'table':
+	elif decl_type == &'table':
 		# Where table can contain vectors of any type
 		if not token.t in (scalar_types + struct_types + table_types
 								+ array_types + enum_types.keys() + union_types):
@@ -946,15 +955,15 @@ func parse_type( p_token : Reader.Token ):
 	token = reader.get_token()
 
 	# Check for Array Syntax
-	if decl_type == 'struct':
-		if token.t == ':':
+	if decl_type == &'struct':
+		if token.t == &':':
 			token = reader.get_token()
 			if not reader.is_integer(token.t):
 				syntax_error(token, "Array Syntax count must be an integral value")
 			token = reader.get_token()
 
 	# Close out the brackets.
-	check_token_t(token, ']')
+	check_token_t(token, &']')
 	return end_frame()
 
 
@@ -966,29 +975,23 @@ func parse_type( p_token : Reader.Token ):
 
 func parse_enumval_decl( p_token : Reader.Token ):
 	# ENUMVAL_DECL = ident [ = integer_constant ]
-	var frame = stack.back()
+	var frame : StackFrame = stack.back()
 
-	var decl_name : String = frame.bindings.get('decl_name', '')
-	var decl_type : String = frame.bindings.get('decl_type', '')
+	var decl_name : String = frame.bindings.get(&'decl_name', StringName())
+	var decl_type : String = frame.bindings.get(&'decl_type', StringName())
 
 	var token : Reader.Token = reader.get_token()
 
 	if check_token_type(token, Reader.TokenType.IDENT ):
-		match decl_type:
-			'enum':
-				pass
-			'union':
-				pass
 		if enum_types.has(decl_name):
-			var enum_vals = enum_types.get(decl_name)
+			var enum_vals : Array[StringName] = enum_types.get(decl_name)
 			enum_vals.append( token.t )
-		elif decl_type == 'union':
+		elif decl_type == &'union':
 			highlight(token, Reader.TokenType.SCALAR)
-		else:
-			syntax_error( token )
+		else: syntax_error( token )
 
 	token = reader.peek_token()
-	if token.t == '=':
+	if token.t == &'=':
 		reader.adv_token(token) # consume ='='
 		token = reader.get_token()
 		if not reader.is_integer(token.t):
@@ -1007,25 +1010,25 @@ func parse_metadata( p_token : Reader.Token ):
 	# single_value = scalar | string_constant
 	var frame : StackFrame = stack.back()
 
-	if frame.data.get('next') == null:
+	if frame.data.get(&'next') == null:
 		var token : Reader.Token = reader.get_token()
-		check_token_t( token, '(' )
-		frame.data['next'] = 'continue'
+		check_token_t( token, &'(' )
+		frame.data[&'next'] = &'continue'
 
-	if frame.data.get('next') == 'continue':
+	if frame.data.get(&'next') == &'continue':
 		var token : Reader.Token = reader.get_token()
 
-		if token.t == ')': return end_frame()
+		if token.t == &')': return end_frame()
 		check_token_type(token, Reader.TokenType.IDENT )
 
 		token = reader.get_token()
-		if token.t == ':':
+		if token.t == &':':
 			token = reader.get_token()
 			if not (token.type == Reader.TokenType.SCALAR
 				or token.type == Reader.TokenType.STRING):
 					syntax_error(token, "is not scalar or string constant")
-		if token.t == ',': return
-		if token.t == ')': return end_frame()
+		if token.t == &',': return
+		if token.t == &')': return end_frame()
 
 	syntax_error(p_token, "reached end of parse_metadata(...)")
 	return end_frame()
@@ -1038,7 +1041,7 @@ func parse_metadata( p_token : Reader.Token ):
 
 func parse_scalar( p_token : Reader.Token ):
 	# SCALAR = boolean_constant | integer_constant | float_constant
-	var this_frame = stack.back()
+	var this_frame : StackFrame = stack.back()
 
 	var token : Reader.Token = reader.get_token()
 	if token.type == Reader.TokenType.SCALAR:
@@ -1061,8 +1064,8 @@ func parse_scalar( p_token : Reader.Token ):
 #    ██████  ██████   █████  ███████  ██████    ██
 
 func parse_object( p_token : Reader.Token ):
-	var this_frame = stack.back()
-	syntax_warning( p_token, "unimplemented" )
+	var this_frame : StackFrame = stack.back()
+	syntax_warning( p_token, &"Unimplemented" )
 	reader.adv_line()
 	return end_frame()
 
@@ -1073,11 +1076,10 @@ func parse_object( p_token : Reader.Token ):
 #   ███████ ██ ██   ████  ██████  ███████ ███████
 
 func parse_single_value( p_token : Reader.Token ):
-	var this_frame = stack.back()
-	syntax_warning( p_token, "unimplemented" )
+	var this_frame : StackFrame = stack.back()
+	syntax_warning( p_token, &"Unimplemented" )
 	reader.adv_line()
-	end_frame()
-	return false
+	return end_frame()
 
 #   ██    ██  █████  ██      ██    ██ ███████
 #   ██    ██ ██   ██ ██      ██    ██ ██
@@ -1086,8 +1088,8 @@ func parse_single_value( p_token : Reader.Token ):
 #     ████   ██   ██ ███████  ██████  ███████
 
 func parse_value( p_token : Reader.Token ):
-	var this_frame = stack.back()
-	syntax_warning( p_token, "unimplemented" )
+	var this_frame : StackFrame = stack.back()
+	syntax_warning( p_token, &"Unimplemented" )
 	reader.adv_line()
 	return end_frame()
 
@@ -1099,24 +1101,24 @@ func parse_value( p_token : Reader.Token ):
 
 func parse_commasep( p_token : Reader.Token ):
 	# COMMASEP(x) = [ x ( , x )* ]
-	var frame = stack.back()
-	var arg_type = frame.data.get('args')
+	var frame : StackFrame = stack.back()
+	var arg_type : FrameType = frame.data.get(&'args')
 	if arg_type == null:
 		syntax_error(p_token, "commasep needs an argument")
 		return end_frame()
 
-	if not (p_token.type == Reader.TokenType.IDENT || p_token.t == ','):
+	if not (p_token.type == Reader.TokenType.IDENT || p_token.t == &','):
 		return end_frame()
 
-	if frame.data.get('next') == null:
+	if frame.data.get(&'next') == null:
 		push_stack( arg_type )
-		frame.data['next'] = ','
+		frame.data[&'next'] = &','
 		return
-	if frame.data.get('next') == ',':
+	if frame.data.get(&'next') == &',':
 		var token : Reader.Token = reader.get_token()
-		frame.data.erase('return')
-		if token.t != ',': return end_frame()
-		frame.data['next'] = null
+		frame.data.erase(&'return')
+		if token.t != &',': return end_frame()
+		frame.data.erase(&'next')
 		return
 
 	syntax_error(p_token, "Reached the end of parse_commasep(...)")
@@ -1129,8 +1131,8 @@ func parse_commasep( p_token : Reader.Token ):
 #   ██      ██ ███████ ███████ ██ ███████ ██   ██    ██
 
 func parse_file_extension_decl( p_token : Reader.Token ):
-	var this_frame = stack.back()
-	syntax_warning( p_token, "Unimplemented")
+	var this_frame : StackFrame = stack.back()
+	syntax_warning( p_token, &"Unimplemented" )
 	reader.adv_line()
 	return end_frame()
 
@@ -1141,8 +1143,8 @@ func parse_file_extension_decl( p_token : Reader.Token ):
 #   ██      ██ ███████ ███████
 
 func parse_file_identifier_decl( p_token : Reader.Token ):
-	var this_frame = stack.back()
-	syntax_warning( p_token, "Unimplemented")
+	var this_frame : StackFrame = stack.back()
+	syntax_warning( p_token, &"Unimplemented" )
 	reader.adv_line()
 	return end_frame()
 
@@ -1153,14 +1155,11 @@ func parse_file_identifier_decl( p_token : Reader.Token ):
 #   ███████    ██    ██   ██ ██ ██   ████  ██████
 
 func parse_string_constant( p_token : Reader.Token ):
-	var frame = stack.back()
-
+	var frame : StackFrame = stack.back()
 	var token : Reader.Token = reader.get_token()
 
-	if token.get('type') == Reader.TokenType.STRING:
-		return end_frame( token )
+	check_token_type(token, Reader.TokenType.STRING)
 
-	syntax_error(token, "wanted filename as string")
 	end_frame()
 
 #   ██ ██████  ███████ ███    ██ ████████
@@ -1174,26 +1173,7 @@ func parse_ident( p_token : Reader.Token ):
 	#FIXME use regex?
 
 	var token : Reader.Token = reader.get_token()
-
-	var ident_start : String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"
-	var ident_end : String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
-
-	var word : String = token.t
-	var is_ident : bool = true
-	while is_ident:
-		# verify first character
-		if not ident_start.contains(word[0]) : is_ident = false; break
-		# verify the remaining
-		for i in range( 1, word.length() ):
-			if not ident_end.contains(word[i]): is_ident = false; break
-		break
-
-	if is_ident:
-		token.type == Reader.TokenType.IDENT
-		reader.get_token()
-		return end_frame( token )
-
-	syntax_error( token, "ident = [a-zA-Z_][a-zA-Z0-9_]*" )
+	check_token_type(token, Reader.TokenType.IDENT )
 	end_frame()
 
 #   ██ ███    ██ ████████
@@ -1207,18 +1187,11 @@ func parse_integer_constant( p_token : Reader.Token ):
 	var frame : StackFrame = stack.back()
 
 	var token : Reader.Token = reader.get_token()
-
-	var ok : bool = true
-	while true:
-		if Regex.dec_integer_constant.search( token.t ): break
-		if Regex.hex_integer_constant.search( token.t ): break
-		ok = false; break
-	if ok:
+	if reader.is_integer( token.t ):
 		return end_frame()
+
 	syntax_error( token, "Wanted ( dec_integer_constant | hex_integer_constant )" )
 	return end_frame()
-
-#endregion Parser
 
 
 #  ██████  ██    ██ ██  ██████ ██   ██         ███████  ██████  █████  ███    ██
@@ -1229,61 +1202,74 @@ func parse_integer_constant( p_token : Reader.Token ):
 
 var included_files : Array = []
 
-func quick_scan_file( filename : String ) -> bool:
-	if filename.begins_with("res://"):
-		if verbose > 0: printerr("paths starting with res:// or user:// are not yet supported: ", filename)
+func quick_scan_file( filepath : String ) -> bool:
+	if filepath.begins_with("res://"):
+		if verbose > 0: printerr("paths starting with res:// or user:// are not supported: ", filepath)
 		return false
 
-	if filename == "godot.fbs":
-		filename = 'res://addons/gdflatbuffers/godot.fbs'
-	else:
-		filename = file_location + filename
+	# a shortcut for godot things.
+	if filepath == "godot.fbs": filepath = 'res://addons/gdflatbuffers/godot.fbs'
+	#elif filepath.is_relative_path():
 
-	if not FileAccess.file_exists( filename ):
-		if verbose > 0: printerr("Enable to locate file for inclusion: ", filename)
+	if not FileAccess.file_exists( filepath ):
+		if verbose > 0:
+			if filepath.is_relative_path():
+				push_warning("Relative Paths are only relative to project root, not their own location.")
+			printerr("Unable to locate file for inclusion: ", filepath)
 		return false
 
-	if filename in included_files: return true # Dont create a loop
-	included_files.append( filename )
-	if verbose > 1: print( "Including file: ", filename )
+	if filepath in included_files: return true # Dont create a loop
+	included_files.append( filepath )
+
+	if verbose > 1: print( "Including file: ", filepath )
 	if verbose > 1: print( "Included files: ", included_files )
-	var file = FileAccess.open( filename, FileAccess.READ )
+	var file = FileAccess.open( filepath, FileAccess.READ )
 	var content = file.get_as_text()
 	quick_scan_text( content )
 	return true
 
 func quick_scan_text( text : String ):
-	if verbose > 1: print_rich( "[b]quick_scan_text( FIX GODOT, Unable to get filenames )[/b]")
+	if verbose > 1: print_rich( "[b]quick_scan_text[/b]")
 	# I need a function which scans the source fast to pick up names before the main scan happens.
 	qreader.reset( text )
 
 	while not qreader.at_end():
-		var token = qreader.get_token()
+		var token : Reader.Token = qreader.get_token()
 
+		# We are only interested in keywords.
 		if token.type != Reader.TokenType.KEYWORD:
 			qreader.adv_line()
 			continue
 
+		# we want to include other files.
 		if token.t == 'include':
-			var filename : String = qreader.get_token().t
-			if Regex.string_constant.search(filename):
-				quick_scan_file( filename.substr( 1, filename.length() - 2 ) )
+			token = qreader.get_token()
+			if token.type != Reader.TokenType.STRING:
+				qreader.adv_line()
+				continue
+			var file_path : String = token.t
+			quick_scan_file( file_path.substr( 1, file_path.length() - 2 ) )
 			qreader.adv_line()
 			continue
 
-		if token.t in ['struct', 'table', 'enum', 'union']:
+		if token.t in ['struct', 'table', 'union']:
 			var ident = qreader.get_token()
-			if Regex.ident.search(ident.t):
-				print("Adding '%s' to user types" % ident.t)
-				user_types[ident.t] = OK
-				# FIXME, add to the different arrays.
-			else:
-				print("identity invalid '%s'" % ident.t)
+			if ident.type != Reader.TokenType.IDENT:
+				qreader.adv_line()
+				continue
+			match token.t:
+				&'struct': struct_types.append(ident.t)
+				&'table': table_types.append(ident.t)
+				&'union': union_types.append(ident.t)
+			qreader.adv_line()
+			continue
 
 		if token.t == 'enum':
-			pass # TODO get the enum names
+			var ident = qreader.get_token()
+			if ident.type != Reader.TokenType.IDENT:
+				qreader.adv_line()
+				continue
+			if not enum_types.has(ident.t):
+				enum_types[ident.t] = Array([], TYPE_STRING_NAME, "", null)
 
 		qreader.adv_line()
-
-	if verbose > 1: print( "user_types: ", user_types.keys())
-	if verbose > 1: print( "user_enum_vals: ", user_enum_vals.keys())
