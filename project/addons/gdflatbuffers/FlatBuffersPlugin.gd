@@ -9,56 +9,35 @@ const flatc_path := EDITOR_SETTINGS_BASE + &"flatc_path"
 
 var script_editor := EditorInterface.get_script_editor()
 static var settings := EditorInterface.get_editor_settings()
-var fs := EditorInterface.get_resource_filesystem()
-var editor_log : RichTextLabel
-
-var fbs := EditorInterface.get_file_system_dock()
-var fbs_rcm : PopupMenu
-var fbs_tree : Tree
 
 var highlighter : EditorSyntaxHighlighter
+var file_menu : MyFileMenu
+
+func _get_plugin_name() -> String:
+	return "flatbuffers"
+
+func _get_plugin_icon() -> Texture2D:
+	# You can use a custom icon:
+	#return preload("res://addons/my_plugin/my_plugin_icon.svg")
+	# Or use a built-in icon:
+	return EditorInterface.get_editor_theme().get_icon("Node", "EditorIcons")
+
 
 func _enter_tree() -> void:
 	change_editor_settings()
-	enable_syntax_highlighter()
-	enable_changes_to_fbs()
-	connect_to_output_meta()
 
-
-func _exit_tree() -> void:
-	disable_changes_to_fbs()
-	disable_syntax_highlighter()
-	disconnect_from_output_meta()
-
-
-func _on_meta_clicked( meta ):
-	print( meta )
-	#if ResourceLoader.exists( meta ):
-		#print( "Path exists: ", meta)
-	#else:
-		#printerr( "Path does not exists: ", meta)
-	#print( test )
-	#if test:
-		#load( meta.test )._run()
-
-func connect_to_output_meta() -> void:
-	var logs : Array[Node] = EditorInterface.get_base_control().find_children('', 'EditorLog', true, false )
-	for item : Node in logs:
-		editor_log = item.find_children('','RichTextLabel', true, false ).front()
-		editor_log.meta_clicked.connect( _on_meta_clicked )
-
-
-func disconnect_from_output_meta() -> void:
-	editor_log.meta_clicked.disconnect( _on_meta_clicked )
-
-
-func enable_syntax_highlighter() -> void:
+	# Syntax Highlighting for flatbuffer schema files
 	highlighter = FlatBuffersHighlighter.new()
 	script_editor.register_syntax_highlighter( highlighter )
 
+	# Context menu of FileSystem dock.
+	file_menu = MyFileMenu.new()
+	add_context_menu_plugin( EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM, file_menu)
 
-func disable_syntax_highlighter() -> void:
+
+func _exit_tree() -> void:
 	script_editor.unregister_syntax_highlighter( highlighter )
+	remove_context_menu_plugin( file_menu )
 
 
 func change_editor_settings() -> void:
@@ -85,60 +64,11 @@ func change_editor_settings() -> void:
 		}
 		settings.add_property_info(property_info)
 
-
-func enable_changes_to_fbs():
-	# get the tree
-	# I dont like using find_children, but all the names are auto generated.
-	fbs_tree = fbs.find_children( "", "Tree", true, false)[0]
-
-	# Get the right click menu
-	var menus : Array[Node] = fbs.find_children( "", "PopupMenu", false, false )
-		# I dont like this, but it appears that the second menu is typically the one
-	fbs_rcm = menus[1]
-
-	# Connect the signals to enable right click generate
-	fbs_tree.item_mouse_selected.connect( append_fbs_rcm )
-	fbs_rcm.id_pressed.connect( rcm_generate )
-
-
-func disable_changes_to_fbs():
-	fbs_tree.item_mouse_selected.disconnect( append_fbs_rcm )
-	fbs_rcm.id_pressed.disconnect( rcm_generate )
-
-
-# this is connected to the item_mouse_selected signal of the FileSystemDock Tree
-func append_fbs_rcm( _position: Vector2, _mouse_button_index: int ):
-	# Change the description depending on the selection.
-	# TODO utilie EditorInterface.get_selected_paths() to determine whether to show the menu
-	var current_path := EditorInterface.get_current_path()
-	if current_path.ends_with(".fbs") or DirAccess.dir_exists_absolute( current_path ):
-		fbs_rcm.add_separator()
-		fbs_rcm.add_item("flatc Generate")
-		var index : int = fbs_rcm.item_count -1
-		# we have to add something to differentiate us from other menu items.
-		fbs_rcm.set_item_metadata(index, "fbs")
-
-
-# This function is connected to the is_pressed signal of the right click popup menu
-func rcm_generate( id ) -> void:
-	# do not proceed if the metadata of the click isnt 'fbs'
-	var meta = fbs_rcm.get_item_metadata( id )
-	if meta != "fbs": return
-
-	var results : Dictionary = {'retcode':OK}
-	var current_path : String= EditorInterface.get_current_path()
-	if DirAccess.dir_exists_absolute( current_path ):
-		var dir: EditorFileSystemDirectory = fs.get_filesystem_path( current_path )
-		for i in dir.get_file_count():
-			var file: String = dir.get_file_path(i)
-			#TODO detect teh filetype rather than the extension when the Resource Loader is created
-			if file.ends_with('.fbs'):
-				results = FlatBuffersPlugin.flatc_generate( file )
-	else:
-		results = FlatBuffersPlugin.flatc_generate( current_path )
-
-	if results.retcode: print_results( results )
-
+#   ███████ ██       █████  ████████  ██████    ███████ ██   ██ ███████
+#   ██      ██      ██   ██    ██    ██         ██       ██ ██  ██
+#   █████   ██      ███████    ██    ██         █████     ███   █████
+#   ██      ██      ██   ██    ██    ██         ██       ██ ██  ██
+#   ██      ███████ ██   ██    ██     ██████ ██ ███████ ██   ██ ███████
 
 static func flatc_generate( path : String ) -> Variant:
 	# Make sure we have the flac compiler
@@ -186,8 +116,55 @@ static func flatc_generate( path : String ) -> Variant:
 	EditorInterface.get_resource_filesystem().scan()
 	return result
 
-func print_results( result : Dictionary ):
+static func print_results( result : Dictionary ):
 	var output = result.get('output')
 	result.erase('output')
 	printerr( "flatc_generate result: ", JSON.stringify( result, '\t', false ) )
 	for o in output: print( o )
+
+#   ██████ ██████ ██     ██████    ███    ███ ██████ ███    ██ ██   ██
+#   ██       ██   ██     ██        ████  ████ ██     ████   ██ ██   ██
+#   ████     ██   ██     ████      ██ ████ ██ ████   ██ ██  ██ ██   ██
+#   ██       ██   ██     ██        ██  ██  ██ ██     ██  ██ ██ ██   ██
+#   ██     ██████ ██████ ██████    ██      ██ ██████ ██   ████  █████
+
+#  NOTE A plugin instance can belong only to a single context menu slot.
+
+# filesystem context menu
+# EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM
+class MyFileMenu extends EditorContextMenuPlugin:
+	# This event is triggered when the menu is opened.
+	# _popup_menu() and option callback will be called with list of paths of the
+	# currently selected files.
+	func _popup_menu(paths):
+		add_context_menu_item("flatc --gdscript", call_flatc_on_paths )#, icon )
+
+	func call_flatc_on_paths( paths ) -> void:
+		for path : String in paths:
+			var abs_path : String = ProjectSettings.globalize_path( path )
+			if path.get_extension() == 'fbs':
+				var results : Dictionary = {'retcode':OK}
+				results = FlatBuffersPlugin.flatc_generate( abs_path )
+				if results.retcode: FlatBuffersPlugin.print_results( results )
+
+## ContextMenuSlot
+# CONTEXT_SLOT_SCRIPT_EDITOR
+# Context menu of Script editor's script tabs.
+# _popup_menu() will be called with the path to the currently edited script,
+# while option callback will receive reference to that script.
+
+# CONTEXT_SLOT_FILESYSTEM_CREATE
+# The "Create..." submenu of FileSystem dock's context menu.
+# _popup_menu() and option callback will be called with list of paths of the
+# currently selected files.
+
+# CONTEXT_SLOT_SCRIPT_EDITOR_CODE
+# Context menu of Script editor's code editor.
+# _popup_menu() will be called with the path to the CodeEdit node.
+# You can fetch it using this code:
+#
+# func _popup_menu(paths):
+# 	var code_edit = Engine.get_main_loop().root.get_node(paths[0]);
+#
+# The option callback will receive reference to that node.
+# You can use CodeEdit methods to perform symbol lookups etc.
