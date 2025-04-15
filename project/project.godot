@@ -11,7 +11,8 @@ config_version=5
 [application]
 
 config/name="FlatBuffers Extension Project"
-config/features=PackedStringArray("4.3")
+run/main_scene="uid://dmx2xuigcpvt4"
+config/features=PackedStringArray("4.4")
 config/icon="res://addons/flatbuffers/fpl_logo_small.png"
 
 [editor_plugins]
