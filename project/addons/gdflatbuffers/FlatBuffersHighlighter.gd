@@ -1,6 +1,8 @@
 @tool
 extends EditorSyntaxHighlighter
 
+static var _plugin
+
 const REGEX = preload('res://addons/gdflatbuffers/scripts/regex.gd')
 static var Regex :
 	get():
@@ -176,7 +178,11 @@ var stack_list : Dictionary[int, Array] = {}
 #           ██ ██  ██ ██ ██    ██
 #   ███████ ██ ██   ████ ██    ██
 
-func _init():
+func _init( plugin : FlatBuffersPlugin = null ):
+	if not _plugin and plugin:
+		_plugin = plugin
+
+	# Fix up the scalar types list
 	scalar_types = integer_types + float_types + boolean_types
 
 	if not Regex: Regex = REGEX.new()
@@ -211,7 +217,7 @@ func _init():
 		colours[Reader.TokenType.IDENT] = editor_settings.get_setting("text_editor/theme/highlighting/symbol_color")
 		colours[Reader.TokenType.SCALAR] = editor_settings.get_setting("text_editor/theme/highlighting/number_color")
 		colours[Reader.TokenType.META] = editor_settings.get_setting("text_editor/theme/highlighting/text_color")
-		verbose = editor_settings.get_setting( FlatBuffersPlugin.debug_verbosity )
+		verbose = _plugin.verbosity
 
 	if verbose > 1: print_rich("[b]FlatBuffersHighlighter._init() - Completed[/b]")
 
@@ -314,7 +320,7 @@ func _get_line_syntax_highlighting ( line_num : int ) -> Dictionary:
 func _update_cache ( ):
 	# Get settings
 	if editor_settings:
-		verbose = editor_settings.get_setting( FlatBuffersPlugin.debug_verbosity )
+		verbose = _plugin.verbosity
 	else:
 		verbose = 10
 	if verbose > 2: print_rich("[b]_update_cache( )[/b]")

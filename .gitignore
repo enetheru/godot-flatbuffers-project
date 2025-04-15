@@ -60,18 +60,23 @@ export_presets.cfg
 
 # Our generated files
 src/entry_point.cpp
-
 *_generated.h
 *_generated.gd
 
+# external library sources
+lib/*/
+
+
+# Project Files
+/project/scratch.gd
+/project/addons/Todo_Manager
+/project/addons/zylann.editor_debugger
+/project/**/*.uid
+/project/**/*.import
+
+# These files are copied across when building.
 /project/addons/gdflatbuffers/gdflatbuffers.gdextension
 /project/addons/gdflatbuffers/bin
 /project/addons/gdflatbuffers/godot.fbs
 
-# Other Unnecessary Files
-/project/scratch.gd
-/project/addons/Todo_Manager
-/project/addons/zylann.editor_debugger
 
-lib/*/
-*.uid

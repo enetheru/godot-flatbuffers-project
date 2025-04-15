@@ -1,41 +1,170 @@
 @tool
 class_name FlatBuffersPlugin extends EditorPlugin
 
-const FlatBuffersHighlighter = preload('res://addons/gdflatbuffers/FlatBuffersHighlighter.gd')
-
-const EDITOR_SETTINGS_BASE := &"plugin/FlatBuffers/"
-const debug_verbosity := EDITOR_SETTINGS_BASE + &"fbs_debug_verbosity"
-const flatc_path := EDITOR_SETTINGS_BASE + &"flatc_path"
+const ICON_TINY_BW = preload('res://addons/gdflatbuffers/fpl_logo_tiny_bw.png')
 
 var script_editor := EditorInterface.get_script_editor()
-static var settings := EditorInterface.get_editor_settings()
+
+const fbsHighlighter = preload('res://addons/gdflatbuffers/FlatBuffersHighlighter.gd')
 
 var highlighter : EditorSyntaxHighlighter
 var context_menus : Dictionary[EditorContextMenuPlugin.ContextMenuSlot,EditorContextMenuPlugin]
 
-func _init() -> void:
-	context_menus = {
-		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM: MyFileMenu.new(),
-		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM_CREATE:MyFileCreateMenu.new(),
-		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_SCRIPT_EDITOR:MyScriptTabMenu.new(),
-		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_SCRIPT_EDITOR_CODE:MyCodeEditMenu.new(),
-	}
+#   ███████ ███████ ████████ ████████ ██ ███    ██  ██████  ███████
+#   ██      ██         ██       ██    ██ ████   ██ ██       ██
+#   ███████ █████      ██       ██    ██ ██ ██  ██ ██   ███ ███████
+#        ██ ██         ██       ██    ██ ██  ██ ██ ██    ██      ██
+#   ███████ ███████    ██       ██    ██ ██   ████  ██████  ███████
+
+# Editor Settings Things
+var editor_settings_path : String = "plugin/FlatBuffers/"
+var editor_settings_list = [
+	"compiler/flatc_exe",
+	"compiler/include_paths",
+	"syntax_highlighting/verbosity",
+	"syntax_highlighting/unknown_color",
+	"syntax_highlighting/comment_color",
+	"syntax_highlighting/keyword_color",
+	"syntax_highlighting/type_color",
+	"syntax_highlighting/string_color",
+	"syntax_highlighting/punct_color",
+	"syntax_highlighting/ident_color",
+	"syntax_highlighting/scalar_color",
+	"syntax_highlighting/meta_color",
+]
+# Settings
+var print_syntax_errors : bool = true
+
+@export_global_file var flatc_exe : String = "addons/gdflatbuffers/bin/flatc.exe"
+
+@export_enum("SILENT:0", "CRITICAL:1", "ERROR:2", "WARNING:3", "INFO:4", "DEBUG:5", "TRACE:6")
+var verbosity : int = 0
+
+## Does this have a description?
+@export_global_dir
+var include_paths: Array[String]
+
+@export_color_no_alpha
+var unknown_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
+var comment_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_color")
+var keyword_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/keyword_color")
+var type_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/base_type_color")
+var string_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/string_color")
+var punct_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
+var ident_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/symbol_color")
+var scalar_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/number_color")
+var meta_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
+
+#   ███████ ██    ██ ███    ██  ██████ ███████
+#   ██      ██    ██ ████   ██ ██      ██
+#   █████   ██    ██ ██ ██  ██ ██      ███████
+#   ██      ██    ██ ██  ██ ██ ██           ██
+#   ██       ██████  ██   ████  ██████ ███████
+
+func print_bright( value ):
+	print_rich("%s.[color=yellow][b]%s[/b][/color]" % [name, value] )
 
 func _get_plugin_name() -> String:
+	print_bright("._get_plugin_name()")
 	return "flatbuffers"
 
-func _get_plugin_icon() -> Texture2D:
-	# You can use a custom icon:
-	#return preload("res://addons/my_plugin/my_plugin_icon.svg")
-	# Or use a built-in icon:
-	return EditorInterface.get_editor_theme().get_icon("Node", "EditorIcons")
 
+func _get_plugin_icon() -> Texture2D:
+	print_bright("._get_plugin_icon()")
+	return preload('res://addons/gdflatbuffers/fpl_logo_tiny_bw.png')
+
+
+#           ██ ███    ██ ██ ████████
+#           ██ ████   ██ ██    ██
+#           ██ ██ ██  ██ ██    ██
+#           ██ ██  ██ ██ ██    ██
+#   ███████ ██ ██   ████ ██    ██
+
+func _init() -> void:
+	name = "FlatBuffersPlugin"
+	init_settings()
+	context_menus = {
+		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM: MyFileMenu.new(self),
+		#EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM_CREATE:MyFileCreateMenu.new(),
+		#EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_SCRIPT_EDITOR:MyScriptTabMenu.new(),
+		#EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_SCRIPT_EDITOR_CODE:MyCodeEditMenu.new(),
+	}
+
+func get_property_info( property_name : StringName ) -> Dictionary:
+	var prop_list := get_property_list()
+	var prop_idx = prop_list.find_custom(
+		func(info): return info.name == property_name )
+	if prop_idx == -1: return {}
+	return prop_list[prop_idx]
+
+func init_settings():
+	print_bright(".init_settings()")
+	var editor_settings : EditorSettings = EditorInterface.get_editor_settings()
+	var project_settings := ProjectSettings
+
+	var prop_list := get_property_list()
+
+	for item : String in editor_settings_list:
+		var prop_info = get_property_info( item.get_file() )
+		if not prop_info: continue
+
+		# copy the prop_info and get the initial value
+		var setting_info : Dictionary = prop_info.duplicate()
+		var initial_value = get(prop_info.name)
+
+		# update the name to include the path
+		setting_info.name = editor_settings_path + item
+
+		# update the settings.
+		if not editor_settings.has_setting(setting_info.name):
+			editor_settings.set_setting( setting_info.name, initial_value )
+			editor_settings.mark_setting_changed(setting_info.name)
+		editor_settings.set_initial_value(setting_info.name, initial_value, false)
+		editor_settings.add_property_info(setting_info)
+
+	ProjectSettings.settings_changed.connect( settings_changed.bind("project") )
+	editor_settings.settings_changed.connect( settings_changed.bind("editor") )
+
+func settings_changed( source : String ):
+	var settings
+	match source:
+		"editor": settings = EditorInterface.get_editor_settings()
+		"project": settings = ProjectSettings; return # FIXME Unimplemented
+		_: push_error("invalid settings source"); return
+
+	for prop_name : String in get("%s_settings_list" % source ):
+		var setting_path = get("%s_settings_path" % source)
+		if not setting_path:
+			push_error("missing %s_settings_path" % source)
+			return
+
+		var setting_name : StringName = setting_path + prop_name
+		if not settings.has_setting(setting_name): continue
+		set( prop_name.get_file(), settings.get_setting(setting_name) )
+
+#   ███████ ███    ██  █████  ██████  ██      ███████
+#   ██      ████   ██ ██   ██ ██   ██ ██      ██
+#   █████   ██ ██  ██ ███████ ██████  ██      █████
+#   ██      ██  ██ ██ ██   ██ ██   ██ ██      ██
+#   ███████ ██   ████ ██   ██ ██████  ███████ ███████
+
+func _enable_plugin() -> void:
+	print_bright("._enable_plugin()")
+
+func _disable_plugin() -> void:
+	print_bright("._disable_plugin()")
+	pass
+
+#   ████████ ██████  ███████ ███████
+#      ██    ██   ██ ██      ██
+#      ██    ██████  █████   █████
+#      ██    ██   ██ ██      ██
+#      ██    ██   ██ ███████ ███████
 
 func _enter_tree() -> void:
-	change_editor_settings()
-
+	print_bright("._enter_tree()")
 	# Syntax Highlighting for flatbuffer schema files
-	highlighter = FlatBuffersHighlighter.new()
+	highlighter = fbsHighlighter.new(self)
 	script_editor.register_syntax_highlighter( highlighter )
 
 	# Context menus
@@ -44,34 +173,11 @@ func _enter_tree() -> void:
 
 
 func _exit_tree() -> void:
+	print_bright("._exit_tree()")
 	script_editor.unregister_syntax_highlighter( highlighter )
 	for menu in context_menus.values():
 		remove_context_menu_plugin( menu )
 
-
-func change_editor_settings() -> void:
-	# TODO make these project settings
-	var settings : EditorSettings = EditorInterface.get_editor_settings()
-
-	# Editor Settings
-	# FIXME: When I loaded the project for the first time the below line failed, and the above line didnt solve it.
-	if not settings.get( flatc_path ):
-		settings.set( flatc_path, "")
-		var property_info := {
-			"name": flatc_path,
-			"type": TYPE_STRING,
-			"hint": PROPERTY_HINT_GLOBAL_FILE,
-			"hint_string": "flatc.exe" # This will the filter string in the file dialog
-		}
-		settings.add_property_info(property_info)
-
-	if not settings.get( debug_verbosity ):
-		settings.set(debug_verbosity, false )
-		var property_info := {
-			"name": debug_verbosity,
-			"type": TYPE_INT,
-		}
-		settings.add_property_info(property_info)
 
 #   ███████ ██       █████  ████████  ██████    ███████ ██   ██ ███████
 #   ██      ██      ██   ██    ██    ██         ██       ██ ██  ██
@@ -79,42 +185,44 @@ func change_editor_settings() -> void:
 #   ██      ██      ██   ██    ██    ██         ██       ██ ██  ██
 #   ██      ███████ ██   ██    ██     ██████ ██ ███████ ██   ██ ███████
 
-static func flatc_generate( path : String ) -> Variant:
+func print_flatc_help():
+	print("flatc_help")
+
+func flatc_generate( schema_path : String ) -> Variant:
 	# Make sure we have the flac compiler
-	var flatc_path : String = settings.get( flatc_path )
-	if flatc_path.is_empty():
-		flatc_path = "res://addons/gdflatbuffers/bin/flatc.exe"
+	if not FileAccess.file_exists(flatc_exe):
+		var msg = "flatc compiler is not found at '%s'" % flatc_exe
+		push_error(msg)
+		return {'retcode':ERR_FILE_BAD_PATH, 'output': [msg]}
 
-	flatc_path = flatc_path.replace('res://', './')
+	if not FileAccess.file_exists(schema_path):
+		var msg = "Missing Schema File: '%s'" % schema_path
+		push_error(msg)
+		return {'retcode':ERR_FILE_BAD_PATH, 'output': [msg] }
 
-	if not FileAccess.file_exists(flatc_path):
-		return {'retcode':ERR_FILE_BAD_PATH, 'output': ["Missing flatc compiler"]}
+	# --gdscript             Generate GDScript files for tables/structs
+	var args : PackedStringArray = ["--gdscript"]
 
-	# TODO make this an editor setting that can be added to.
-	var include_paths : Array = ["res://addons/gdflatbuffers/"]
-	for i in include_paths.size():
-		include_paths[i] = include_paths[i].replace('res://', './')
+	# -I <path>                Search for includes in the specified path.
+	#var dir_access := DirAccess.open("res://")
+	for ipath in include_paths + ["res://addons/gdflatbuffers/"]:
+		if not DirAccess.dir_exists_absolute(ipath):
+			push_warning("invalid include path: '%s'" % ipath)
+			continue
+		args.append_array(["-I", ipath.replace('res://', './')])
 
-	var source_path : String = path.replace('res://', './')
-	if not FileAccess.file_exists(source_path):
-		return {'retcode':ERR_FILE_BAD_PATH, 'output': ["Missing Schema File: %s" % source_path] }
+	# -o <path>
+	args.append_array([ "-o", schema_path.get_base_dir()])
 
-	var output_path : String = source_path.get_base_dir()
-
-	var args : PackedStringArray = []
-
-	#-I PATH                Search for includes in the specified path.
-	for include in include_paths: args.append_array(["-I", include])
-
-	#--gdscript             Generate GDScript files for tables/structs
-	args.append_array([ "--gdscript",  "-o", output_path, source_path, ])
+	# the schema path
+	args.append( schema_path )
 
 	var result : Dictionary = {
-		'flatc_path':flatc_path,
+		'flatc_path':flatc_exe,
 		'args':args,
 	}
 	var output : Array = []
-	result['retcode'] = OS.execute( flatc_path, args, output, true )
+	result['retcode'] = OS.execute( flatc_exe, args, output, true, true )
 	result['output'] = output
 
 	#TODO Figure out a way to get the script in the editor to reload.
@@ -131,17 +239,22 @@ static func print_results( result : Dictionary ):
 	printerr( "flatc_generate result: ", JSON.stringify( result, '\t', false ) )
 	for o in output: print( o )
 
-#   ██████ ██████ ██     ██████    ███    ███ ██████ ███    ██ ██   ██
-#   ██       ██   ██     ██        ████  ████ ██     ████   ██ ██   ██
-#   ████     ██   ██     ████      ██ ████ ██ ████   ██ ██  ██ ██   ██
-#   ██       ██   ██     ██        ██  ██  ██ ██     ██  ██ ██ ██   ██
-#   ██     ██████ ██████ ██████    ██      ██ ██████ ██   ████  █████
+#   ██████   ██████         ███    ███ ███████ ███    ██ ██    ██ ███████
+#   ██   ██ ██              ████  ████ ██      ████   ██ ██    ██ ██
+#   ██████  ██              ██ ████ ██ █████   ██ ██  ██ ██    ██ ███████
+#   ██   ██ ██              ██  ██  ██ ██      ██  ██ ██ ██    ██      ██
+#   ██   ██  ██████ ███████ ██      ██ ███████ ██   ████  ██████  ███████
 
 #  NOTE A plugin instance can belong only to a single context menu slot.
 
 # filesystem context menu
 # EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM
 class MyFileMenu extends EditorContextMenuPlugin:
+	var _plugin : FlatBuffersPlugin
+
+	func _init( plugin : FlatBuffersPlugin ) -> void:
+		_plugin = plugin
+
 	# _popup_menu() and option callback will be called with list of paths of the
 	# currently selected files.
 	func _popup_menu(paths):
@@ -155,7 +268,7 @@ class MyFileMenu extends EditorContextMenuPlugin:
 			var abs_path : String = ProjectSettings.globalize_path( path )
 			if path.get_extension() == 'fbs':
 				var results : Dictionary = {'retcode':OK}
-				results = FlatBuffersPlugin.flatc_generate( abs_path )
+				results = _plugin.flatc_generate( abs_path )
 				if results.retcode: FlatBuffersPlugin.print_results( results )
 
 # CONTEXT_SLOT_FILESYSTEM_CREATE
