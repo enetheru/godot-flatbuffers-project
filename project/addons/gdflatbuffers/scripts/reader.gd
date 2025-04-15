@@ -1,4 +1,4 @@
-
+const Token = preload('res://addons/gdflatbuffers/scripts/token.gd')
 const REGEX = preload('res://addons/gdflatbuffers/scripts/regex.gd')
 static var Regex :
 	get():
@@ -16,71 +16,6 @@ func print_bright( _value ):
 
 ## The reader class steps through a string, pulling out tokens as it goes.
 
-# MARK: Token
-#  _____    _
-# |_   _|__| |_____ _ _
-#   | |/ _ \ / / -_) ' \
-#   |_|\___/_\_\___|_||_|
-# ------------------------
-
-## Types of token that the reader knows about
-enum TokenType {
-	NULL,
-	COMMENT,
-	KEYWORD,
-	TYPE,
-	STRING,
-	PUNCT,
-	IDENT,
-	SCALAR,
-	META,
-	EOL,
-	EOF,
-	UNKNOWN
-}
-
-## Token class helps with static typing to catch and fix bugs.
-class Token:
-	## Default Values
-	static var defs : Dictionary = {
-		&"line":0, &"col":0, &"type":TokenType.NULL, &"t":"String"
-	}
-	## properties
-	var line : int
-	var col : int
-	var type : TokenType
-	var t : String
-
-	func eof() -> bool: return type == TokenType.EOF
-	func eol() -> bool: return type == TokenType.EOL
-
-	## Constructor
-	func _init( line_or_dict = 0, _col : int = 0, _type : TokenType = TokenType.NULL, _t : String = "" ) -> void:
-		if line_or_dict is int:
-			line = line_or_dict; col = _col; type = _type; t = _t
-		elif line_or_dict is Dictionary:
-			from_dict( line_or_dict )
-		else:
-			var typename = type_string(typeof(line_or_dict))
-			assert(false, "Token._init( '%s', ... ) is not an int or dict" % typename )
-
-	## assignment from dictionary
-	func from_dict( value : Dictionary ):
-		# Validate and Assign
-		for key in defs.keys():
-			# Missing keys are not an error, assigning default
-			if not key in value: set(key, defs[key])
-			# different types is an error.
-			if typeof(defs[key]) != typeof(value[key]):
-				var typename = type_string(typeof(defs[key]))
-				assert( false, "Invalid type '%s:%s' " % [key, typename ])
-				set(key, defs[key])
-			# value[key] passed validation.
-			set(key, value[key])
-
-	func _to_string() -> String:
-		# Line numbers in the editor gutter start at 1
-		return "Token{ line:%d, col:%d, type:%s, t:'%s' }" % [line+1, col+1, TokenType.keys()[type], t.c_escape()]
 
 # MARK: Signals
 #   ___ _                _
@@ -243,35 +178,35 @@ func peek_token( skip : bool = true ) -> Token:
 	while true:
 		adv_whitespace()
 		# end of file
-		p_token = Token.new(line_n, cursor_lp, TokenType.EOF, peek_char() )
+		p_token = Token.new(line_n, cursor_lp, Token.Type.EOF, peek_char() )
 		if at_end(): break
 
-		p_token.type = TokenType.UNKNOWN
+		p_token.type = Token.Type.UNKNOWN
 
 		# char based tokens
 		if p_token.t == '/' and peek_char(1) == '/':
 			if skip: adv_line(); continue
-			p_token.type = TokenType.COMMENT
+			p_token.type = Token.Type.COMMENT
 			p_token.t = peek_line()
 		elif p_token.t == '\n':
-			p_token.type = TokenType.EOL
+			p_token.type = Token.Type.EOL
 		elif p_token.t in punc:
-			p_token.type = TokenType.PUNCT
+			p_token.type = Token.Type.PUNCT
 		elif p_token.t == '"':
 			p_token.t = peek_string()
 			if p_token.t.length() > 2:
-				p_token.type = TokenType.STRING
+				p_token.type = Token.Type.STRING
 
 
-		if p_token.type != TokenType.UNKNOWN:
+		if p_token.type != Token.Type.UNKNOWN:
 			break
 
 		# word based token
 		p_token.t = peek_word()
-		if is_keyword(p_token.t): p_token.type = TokenType.KEYWORD
-		elif is_scalar( p_token.t ): p_token.type = TokenType.SCALAR
-		elif is_type( p_token.t ): p_token.type = TokenType.TYPE
-		elif is_ident(p_token.t): p_token.type = TokenType.IDENT
+		if is_keyword(p_token.t): p_token.type = Token.Type.KEYWORD
+		elif is_scalar( p_token.t ): p_token.type = Token.Type.SCALAR
+		elif is_type( p_token.t ): p_token.type = Token.Type.TYPE
+		elif is_ident(p_token.t): p_token.type = Token.Type.IDENT
 
 		break
 
@@ -319,7 +254,7 @@ func get_string() -> String:
 func get_integer_constant() -> Token:
 	# Verify Starting position.
 	var p_token = peek_token()
-	if p_token.type != TokenType.UNKNOWN:
+	if p_token.type != Token.Type.UNKNOWN:
 		return p_token
 
 	#INTEGER_CONSTANT, # = dec_integer_constant | hex_integer_constant
@@ -333,7 +268,7 @@ func get_integer_constant() -> Token:
 	var first_char : String = "-+0123456789abcdefABCDEF"
 	var valid_chars = "xX0123456789abcdefABCDEF"
 	if peek_char() not in first_char: return p_token
-	p_token.type = TokenType.SCALAR
+	p_token.type = Token.Type.SCALAR
 	# seek to the end and return our valid integer constant
 	var start : int = cursor_p
 	while not at_end():

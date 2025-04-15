@@ -1,7 +1,10 @@
 @tool
 extends EditorSyntaxHighlighter
 
-static var _plugin
+static var _plugin : FlatBuffersPlugin
+
+const Reader = preload('res://addons/gdflatbuffers/scripts/reader.gd')
+const Token = preload('res://addons/gdflatbuffers/scripts/token.gd')
 
 const REGEX = preload('res://addons/gdflatbuffers/scripts/regex.gd')
 static var Regex :
@@ -9,13 +12,26 @@ static var Regex :
 		if Regex == null: Regex = REGEX.new()
 		return Regex
 
-const Reader = preload('res://addons/gdflatbuffers/scripts/reader.gd')
+# It's easier to duplicate here than it is to constantly call back to the plugin.
+enum LogLevel {
+	SILENT = 0,
+	CRITICAL = 1,
+	ERROR = 2,
+	WARNING = 3,
+	NOTICE = 4,
+	DEBUG = 5,
+	TRACE = 6,
+}
 
-var editor_settings : EditorSettings
-var verbose : int = 0
+func print_log(level : LogLevel, message : String ) -> bool:
+	if _plugin.verbosity < level: return false
+	var colour = _plugin.colours[level].to_html()
+	var padding = "".lpad(stack.size()-1, '\t') if level == LogLevel.TRACE else ""
+	print_rich( padding + "[color=%s]%s[/color]" % [colour, message] )
+	return true
 
-func print_bright( _value ):
-	print_rich( "[b][color=yellow]%s[/color][/b]" % [_value] )
+func log_level( level : LogLevel ) -> bool:
+	return _plugin.verbosity >= level
 
 #  ██████  ██████   █████  ███    ███ ███    ███  █████  ██████
 # ██       ██   ██ ██   ██ ████  ████ ████  ████ ██   ██ ██   ██
@@ -68,6 +84,7 @@ enum FrameType {
 	#BOOLEAN_CONSTANT, # = true | false
 }
 
+
 var keywords : Array[StringName] = [
 	&'include', &'namespace', &'table', &'struct', &'enum',
 	&'union', &'root_type', &'file_extension', &'file_identifier', &'attribute',
@@ -81,39 +98,20 @@ var float_types : Array[StringName] = [&"float", &"double", &"float32", &"float6
 
 var boolean_types : Array[StringName] = [&"bool"]
 
-## NEEDS TO BE SET IN _INIT()
-var scalar_types: Array[StringName] # integer_types + float_types + boolean_types
-
-var enum_types : Dictionary = {}
-
-var union_types : Array[StringName] = []
-
-var struct_types: Array[StringName] = []
-	#"Vector2",
-	#"Vector2i",
-	#"Rect2",
-	#"Rect2i",
-	#"Vector3",
-	#"Vector3i",
-	#"Transform2D",
-	#"Vector4",
-	#"Vector4i",
-	#"Plane",
-	#"Quaternion",
-	#"AABB",
-	#"Basis",
-	#"Transform3D",
-	#"Projection",
-	#"Color", ]
-
-var table_types: Array[StringName] = []
-
 var array_types: Array[StringName] = [
 	&"string",
 	&"String",
 	&"StringName",
 	&"NodePath", ]
 
+## NEEDS TO BE SET IN _INIT()
+var scalar_types: Array[StringName] # integer_types + float_types + boolean_types
+
+## Defined by the flatbuffer schemas as they are parsed.
+var enum_types : Dictionary = {}
+var union_types : Array[StringName] = []
+var struct_types: Array[StringName] = []
+var table_types: Array[StringName] = []
 
 # ██   ██ ██  ██████  ██   ██ ██      ██  ██████  ██   ██ ████████ ███████ ██████
 # ██   ██ ██ ██       ██   ██ ██      ██ ██       ██   ██    ██    ██      ██   ██
@@ -121,20 +119,9 @@ var array_types: Array[StringName] = [
 # ██   ██ ██ ██    ██ ██   ██ ██      ██ ██    ██ ██   ██    ██    ██      ██   ██
 # ██   ██ ██  ██████  ██   ██ ███████ ██  ██████  ██   ██    ██    ███████ ██   ██
 
-var colours : Dictionary[Reader.TokenType, Color] = {
-	Reader.TokenType.UNKNOWN : Color.GREEN,
-	Reader.TokenType.COMMENT : Color.DIM_GRAY,
-	Reader.TokenType.KEYWORD : Color.SALMON,
-	Reader.TokenType.TYPE : Color.GREEN,
-	Reader.TokenType.STRING : Color.GREEN,
-	Reader.TokenType.PUNCT : Color.GREEN,
-	Reader.TokenType.IDENT : Color.GREEN,
-	Reader.TokenType.SCALAR : Color.GREEN,
-}
-var error_color : Color = Color.FIREBRICK
-
 ## The current resource file
 ## FIXME relies on patch and not used otherwise.
+## There is no way to retrieve the current source file_name.
 var resource : Resource
 
 ## The location of the file, only works for absolute names that are included
@@ -142,7 +129,7 @@ var resource : Resource
 var file_location : String
 
 ## The main Reader object for this file.
-var reader : Reader				# the main reader
+var reader : Reader
 
 ## The Reader object when performing a quick scan through the file for identifiers
 var qreader : Reader
@@ -188,8 +175,6 @@ func _init( plugin : FlatBuffersPlugin = null ):
 	if not Regex: Regex = REGEX.new()
 	new_index_chunk.resize(10)
 	new_index_chunk.fill(false)
-	editor_settings = EditorInterface.get_editor_settings()
-	error_color = Color.RED
 
 	reader = Reader.new(self)
 	qreader = Reader.new(self)
@@ -198,28 +183,16 @@ func _init( plugin : FlatBuffersPlugin = null ):
 	reader.new_token.connect(func( token : Reader.Token ):
 		loop_detection = 0
 		highlight( token )
-		if verbose > 1:
-			var colour : Color = colours.get(token.type, Color.YELLOW )
-			if verbose > 1: print_rich( lpad() + "\t[color=%s]%s[/color]" % [colour.to_html(), token] )
+		if log_level(LogLevel.TRACE):
+			var colour = _plugin.colours[token.type].to_html()
+			print_rich( lpad() + "\t[color=%s]%s[/color]" % [colour, token] )
 	)
 	reader.newline.connect( func(l,p):
 		if error_flag: return
 		save_stack(l, 0)
 	)
-	#FIXME reader.endfile.connect( save_stack )
-	if editor_settings:
-		colours[Reader.TokenType.UNKNOWN] = editor_settings.get_setting("text_editor/theme/highlighting/text_color")
-		colours[Reader.TokenType.COMMENT] = editor_settings.get_setting("text_editor/theme/highlighting/comment_color")
-		colours[Reader.TokenType.KEYWORD] = editor_settings.get_setting("text_editor/theme/highlighting/keyword_color")
-		colours[Reader.TokenType.TYPE] = editor_settings.get_setting("text_editor/theme/highlighting/base_type_color")
-		colours[Reader.TokenType.STRING] = editor_settings.get_setting("text_editor/theme/highlighting/string_color")
-		colours[Reader.TokenType.PUNCT] = editor_settings.get_setting("text_editor/theme/highlighting/text_color")
-		colours[Reader.TokenType.IDENT] = editor_settings.get_setting("text_editor/theme/highlighting/symbol_color")
-		colours[Reader.TokenType.SCALAR] = editor_settings.get_setting("text_editor/theme/highlighting/number_color")
-		colours[Reader.TokenType.META] = editor_settings.get_setting("text_editor/theme/highlighting/text_color")
-		verbose = _plugin.verbosity
 
-	if verbose > 1: print_rich("[b]FlatBuffersHighlighter._init() - Completed[/b]")
+	print_log(LogLevel.TRACE, "[b]FlatBuffersHighlighter._init() - Completed[/b]")
 
 # Override methods for EditorSyntaxHighlighter
 func _get_name ( ) -> String:
@@ -236,7 +209,7 @@ func _clear_highlighting_cache ( ):
 	# file_location = resource.resource_path.get_base_dir() + "/"
 	# FIXME: This ^^ relies on a patch
 
-	if verbose > 2: print_rich("[b]_clear_highlighting_cache( )[/b]")
+	print_log(LogLevel.TRACE, "[b]_clear_highlighting_cache( )[/b]")
 	included_files.clear()
 	user_enum_vals.clear()
 	user_types.clear()
@@ -245,40 +218,36 @@ func _clear_highlighting_cache ( ):
 	stack_list.clear()
 	stack_index.resize( get_text_edit().text.length() + 10)
 	stack_index.fill(false)
-	if verbose > 2: print( "highlight dict: ", JSON.stringify(dict, '\t') )
+	print_log( LogLevel.TRACE, "highlight dict: %s" % JSON.stringify(dict, '\t') )
 
 # This function runs on any change, with the line number that is edited.
 # we can use it to update the highlighting.
 func _get_line_syntax_highlighting ( line_num : int ) -> Dictionary:
-	# Very early out for an empty line
-	var line = get_text_edit().get_line( line_num )
-	dict.erase(line_num)
+	# Reset Variables
 	line_dict = {}
+	dict[line_num] = line_dict
 	stack_index[line_num] = false
-	if line.is_empty():
-		return {}
 
-	if verbose > 1:
-		print_rich( "\n[b]Line %s[/b]" % [line_num+1] )
-		print( "stack_index[%s]: %s" % [line_num+1, stack_index[line_num]] )
+	# skip empty lines
+	var line = get_text_edit().get_line( line_num )
+	if line.is_empty(): return {}
+
+	print_log( LogLevel.TRACE, "\n[b]Line %s[/b]" % [line_num+1] )
+	print_log( LogLevel.TRACE, "stack_index[%s]: %s" % [line_num+1, stack_index[line_num]] )
 
 	# reset the reader
 	reader.reset( line, line_num )
 
-	# skip whitespace
-	reader.adv_whitespace()
-
 	# easy tokens
 	var token := reader.peek_token(false)
-	print(token)
+	print_log( LogLevel.TRACE, str(token) )
 	match token.type:
-		Reader.TokenType.COMMENT:
+		Token.Type.COMMENT:
 			highlight(token)
-			dict[line_num] = line_dict
 			return line_dict
-		Reader.TokenType.EOL:
+		Token.Type.EOL:
 			return {}
-		Reader.TokenType.EOF:
+		Token.Type.EOF:
 			return {}
 
 	# get the previous stack save, skip lines with empty stacks.
@@ -307,49 +276,38 @@ func _get_line_syntax_highlighting ( line_num : int ) -> Dictionary:
 	if prev_stack: stack = prev_stack.duplicate(true)
 	else: stack = Array([], TYPE_OBJECT, &"RefCounted", StackFrame)
 
-	if verbose > 1:
-		print( "Using stack from line %s" % [stack_line+1] )
-		print( stack_to_string() )
+	if print_log(LogLevel.TRACE, "Using stack from line %s" % [stack_line+1] ):
+		print_log(LogLevel.TRACE, stack_to_string() )
 
 	parse()
 
-	dict[line_num] = line_dict
 	return line_dict
 
 
 func _update_cache ( ):
 	# Get settings
-	if editor_settings:
-		verbose = _plugin.verbosity
-	else:
-		verbose = 10
-	if verbose > 2: print_rich("[b]_update_cache( )[/b]")
+	print_log(LogLevel.TRACE, "[b]_update_cache( )[/b]")
 	quick_scan_text( get_text_edit().text )
-	error_color = Color.RED
 
-func highlight( token : Reader.Token, override : Reader.TokenType = 0 ):
-	if token.type not in colours: return
-	line_dict[token.col] = { 'color':colours[override if override else token.type] }
+func highlight( token : Reader.Token, override : Color = Color.ORANGE ):
+	line_dict[token.col] = { 'color':_plugin.colours.get( token.type, override ) }
 
 func syntax_warning( token : Reader.Token, reason = "" ):
-	line_dict[token.col] = { 'color':colours[Reader.TokenType.COMMENT] }
-	if verbose > 0:
-		var padding = "".lpad(stack.size(), '\t') if verbose > 1 else ""
-		var colour = Color.ORANGE.to_html()
-		var frame_type = FrameType.keys()[stack.back().type] if stack.size() else '#'
-		print_rich( "\n[color=%s]%s:Warning in: %s - %s[/color]" % [colour, frame_type, token, reason] )
-		if verbose > 1: print( stack_to_string() )
+	var colour : Color = _plugin.colours[_plugin.LogLevel.WARNING]
+	line_dict[token.col] = { 'color':colour }
+	if log_level(LogLevel.WARNING):
+		var frame_type = FrameType.find_key(stack.back().type) if stack.size() else '#'
+		print_log( LogLevel.WARNING, "%s:Warning in: %s - %s" % [frame_type, token, reason] )
+		print_log( LogLevel.DEBUG, stack_to_string() )
 
 func syntax_error( token : Reader.Token, reason = "" ):
 	error_flag = true
-	if line_dict.has(token.col): line_dict.erase(token.col)
-	line_dict[token.col] = { 'color':error_color }
-	if verbose > 0:
-		var padding = "".lpad(stack.size(), '\t') if verbose > 1 else ""
-		var colour = error_color.to_html()
-		var frame_type = FrameType.keys()[stack.back().type] if stack.size() else '#'
-		print_rich( "\n[color=%s]%s:Error in: %s - %s[/color]" % [colour, frame_type, token, reason] )
-		if verbose > 1: print( stack_to_string() + "\n" )
+	var colour : Color = _plugin.colours[_plugin.LogLevel.ERROR]
+	line_dict[token.col] = { 'color':colour }
+	if log_level(LogLevel.ERROR):
+		var frame_type = FrameType.find_key(stack.back().type) if stack.size() else '#'
+		print_log( LogLevel.ERROR, "%s:Error in: %s - %s" % [frame_type, token, reason] )
+		print_log( LogLevel.DEBUG, stack_to_string() )
 
 # ██████   █████  ██████  ███████ ███████ ██████
 # ██   ██ ██   ██ ██   ██ ██      ██      ██   ██
@@ -431,18 +389,18 @@ func lpad( extra : int = 0 ) -> String:
 func push_stack( type : FrameType, bindings : Dictionary = {} ):
 	var new_frame = StackFrame.new( type )
 	new_frame.bindings = bindings
-	print( lpad(1), "Push: ", new_frame )
+	print_log(LogLevel.TRACE, "Push: %s" % new_frame)
 	stack.append( new_frame )
 
 
 ## start_frame() runs the appropriate stack frame function
 func start_frame( frame : StackFrame, args ):
-	if verbose > 1:
+	if log_level( LogLevel.TRACE ):
 		var msg : Array = [
-			"⮱Start:" if frame.data.is_empty() else "⮱Resume:",
+			"" if frame.data.is_empty() else "⮱Resume:",
 			frame,
 			JSON.stringify( args ) ]
-		print( lpad(), " ".join(msg) )
+		print_log( LogLevel.TRACE, " ".join(msg) )
 
 	parse_funcs[ frame.type ].call( args )
 
@@ -451,16 +409,14 @@ func start_frame( frame : StackFrame, args ):
 ## if retval is not null, the top stack frame will have 'return' = retval added
 func end_frame( retval = null ) -> bool:
 	var frame = stack.back()
-	if verbose > 1:
-		var type_name : String = FrameType.find_key(frame.type)
-		print( lpad() + "⮶End %s.end_frame(%s)" % [type_name, retval] )
+	print_log( LogLevel.TRACE, "⮶End %s.end_frame(%s)" % [FrameType.find_key(frame.type), retval] )
 	stack.pop_back()
 	if stack.size() && retval: stack.back().data['return'] = retval
 	return true
 
 func save_stack( line_num : int, cursor_pos : int = 0 ):
 	if stack.size() == prev_stack.size(): return # FIXME
-	if verbose > 2: print( lpad(), "Stack saved to line %s | " % [line_num+1], stack_to_string( stack ) )
+	print_log( LogLevel.TRACE, "Stack saved to line %s | %s" % [line_num+1, stack_to_string( stack )] )
 
 	#var this_dict = dict.get( line_num, {} )
 	#this_dict['stack'] = copy_stack( stack )
@@ -483,18 +439,18 @@ func check_token_t( token : Reader.Token, t : StringName, msg : String = "" ) ->
 	if token.t == t: return true
 	var error_msg = "'%s' != '%s'" % [ token.t, t ]
 	syntax_error( token, error_msg )
-	if not msg.is_empty(): print( lpad() + msg )
+	if not msg.is_empty(): print_log( LogLevel.ERROR, msg )
 	return false
 
 ## returns true if token.type == type
-func check_token_type( token : Reader.Token, type : Reader.TokenType, msg : String = "" ) -> bool:
+func check_token_type( token : Reader.Token, type : Token.Type, msg : String = "" ) -> bool:
 	if token.type == type: return true
 	var error_msg = "'%s' != '%s'" % [
-		Reader.TokenType.find_key(token.type),
-		Reader.TokenType.find_key(type)
+		Token.Type.find_key(token.type),
+		Token.Type.find_key(type)
 	]
 	syntax_error( token, error_msg )
-	if not msg.is_empty(): print( lpad() + msg )
+	if not msg.is_empty(): print_log( LogLevel.ERROR, msg )
 	return false
 
 var loop_detection : int = 0
@@ -532,8 +488,8 @@ func parse_schema( p_token : Reader.Token ):
 	if p_token.eof(): return
 
 
-	if p_token.type != Reader.TokenType.KEYWORD:
-		syntax_error( p_token, "Wanted Reader.TokenType.KEYWORD" )
+	if p_token.type != Token.Type.KEYWORD:
+		syntax_error( p_token, "Wanted Token.Type.KEYWORD" )
 		reader.adv_line()
 		return
 
@@ -562,9 +518,10 @@ func parse_include( p_token : Reader.Token ):
 	check_token_t(token, &'include')
 
 	token = reader.get_token()
-	if check_token_type(token, Reader.TokenType.STRING ):
+	if check_token_type(token, Token.Type.STRING ):
 		var filename: String = token.t.substr(1, token.t.length() -2)
-		if not FileAccess.file_exists( filename ):
+
+		if not using_file( filename ):
 			syntax_error(token, "Unable to locate file: %s" % filename )
 
 	token = reader.get_token()
@@ -587,7 +544,7 @@ func parse_namespace_decl( p_token : Reader.Token ):
 
 	while true:
 		token = reader.get_token()
-		check_token_type(token, Reader.TokenType.IDENT)
+		check_token_type(token, Token.Type.IDENT)
 
 		token = reader.peek_token()
 		if token.t == &'.':
@@ -615,8 +572,8 @@ func parse_attribute_decl( p_token : Reader.Token ):
 
 	token = reader.get_token()
 	match token.type:
-		Reader.TokenType.IDENT: pass
-		Reader.TokenType.STRING:pass
+		Token.Type.IDENT: pass
+		Token.Type.STRING:pass
 		_: syntax_error(token, "Wanted 'ident | string_constant'")
 
 	token = reader.get_token()
@@ -645,7 +602,7 @@ func parse_type_decl( p_token : Reader.Token ):
 			frame.data[&'decl_type'] = token.t
 
 		token = reader.get_token()
-		check_token_type(token, Reader.TokenType.IDENT )
+		check_token_type(token, Token.Type.IDENT )
 		# add token to appropriate array
 		match decl_type:
 			&"struct": struct_types.append(token.t)
@@ -707,7 +664,7 @@ func parse_enum_decl( p_token : Reader.Token ):
 
 		# ident
 		token = reader.get_token()
-		if check_token_type(token, Reader.TokenType.IDENT):
+		if check_token_type(token, Token.Type.IDENT):
 			match decl_type:
 				&"union" : union_types.append(token.t)
 				&"enum" :
@@ -742,7 +699,7 @@ func parse_enum_decl( p_token : Reader.Token ):
 			reader.get_token() # Consume the }
 			return end_frame()
 
-		if check_token_type( p_token, Reader.TokenType.IDENT ):
+		if check_token_type( p_token, Token.Type.IDENT ):
 			frame.data[&'next'] = &','
 			match decl_type:
 				&'union': push_stack( FrameType.ENUMVAL_DECL,
@@ -779,7 +736,7 @@ func parse_root_decl( p_token : Reader.Token ):
 	check_token_t(token, &'root_type')
 
 	token = reader.get_token()
-	check_token_type(token, Reader.TokenType.IDENT )
+	check_token_type(token, Token.Type.IDENT )
 
 	token = reader.get_token()
 	check_token_t(token, &';')
@@ -804,7 +761,7 @@ func parse_field_decl( p_token : Reader.Token ):
 
 	if frame.data.get(&'next') == null:
 		var token : Reader.Token = reader.get_token()
-		if check_token_type(token, Reader.TokenType.IDENT):
+		if check_token_type(token, Token.Type.IDENT):
 			field_name = token.t
 			frame.data[&'field_name'] = token.t
 
@@ -834,7 +791,7 @@ func parse_field_decl( p_token : Reader.Token ):
 				if not token.t in enum_vals:
 					syntax_error(token, "value not found in enum")
 				else:
-					highlight(token, Reader.TokenType.SCALAR)
+					highlight(token, _plugin.colours[Token.Type.SCALAR])
 			elif not reader.is_scalar(token.t):
 				syntax_error(token, "Only Scalar values can have defaults")
 
@@ -920,7 +877,7 @@ func parse_type( p_token : Reader.Token ):
 		var token : Reader.Token = reader.get_token()
 		if not token.t in integer_types:
 			syntax_error( token, "Enum types must be an integral")
-		else: highlight(token, Reader.TokenType.TYPE)
+		else: highlight(token, _plugin.colours[Token.Type.TYPE])
 		return end_frame()
 
 
@@ -947,13 +904,13 @@ func parse_type( p_token : Reader.Token ):
 	if decl_type == &'struct':
 		if not token.t in scalar_types + struct_types + enum_types.keys():
 			syntax_error(token, "struct array/vector fields may only contain scalars or other structs")
-		else: highlight(token, Reader.TokenType.TYPE)
+		else: highlight(token, _plugin.colours[Token.Type.TYPE])
 	elif decl_type == &'table':
 		# Where table can contain vectors of any type
 		if not token.t in (scalar_types + struct_types + table_types
 								+ array_types + enum_types.keys() + union_types):
 			syntax_error(token, "invalid type name")
-		else: highlight(token, Reader.TokenType.TYPE)
+		else: highlight(token, _plugin.colours[Token.Type.TYPE])
 
 	# If we arent using brackets we can just end here
 	if not has_bracket: return end_frame( return_val )
@@ -988,12 +945,12 @@ func parse_enumval_decl( p_token : Reader.Token ):
 
 	var token : Reader.Token = reader.get_token()
 
-	if check_token_type(token, Reader.TokenType.IDENT ):
+	if check_token_type(token, Token.Type.IDENT ):
 		if enum_types.has(decl_name):
 			var enum_vals : Array[StringName] = enum_types.get(decl_name)
 			enum_vals.append( token.t )
 		elif decl_type == &'union':
-			highlight(token, Reader.TokenType.SCALAR)
+			highlight(token, _plugin.colours[Token.Type.SCALAR])
 		else: syntax_error( token )
 
 	token = reader.peek_token()
@@ -1025,13 +982,13 @@ func parse_metadata( p_token : Reader.Token ):
 		var token : Reader.Token = reader.get_token()
 
 		if token.t == &')': return end_frame()
-		check_token_type(token, Reader.TokenType.IDENT )
+		check_token_type(token, Token.Type.IDENT )
 
 		token = reader.get_token()
 		if token.t == &':':
 			token = reader.get_token()
-			if not (token.type == Reader.TokenType.SCALAR
-				or token.type == Reader.TokenType.STRING):
+			if not (token.type == Token.Type.SCALAR
+				or token.type == Token.Type.STRING):
 					syntax_error(token, "is not scalar or string constant")
 		if token.t == &',': return
 		if token.t == &')': return end_frame()
@@ -1050,15 +1007,15 @@ func parse_scalar( p_token : Reader.Token ):
 	var this_frame : StackFrame = stack.back()
 
 	var token : Reader.Token = reader.get_token()
-	if token.type == Reader.TokenType.SCALAR:
+	if token.type == Token.Type.SCALAR:
 		reader.get_token()
 		return end_frame()
 	if token.t in user_enum_vals:
-		token.type = Reader.TokenType.SCALAR
+		token.type = Token.Type.SCALAR
 		highlight( token )
 		reader.get_token()
 		return end_frame()
-	syntax_error( token, "Wanted Reader.TokenType.SCALAR" )
+	syntax_error( token, "Wanted Token.Type.SCALAR" )
 	reader.adv_line()
 	end_frame()
 	return false
@@ -1113,7 +1070,7 @@ func parse_commasep( p_token : Reader.Token ):
 		syntax_error(p_token, "commasep needs an argument")
 		return end_frame()
 
-	if not (p_token.type == Reader.TokenType.IDENT || p_token.t == &','):
+	if not (p_token.type == Token.Type.IDENT || p_token.t == &','):
 		return end_frame()
 
 	if frame.data.get(&'next') == null:
@@ -1164,7 +1121,7 @@ func parse_string_constant( p_token : Reader.Token ):
 	var frame : StackFrame = stack.back()
 	var token : Reader.Token = reader.get_token()
 
-	check_token_type(token, Reader.TokenType.STRING)
+	check_token_type(token, Token.Type.STRING)
 
 	end_frame()
 
@@ -1179,7 +1136,7 @@ func parse_ident( p_token : Reader.Token ):
 	#FIXME use regex?
 
 	var token : Reader.Token = reader.get_token()
-	check_token_type(token, Reader.TokenType.IDENT )
+	check_token_type(token, Token.Type.IDENT )
 	end_frame()
 
 #   ██ ███    ██ ████████
@@ -1208,9 +1165,25 @@ func parse_integer_constant( p_token : Reader.Token ):
 
 var included_files : Array = []
 
+func using_file( file_path: String ) -> String:
+	if not file_path.is_valid_filename(): return ""
+
+	if FileAccess.file_exists( file_path ): return file_path
+	# we can only transform relative paths.
+	if file_path.is_absolute_path(): return ""
+
+	for ipath : String in _plugin.include_paths:
+		var try_path = ipath.path_join(file_path)
+		if FileAccess.file_exists( try_path ):
+			print_log(LogLevel.NOTICE, "Including: '%s'" % try_path)
+			return try_path
+
+	return ""
+
 func quick_scan_file( filepath : String ) -> bool:
+	print_log( LogLevel.TRACE, "[b]quick_scan_file: '%s'[/b]" % filepath)
 	if filepath.begins_with("res://"):
-		if verbose > 0: printerr("paths starting with res:// or user:// are not supported: ", filepath)
+		print_log( LogLevel.ERROR, "paths starting with res:// or user:// are not supported: %s" % filepath)
 		return false
 
 	# a shortcut for godot things.
@@ -1218,24 +1191,23 @@ func quick_scan_file( filepath : String ) -> bool:
 	#elif filepath.is_relative_path():
 
 	if not FileAccess.file_exists( filepath ):
-		if verbose > 0:
+		if print_log( LogLevel.ERROR,"Unable to locate file for inclusion: %s" % filepath):
 			if filepath.is_relative_path():
-				push_warning("Relative Paths are only relative to project root, not their own location.")
-			printerr("Unable to locate file for inclusion: ", filepath)
+				print_log( LogLevel.WARNING, "Relative Paths are only relative to project root, not their own location.")
 		return false
 
 	if filepath in included_files: return true # Dont create a loop
 	included_files.append( filepath )
 
-	if verbose > 1: print( "Including file: ", filepath )
-	if verbose > 1: print( "Included files: ", included_files )
+	print_log( LogLevel.TRACE, "Including file: %s" % filepath )
+	print_log( LogLevel.TRACE, "Included files: %s" % included_files )
 	var file = FileAccess.open( filepath, FileAccess.READ )
 	var content = file.get_as_text()
 	quick_scan_text( content )
 	return true
 
 func quick_scan_text( text : String ):
-	if verbose > 1: print_rich( "[b]quick_scan_text[/b]")
+	print_log( LogLevel.TRACE, "[b]quick_scan_text[/b]")
 	# I need a function which scans the source fast to pick up names before the main scan happens.
 	qreader.reset( text )
 
@@ -1243,14 +1215,14 @@ func quick_scan_text( text : String ):
 		var token : Reader.Token = qreader.get_token()
 
 		# We are only interested in keywords.
-		if token.type != Reader.TokenType.KEYWORD:
+		if token.type != Token.Type.KEYWORD:
 			qreader.adv_line()
 			continue
 
 		# we want to include other files.
 		if token.t == 'include':
 			token = qreader.get_token()
-			if token.type != Reader.TokenType.STRING:
+			if token.type != Token.Type.STRING:
 				qreader.adv_line()
 				continue
 			var file_path : String = token.t
@@ -1260,7 +1232,7 @@ func quick_scan_text( text : String ):
 
 		if token.t in ['struct', 'table', 'union']:
 			var ident = qreader.get_token()
-			if ident.type != Reader.TokenType.IDENT:
+			if ident.type != Token.Type.IDENT:
 				qreader.adv_line()
 				continue
 			match token.t:
@@ -1272,7 +1244,7 @@ func quick_scan_text( text : String ):
 
 		if token.t == 'enum':
 			var ident = qreader.get_token()
-			if ident.type != Reader.TokenType.IDENT:
+			if ident.type != Token.Type.IDENT:
 				qreader.adv_line()
 				continue
 			if not enum_types.has(ident.t):

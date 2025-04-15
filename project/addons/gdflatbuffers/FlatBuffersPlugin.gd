@@ -6,6 +6,7 @@ const ICON_TINY_BW = preload('res://addons/gdflatbuffers/fpl_logo_tiny_bw.png')
 var script_editor := EditorInterface.get_script_editor()
 
 const fbsHighlighter = preload('res://addons/gdflatbuffers/FlatBuffersHighlighter.gd')
+const Token = preload('res://addons/gdflatbuffers/scripts/token.gd')
 
 var highlighter : EditorSyntaxHighlighter
 var context_menus : Dictionary[EditorContextMenuPlugin.ContextMenuSlot,EditorContextMenuPlugin]
@@ -19,32 +20,52 @@ var context_menus : Dictionary[EditorContextMenuPlugin.ContextMenuSlot,EditorCon
 # Editor Settings Things
 var editor_settings_path : String = "plugin/FlatBuffers/"
 var editor_settings_list = [
+	"verbosity",
+	# Compiler
 	"compiler/flatc_exe",
 	"compiler/include_paths",
-	"syntax_highlighting/verbosity",
-	"syntax_highlighting/unknown_color",
-	"syntax_highlighting/comment_color",
-	"syntax_highlighting/keyword_color",
-	"syntax_highlighting/type_color",
-	"syntax_highlighting/string_color",
-	"syntax_highlighting/punct_color",
-	"syntax_highlighting/ident_color",
-	"syntax_highlighting/scalar_color",
-	"syntax_highlighting/meta_color",
+	# Colours
+	"syntac_highlighting/unknown_color",
+	"syntac_highlighting/comment_color",
+	"syntac_highlighting/keyword_color",
+	"syntac_highlighting/type_color",
+	"syntac_highlighting/string_color",
+	"syntac_highlighting/punct_color",
+	"syntac_highlighting/ident_color",
+	"syntac_highlighting/scalar_color",
+	"syntac_highlighting/meta_color",
+	"syntac_highlighting/critical_color",
+	"syntac_highlighting/error_color",
+	"syntac_highlighting/warning_color",
+	"syntac_highlighting/debug_color",
+	"syntac_highlighting/notice_color",
+	"syntac_highlighting/trace_color",
 ]
 # Settings
 var print_syntax_errors : bool = true
 
 @export_global_file var flatc_exe : String = "addons/gdflatbuffers/bin/flatc.exe"
 
-@export_enum("SILENT:0", "CRITICAL:1", "ERROR:2", "WARNING:3", "INFO:4", "DEBUG:5", "TRACE:6")
-var verbosity : int = 0
+enum LogLevel {
+	SILENT = 0,
+	CRITICAL = 1,
+	ERROR = 2,
+	WARNING = 3,
+	NOTICE = 4,
+	DEBUG = 5,
+	TRACE = 6,
+}
+
+#@export_enum("SILENT:0", "CRITICAL:1", "ERROR:2", "WARNING:3", "NOTICE:4", "DEBUG:5", "TRACE:6")
+@export
+var verbosity : LogLevel = 0
 
 ## Does this have a description?
 @export_global_dir
 var include_paths: Array[String]
 
-@export_color_no_alpha
+# Colours
+# Tokens
 var unknown_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
 var comment_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_color")
 var keyword_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/keyword_color")
@@ -54,6 +75,18 @@ var punct_color : Color = EditorInterface.get_editor_settings().get_setting("tex
 var ident_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/symbol_color")
 var scalar_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/number_color")
 var meta_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
+# log levels
+var critical_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_markers/critical_color")
+var error_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_markers/critical_color")
+var warning_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_markers/warning_color")
+var notice_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
+var debug_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_color")
+var trace_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_color")
+
+
+# Dictionary of colours
+var colours : Dictionary[int, Color]
+
 
 #   ███████ ██    ██ ███    ██  ██████ ███████
 #   ██      ██    ██ ████   ██ ██      ██
@@ -83,11 +116,12 @@ func _get_plugin_icon() -> Texture2D:
 func _init() -> void:
 	name = "FlatBuffersPlugin"
 	init_settings()
+	colours_changed()
 	context_menus = {
 		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM: MyFileMenu.new(self),
-		#EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM_CREATE:MyFileCreateMenu.new(),
-		#EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_SCRIPT_EDITOR:MyScriptTabMenu.new(),
-		#EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_SCRIPT_EDITOR_CODE:MyCodeEditMenu.new(),
+		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM_CREATE:MyFileCreateMenu.new(),
+		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_SCRIPT_EDITOR:MyScriptTabMenu.new(),
+		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_SCRIPT_EDITOR_CODE:MyCodeEditMenu.new(),
 	}
 
 func get_property_info( property_name : StringName ) -> Dictionary:
@@ -104,6 +138,7 @@ func init_settings():
 
 	var prop_list := get_property_list()
 
+	# Update editor Properties
 	for item : String in editor_settings_list:
 		var prop_info = get_property_info( item.get_file() )
 		if not prop_info: continue
@@ -141,6 +176,31 @@ func settings_changed( source : String ):
 		var setting_name : StringName = setting_path + prop_name
 		if not settings.has_setting(setting_name): continue
 		set( prop_name.get_file(), settings.get_setting(setting_name) )
+
+	# Update colours after updating settings.
+	colours_changed()
+
+func colours_changed():
+	colours = {
+		LogLevel.CRITICAL : critical_color,
+		LogLevel.ERROR : error_color,
+		LogLevel.WARNING : warning_color,
+		LogLevel.NOTICE : notice_color,
+		LogLevel.DEBUG : debug_color,
+		LogLevel.TRACE : trace_color,
+		# Token.Type starts at 100
+		Token.Type.NULL : unknown_color,
+		Token.Type.COMMENT : comment_color,
+		Token.Type.KEYWORD : keyword_color,
+		Token.Type.TYPE : type_color,
+		Token.Type.STRING : string_color,
+		Token.Type.PUNCT : punct_color,
+		Token.Type.IDENT : ident_color,
+		Token.Type.SCALAR : scalar_color,
+		Token.Type.META : meta_color,
+		Token.Type.UNKNOWN : unknown_color,
+	}
+
 
 #   ███████ ███    ██  █████  ██████  ██      ███████
 #   ██      ████   ██ ██   ██ ██   ██ ██      ██
