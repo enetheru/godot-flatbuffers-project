@@ -199,6 +199,8 @@ func colours_changed():
 		Token.Type.SCALAR : scalar_color,
 		Token.Type.META : meta_color,
 		Token.Type.UNKNOWN : unknown_color,
+		Token.Type.EOL : unknown_color,
+		Token.Type.EOF : unknown_color,
 	}
 
 
