@@ -1,11 +1,11 @@
 @tool
 class_name FlatBuffersPlugin extends EditorPlugin
 
-const ICON_TINY_BW = preload('res://addons/gdflatbuffers/fpl_logo_tiny_bw.png')
+# Supporting Assets
+const FB_LOGO_BW_TINY = preload('res://addons/gdflatbuffers/fpl_logo_tiny_bw.png')
 
-var script_editor := EditorInterface.get_script_editor()
-
-const fbsHighlighter = preload('res://addons/gdflatbuffers/FlatBuffersHighlighter.gd')
+# Supporting Scripts
+const FlatbufferSchemaHighlighter = preload('res://addons/gdflatbuffers/FlatBuffersHighlighter.gd')
 const Token = preload('res://addons/gdflatbuffers/scripts/token.gd')
 
 var highlighter : EditorSyntaxHighlighter
@@ -25,21 +25,25 @@ var editor_settings_list = [
 	"compiler/flatc_exe",
 	"compiler/include_paths",
 	# Colours
-	"syntac_highlighting/unknown_color",
-	"syntac_highlighting/comment_color",
-	"syntac_highlighting/keyword_color",
-	"syntac_highlighting/type_color",
-	"syntac_highlighting/string_color",
-	"syntac_highlighting/punct_color",
-	"syntac_highlighting/ident_color",
-	"syntac_highlighting/scalar_color",
-	"syntac_highlighting/meta_color",
-	"syntac_highlighting/critical_color",
-	"syntac_highlighting/error_color",
-	"syntac_highlighting/warning_color",
-	"syntac_highlighting/debug_color",
-	"syntac_highlighting/notice_color",
-	"syntac_highlighting/trace_color",
+	"syntax_colors/unknown_color",
+	"syntax_colors/comment_color",
+	"syntax_colors/keyword_color",
+	"syntax_colors/type_color",
+	"syntax_colors/string_color",
+	"syntax_colors/punct_color",
+	"syntax_colors/ident_color",
+	"syntax_colors/scalar_color",
+	"syntax_colors/meta_color",
+	# Notice Colours
+	"notice_colors/critical_color",
+	"notice_colors/error_color",
+	"notice_colors/warning_color",
+	"notice_colors/debug_color",
+	"notice_colors/notice_color",
+	"notice_colors/trace_color",
+	# Highlights
+	"highlighting/highlight_error",
+	"highlighting/highlight_warning",
 ]
 # Settings
 var print_syntax_errors : bool = true
@@ -60,6 +64,16 @@ enum LogLevel {
 @export
 var verbosity : LogLevel = 0
 
+func print_log(level : LogLevel, message : String ) -> bool:
+	if verbosity < level: return false
+	var colour = colours[level].to_html()
+	var padding = "".lpad(get_stack().size()-1, '\t') if level == LogLevel.TRACE else ""
+	print_rich( padding + "[color=%s]%s[/color]" % [colour, message] )
+	return true
+
+func log_level( level : LogLevel ) -> bool:
+	return verbosity >= level
+
 ## Does this have a description?
 @export_global_dir
 var include_paths: Array[String]
@@ -75,6 +89,9 @@ var punct_color : Color = EditorInterface.get_editor_settings().get_setting("tex
 var ident_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/symbol_color")
 var scalar_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/number_color")
 var meta_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
+# Highlighting
+var highlight_error : bool = true
+var highlight_warning : bool = true
 # log levels
 var critical_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_markers/critical_color")
 var error_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_markers/critical_color")
@@ -94,18 +111,21 @@ var colours : Dictionary[int, Color]
 #   ██      ██    ██ ██  ██ ██ ██           ██
 #   ██       ██████  ██   ████  ██████ ███████
 
-func print_bright( value ):
-	print_rich("%s.[color=yellow][b]%s[/b][/color]" % [name, value] )
-
 func _get_plugin_name() -> String:
-	print_bright("._get_plugin_name()")
+	print_log( LogLevel.TRACE, "%s._get_plugin_name()" % name )
 	return "flatbuffers"
 
 
 func _get_plugin_icon() -> Texture2D:
-	print_bright("._get_plugin_icon()")
+	print_log( LogLevel.TRACE, "%s._get_plugin_icon()" % name )
 	return preload('res://addons/gdflatbuffers/fpl_logo_tiny_bw.png')
 
+func get_property_info( property_name : StringName ) -> Dictionary:
+	var prop_list := get_property_list()
+	var prop_idx = prop_list.find_custom(
+		func(info): return info.name == property_name )
+	if prop_idx == -1: return {}
+	return prop_list[prop_idx]
 
 #           ██ ███    ██ ██ ████████
 #           ██ ████   ██ ██    ██
@@ -116,23 +136,15 @@ func _get_plugin_icon() -> Texture2D:
 func _init() -> void:
 	name = "FlatBuffersPlugin"
 	init_settings()
-	colours_changed()
 	context_menus = {
 		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM: MyFileMenu.new(self),
 		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM_CREATE:MyFileCreateMenu.new(),
 		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_SCRIPT_EDITOR:MyScriptTabMenu.new(),
 		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_SCRIPT_EDITOR_CODE:MyCodeEditMenu.new(),
 	}
-
-func get_property_info( property_name : StringName ) -> Dictionary:
-	var prop_list := get_property_list()
-	var prop_idx = prop_list.find_custom(
-		func(info): return info.name == property_name )
-	if prop_idx == -1: return {}
-	return prop_list[prop_idx]
+	print_log( LogLevel.TRACE, "%s._init() - Completed" % name )
 
 func init_settings():
-	print_bright(".init_settings()")
 	var editor_settings : EditorSettings = EditorInterface.get_editor_settings()
 	var project_settings := ProjectSettings
 
@@ -153,12 +165,14 @@ func init_settings():
 		# update the settings.
 		if not editor_settings.has_setting(setting_info.name):
 			editor_settings.set_setting( setting_info.name, initial_value )
-			editor_settings.mark_setting_changed(setting_info.name)
+			#editor_settings.mark_setting_changed(setting_info.name)
 		editor_settings.set_initial_value(setting_info.name, initial_value, false)
 		editor_settings.add_property_info(setting_info)
 
 	ProjectSettings.settings_changed.connect( settings_changed.bind("project") )
 	editor_settings.settings_changed.connect( settings_changed.bind("editor") )
+	settings_changed("editor")
+
 
 func settings_changed( source : String ):
 	var settings
@@ -211,11 +225,10 @@ func colours_changed():
 #   ███████ ██   ████ ██   ██ ██████  ███████ ███████
 
 func _enable_plugin() -> void:
-	print_bright("._enable_plugin()")
+	print_log( LogLevel.TRACE, "%s._enable_plugin()" % name )
 
 func _disable_plugin() -> void:
-	print_bright("._disable_plugin()")
-	pass
+	print_log( LogLevel.TRACE, "%s._disable_plugin()" % name )
 
 #   ████████ ██████  ███████ ███████
 #      ██    ██   ██ ██      ██
@@ -224,10 +237,11 @@ func _disable_plugin() -> void:
 #      ██    ██   ██ ███████ ███████
 
 func _enter_tree() -> void:
-	print_bright("._enter_tree()")
+	print_log( LogLevel.TRACE, "%s._enter_tree()" % name )
+
 	# Syntax Highlighting for flatbuffer schema files
-	highlighter = fbsHighlighter.new(self)
-	script_editor.register_syntax_highlighter( highlighter )
+	highlighter = FlatbufferSchemaHighlighter.new(self)
+	EditorInterface.get_script_editor().register_syntax_highlighter( highlighter )
 
 	# Context menus
 	for key in context_menus.keys():
@@ -235,8 +249,8 @@ func _enter_tree() -> void:
 
 
 func _exit_tree() -> void:
-	print_bright("._exit_tree()")
-	script_editor.unregister_syntax_highlighter( highlighter )
+	print_log( LogLevel.TRACE, "%s._exit_tree()" % name )
+	EditorInterface.get_script_editor().unregister_syntax_highlighter( highlighter )
 	for menu in context_menus.values():
 		remove_context_menu_plugin( menu )
 

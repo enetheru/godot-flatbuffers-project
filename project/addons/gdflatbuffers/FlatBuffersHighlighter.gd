@@ -3,14 +3,16 @@ extends EditorSyntaxHighlighter
 
 static var _plugin : FlatBuffersPlugin
 
+# Supporting Scripts
 const Reader = preload('res://addons/gdflatbuffers/scripts/reader.gd')
 const Token = preload('res://addons/gdflatbuffers/scripts/token.gd')
+const Tips = preload('res://addons/gdflatbuffers/scripts/tooltips.gd')
+const Regex = preload('res://addons/gdflatbuffers/scripts/regex.gd')
 
-const REGEX = preload('res://addons/gdflatbuffers/scripts/regex.gd')
-static var Regex :
+static var regex :
 	get():
-		if Regex == null: Regex = REGEX.new()
-		return Regex
+		if regex == null: regex = Regex.new()
+		return regex
 
 # It's easier to duplicate here than it is to constantly call back to the plugin.
 enum LogLevel {
@@ -108,6 +110,7 @@ var array_types: Array[StringName] = [
 var scalar_types: Array[StringName] # integer_types + float_types + boolean_types
 
 ## Defined by the flatbuffer schemas as they are parsed.
+var included_files : Array = []
 var enum_types : Dictionary = {}
 var union_types : Array[StringName] = []
 var struct_types: Array[StringName] = []
@@ -120,13 +123,12 @@ var table_types: Array[StringName] = []
 # ██   ██ ██  ██████  ██   ██ ███████ ██  ██████  ██   ██    ██    ███████ ██   ██
 
 ## The current resource file
-## FIXME relies on patch and not used otherwise.
-## There is no way to retrieve the current source file_name.
-var resource : Resource
+## FIXME There is no way to retrieve the current source file_name from a TextEdit.
+#var resource : Resource
 
-## The location of the file, only works for absolute names that are included
-## FIXME relies on the resource patch
-var file_location : String
+## The location of the current file
+## FIXME There is no way to retrieve the current source file_name from a TextEdit.
+#var file_location : String
 
 ## The main Reader object for this file.
 var reader : Reader
@@ -134,7 +136,7 @@ var reader : Reader
 ## The Reader object when performing a quick scan through the file for identifiers
 var qreader : Reader
 
-## per line stack information, key is line number, value is line dictionary
+## per line colour information, key is line number, value is a dictionary
 var dict : Dictionary[int, Dictionary]
 
 ## current line dictionary, key is column number
@@ -142,12 +144,8 @@ var line_dict : Dictionary[int,Dictionary]
 
 ## This is to indicate not to save the stack to the next line
 var error_flag : bool = false
-
-## Dictionary of user types retrieved from scanning document.
-var user_types : Dictionary[String, int] = {}
-
-## Dictionary of user enum values, TODO might be useful to have them named
-var user_enum_vals : Dictionary = {}
+var warning_flag : bool = false
+var scan_flag : bool = false
 
 ## A block of false data which is used to expand on the stack index
 var new_index_chunk : Array[bool]
@@ -175,7 +173,8 @@ func _init( plugin : FlatBuffersPlugin = null ):
 	# Fix up the scalar types list
 	scalar_types = integer_types + float_types + boolean_types
 
-	if not Regex: Regex = REGEX.new()
+	if not regex: assert(false, "Unable to fetch regex class")
+
 	new_index_chunk.resize(10)
 	new_index_chunk.fill(false)
 
@@ -197,6 +196,7 @@ func _init( plugin : FlatBuffersPlugin = null ):
 
 	print_log(LogLevel.TRACE, "[b]FlatBuffersHighlighter._init() - Completed[/b]")
 
+
 # Override methods for EditorSyntaxHighlighter
 func _get_name ( ) -> String:
 	return "FlatBuffersSchema"
@@ -213,15 +213,26 @@ func _clear_highlighting_cache ( ):
 	# FIXME: This ^^ relies on a patch
 
 	print_log(LogLevel.TRACE, "[b]_clear_highlighting_cache( )[/b]")
-	included_files.clear()
-	user_enum_vals.clear()
-	user_types.clear()
+
 	dict.clear()
 	error_flag = false
+	warning_flag = false
+	scan_flag = false
+	for line_num in range( get_text_edit().get_line_count() ):
+		get_text_edit().set_line_background_color(line_num, Color(0,0,0,0) )
+
+
 	stack_list.clear()
-	stack_index.resize( get_text_edit().text.length() + 10)
+	stack_index.resize( get_text_edit().text.length() + 10 )
 	stack_index.fill(false)
-	print_log( LogLevel.TRACE, "highlight dict: %s" % JSON.stringify(dict, '\t') )
+
+	# clear types
+	included_files.clear()
+	struct_types.clear()
+	table_types.clear()
+	union_types.clear()
+	enum_types.clear()
+
 
 # This function runs on any change, with the line number that is edited.
 # we can use it to update the highlighting.
@@ -229,11 +240,17 @@ func _get_line_syntax_highlighting ( line_num : int ) -> Dictionary:
 	if log_level(LogLevel.TRACE):
 		print()
 		print_log(LogLevel.TRACE, "[b]_get_line_syntax_highlighting( line_num:%d )[/b]" % [line_num+1] )
+
 	# Reset Variables
 	line_dict = {}
 	prev_stack = []
 	stack = Array([], TYPE_OBJECT, &"RefCounted", StackFrame)
 	dict[line_num] = line_dict
+	# Clear highlighting
+	get_text_edit().set_line_background_color(line_num, Color(0,0,0,0) )
+
+	if not scan_flag:
+		quick_scan_text( get_text_edit().text )
 
 	# Stack_index.size() needs to be at least as large as the line number we are looking at.
 	# Increasing it this way saves re-allocating all at once at the beginning.
@@ -283,21 +300,36 @@ func _update_cache ( ):
 	print_log(LogLevel.TRACE, "[b]_update_cache( )[/b]")
 	quick_scan_text( get_text_edit().text )
 
+	get_text_edit().set_tooltip_request_func( func( word ):
+		var tip = Tips.keywords.get(word)
+		return  tip if tip else ""
+		)
+
+
 func highlight( token : Reader.Token, override : Color = Color.ORANGE ):
 	line_dict[token.col] = { 'color':_plugin.colours.get( token.type, override ) }
+	if not (error_flag or warning_flag):
+		get_text_edit().set_line_background_color(reader.line_n, Color(0,0,0,0) )
+
 
 func syntax_warning( token : Reader.Token, reason = "" ):
+	warning_flag = true
 	var colour : Color = _plugin.colours[_plugin.LogLevel.WARNING]
-	line_dict[token.col] = { 'color':colour }
+	if _plugin.highlight_warning:
+		get_text_edit().set_line_background_color(reader.line_n, colour.blend(Color(0,0,0,.5)) )
+	else: line_dict[token.col] = { 'color':colour }
 	if log_level(LogLevel.WARNING):
 		var frame_type = FrameType.find_key(stack.back().type) if stack.size() else '#'
 		print_log( LogLevel.WARNING, "%s:Warning in: %s - %s" % [frame_type, token, reason] )
 		print_log( LogLevel.DEBUG, stack_to_string() )
 
+
 func syntax_error( token : Reader.Token, reason = "" ):
 	error_flag = true
 	var colour : Color = _plugin.colours[_plugin.LogLevel.ERROR]
-	line_dict[token.col] = { 'color':colour }
+	if _plugin.highlight_error:
+		get_text_edit().set_line_background_color(reader.line_n, colour.blend(Color(0,0,0,.5)) )
+	else: line_dict[token.col] = { 'color':colour }
 	if log_level(LogLevel.ERROR):
 		var frame_type = FrameType.find_key(stack.back().type) if stack.size() else '#'
 		print_log( LogLevel.ERROR, "%s:Error in: %s - %s" % [frame_type, token, reason] )
@@ -1009,12 +1041,12 @@ func parse_scalar( p_token : Reader.Token ):
 	if token.type == Token.Type.SCALAR:
 		reader.get_token()
 		return end_frame()
-	if token.t in user_enum_vals:
-		token.type = Token.Type.SCALAR
-		highlight( token )
-		reader.get_token()
-		return end_frame()
-	syntax_error( token, "Wanted Token.Type.SCALAR" )
+	#if token.t in user_enum_vals:
+		#token.type = Token.Type.SCALAR
+		#highlight( token )
+		#reader.get_token()
+		#return end_frame()
+	#syntax_error( token, "Wanted Token.Type.SCALAR" )
 	reader.adv_line()
 	end_frame()
 	return false
@@ -1162,8 +1194,6 @@ func parse_integer_constant( p_token : Reader.Token ):
 # ██ ▄▄ ██ ██    ██ ██ ██      ██  ██               ██ ██      ██   ██ ██  ██ ██
 #  ██████   ██████  ██  ██████ ██   ██ ███████ ███████  ██████ ██   ██ ██   ████
 
-var included_files : Array = []
-
 func using_file( file_path: String ) -> String:
 	if not file_path.is_valid_filename():
 		print_log(LogLevel.ERROR, "Invalid filename: '%s'" % file_path )
@@ -1179,16 +1209,13 @@ func using_file( file_path: String ) -> String:
 	for ipath : String in _plugin.include_paths:
 		var try_path = ipath.path_join(file_path)
 		if FileAccess.file_exists( try_path ):
-			print_log(LogLevel.NOTICE, "Including: '%s'" % try_path)
+			print_log(LogLevel.DEBUG, "Found: '%s'" % try_path)
 			return try_path
 
 	return ""
 
 func quick_scan_file( filepath : String ) -> bool:
-	print_log( LogLevel.TRACE, "[b]quick_scan_file: '%s'[/b]" % filepath)
-
-	# a shortcut for godot things.
-	if filepath == "godot.fbs": filepath = 'res://addons/gdflatbuffers/godot.fbs'
+	print_log( LogLevel.DEBUG, "[b]quick_scan_file: '%s'[/b]" % filepath)
 
 	if not FileAccess.file_exists( filepath ):
 		if print_log( LogLevel.ERROR,"Unable to locate file for inclusion: %s" % filepath):
@@ -1196,18 +1223,19 @@ func quick_scan_file( filepath : String ) -> bool:
 				print_log( LogLevel.WARNING, "Relative Paths are only relative to project root, not their own location.")
 		return false
 
-	if filepath in included_files: return true # Dont create a loop
+	if filepath in included_files:
+		return true # Dont create a loop
 	included_files.append( filepath )
 
-	print_log( LogLevel.TRACE, "Including file: %s" % filepath )
-	print_log( LogLevel.TRACE, "Included files: %s" % included_files )
+	print_log( LogLevel.DEBUG, "Including file: %s" % filepath )
 	var file = FileAccess.open( filepath, FileAccess.READ )
 	var content = file.get_as_text()
 	quick_scan_text( content )
 	return true
 
 func quick_scan_text( text : String ):
-	print_log( LogLevel.TRACE, "[b]quick_scan_text[/b]")
+	print_log( LogLevel.DEBUG, "[b]quick_scan_text[/b]")
+	scan_flag = true
 	# I need a function which scans the source fast to pick up names before the main scan happens.
 	qreader.reset( text )
 
@@ -1224,9 +1252,9 @@ func quick_scan_text( text : String ):
 			token = qreader.get_token()
 			qreader.adv_line()
 			if token.type != Token.Type.STRING: continue
+			print_log(LogLevel.TRACE, "include %s" % token.t)
 			# Strip quotes from token
 			var file_path = token.t.substr( 1, token.t.length() - 2 )
-			print_log(LogLevel.TRACE, "Trying Include: %s" % file_path)
 			# validate the file
 			file_path = using_file( file_path )
 			# Scan the file
@@ -1239,6 +1267,7 @@ func quick_scan_text( text : String ):
 			if ident.type != Token.Type.IDENT:
 				qreader.adv_line()
 				continue
+			print_log(LogLevel.TRACE, "%s %s" % [token.t, ident.t])
 			match token.t:
 				&"struct": struct_types.append(ident.t)
 				&"table": table_types.append(ident.t)
@@ -1251,6 +1280,7 @@ func quick_scan_text( text : String ):
 			if ident.type != Token.Type.IDENT:
 				qreader.adv_line()
 				continue
+			print_log(LogLevel.TRACE, "%s %s" % [token.t, ident.t])
 			var enum_vals = enum_types.get(ident.t)
 			if not enum_vals:
 				enum_vals = Array([], TYPE_STRING_NAME, "", null)
@@ -1259,5 +1289,7 @@ func quick_scan_text( text : String ):
 				token = qreader.get_token()
 				if token.type == Token.Type.IDENT:
 					enum_vals.append( token.t )
+			print_log(LogLevel.TRACE, "enum %s %s" % [ident.t, enum_vals])
 
 		qreader.adv_line()
+	#print_log( LogLevel.TRACE, "Included files: %s" % [included_files] )
