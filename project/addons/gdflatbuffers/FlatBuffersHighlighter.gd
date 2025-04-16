@@ -1165,7 +1165,9 @@ func parse_integer_constant( p_token : Reader.Token ):
 var included_files : Array = []
 
 func using_file( file_path: String ) -> String:
-	if not file_path.is_valid_filename(): return ""
+	if not file_path.is_valid_filename():
+		print_log(LogLevel.ERROR, "Invalid filename: '%s'" % file_path )
+		return ""
 
 	# a shortcut for godot things.
 	if file_path == "godot.fbs": file_path = 'res://addons/gdflatbuffers/godot.fbs'
@@ -1184,9 +1186,6 @@ func using_file( file_path: String ) -> String:
 
 func quick_scan_file( filepath : String ) -> bool:
 	print_log( LogLevel.TRACE, "[b]quick_scan_file: '%s'[/b]" % filepath)
-	if filepath.begins_with("res://"):
-		print_log( LogLevel.ERROR, "paths starting with res:// or user:// are not supported: %s" % filepath)
-		return false
 
 	# a shortcut for godot things.
 	if filepath == "godot.fbs": filepath = 'res://addons/gdflatbuffers/godot.fbs'
@@ -1223,12 +1222,16 @@ func quick_scan_text( text : String ):
 		# we want to include other files.
 		if token.t == 'include':
 			token = qreader.get_token()
-			if token.type != Token.Type.STRING:
-				qreader.adv_line()
-				continue
-			var file_path : String = token.t
-			quick_scan_file( file_path.substr( 1, file_path.length() - 2 ) )
 			qreader.adv_line()
+			if token.type != Token.Type.STRING: continue
+			# Strip quotes from token
+			var file_path = token.t.substr( 1, token.t.length() - 2 )
+			print_log(LogLevel.TRACE, "Trying Include: %s" % file_path)
+			# validate the file
+			file_path = using_file( file_path )
+			# Scan the file
+			if file_path: quick_scan_file( file_path )
+			else: print_log(LogLevel.ERROR, "Invalid path: %s" % file_path)
 			continue
 
 		if token.t in ['struct', 'table', 'union']:
@@ -1248,7 +1251,13 @@ func quick_scan_text( text : String ):
 			if ident.type != Token.Type.IDENT:
 				qreader.adv_line()
 				continue
-			if not enum_types.has(ident.t):
-				enum_types[ident.t] = Array([], TYPE_STRING_NAME, "", null)
+			var enum_vals = enum_types.get(ident.t)
+			if not enum_vals:
+				enum_vals = Array([], TYPE_STRING_NAME, "", null)
+				enum_types[ident.t] = enum_vals
+			while token.t != '}':
+				token = qreader.get_token()
+				if token.type == Token.Type.IDENT:
+					enum_vals.append( token.t )
 
 		qreader.adv_line()
