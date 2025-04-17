@@ -1,6 +1,9 @@
 @tool
 class_name FlatBuffersPlugin extends EditorPlugin
 
+## A variable to help me turn on and off debug features and tests.
+var debug : bool = true
+
 # Supporting Assets
 const FB_LOGO_BW_TINY = preload('res://addons/gdflatbuffers/fpl_logo_tiny_bw.png')
 
@@ -135,11 +138,13 @@ func get_property_info( property_name : StringName ) -> Dictionary:
 
 func _init() -> void:
 	name = "FlatBuffersPlugin"
+	#FIXME update editor property docks/filesystem/textfile_extensions to include fbs
+
 	init_settings()
 	context_menus = {
 		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM: MyFileMenu.new(self),
 		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM_CREATE:MyFileCreateMenu.new(),
-		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_SCRIPT_EDITOR:MyScriptTabMenu.new(),
+		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_SCRIPT_EDITOR:MyScriptTabMenu.new(self),
 		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_SCRIPT_EDITOR_CODE:MyCodeEditMenu.new(),
 	}
 	print_log( LogLevel.TRACE, "%s._init() - Completed" % name )
@@ -261,10 +266,16 @@ func _exit_tree() -> void:
 #   ██      ██      ██   ██    ██    ██         ██       ██ ██  ██
 #   ██      ███████ ██   ██    ██     ██████ ██ ███████ ██   ██ ███████
 
-func print_flatc_help():
-	print("flatc_help")
+func flatc_multi( paths : Array, args : Array ) -> Array:
+	var results : Array
+	for path : String in paths:
+		var abs_path : String = ProjectSettings.globalize_path( path )
+		if path.get_extension() == 'fbs':
+			results.append( flatc_generate( abs_path, args ) )
+	return results
 
-func flatc_generate( schema_path : String ) -> Variant:
+
+func flatc_generate( schema_path : String, args : Array ) -> Variant:
 	# Make sure we have the flac compiler
 	if not FileAccess.file_exists(flatc_exe):
 		var msg = "flatc compiler is not found at '%s'" % flatc_exe
@@ -277,7 +288,7 @@ func flatc_generate( schema_path : String ) -> Variant:
 		return {'retcode':ERR_FILE_BAD_PATH, 'output': [msg] }
 
 	# --gdscript             Generate GDScript files for tables/structs
-	var args : PackedStringArray = ["--gdscript"]
+	#var args : PackedStringArray = ["--gdscript"]
 
 	# -I <path>                Search for includes in the specified path.
 	#var dir_access := DirAccess.open("res://")
@@ -288,18 +299,21 @@ func flatc_generate( schema_path : String ) -> Variant:
 		args.append_array(["-I", ipath.replace('res://', './')])
 
 	# -o <path>
-	args.append_array([ "-o", schema_path.get_base_dir()])
+	args.append_array([ "-o", schema_path.get_base_dir().replace('res://', './')])
 
 	# the schema path
-	args.append( schema_path )
+	args.append( schema_path.replace('res://', './') )
 
 	var result : Dictionary = {
 		'flatc_path':flatc_exe,
 		'args':args,
 	}
 	var output : Array = []
-	result['retcode'] = OS.execute( flatc_exe, args, output, true, true )
+	result['retcode'] = OS.execute( flatc_exe, args, output, true )
 	result['output'] = output
+
+	print( "flatc_generate result: ", JSON.stringify( result, '\t', false ) )
+	for o in output: print( o )
 
 	#TODO Figure out a way to get the script in the editor to reload.
 	#  the only reliable way I have found to refresh the script in the editor
@@ -308,12 +322,6 @@ func flatc_generate( schema_path : String ) -> Variant:
 	# This line refreshes the filesystem dock.
 	EditorInterface.get_resource_filesystem().scan()
 	return result
-
-static func print_results( result : Dictionary ):
-	var output = result.get('output')
-	result.erase('output')
-	printerr( "flatc_generate result: ", JSON.stringify( result, '\t', false ) )
-	for o in output: print( o )
 
 #   ██████   ██████         ███    ███ ███████ ███    ██ ██    ██ ███████
 #   ██   ██ ██              ████  ████ ██      ████   ██ ██    ██ ██
@@ -336,16 +344,9 @@ class MyFileMenu extends EditorContextMenuPlugin:
 	func _popup_menu(paths):
 		for path in paths:
 			if path.get_extension() == 'fbs':
-				add_context_menu_item("flatc --gdscript", call_flatc_on_paths )#, icon )
+				add_context_menu_item("flatc --gdscript", _plugin.flatc_multi.bind(['--gdscript']) )#, icon )
 				return
 
-	func call_flatc_on_paths( paths ) -> void:
-		for path : String in paths:
-			var abs_path : String = ProjectSettings.globalize_path( path )
-			if path.get_extension() == 'fbs':
-				var results : Dictionary = {'retcode':OK}
-				results = _plugin.flatc_generate( abs_path )
-				if results.retcode: FlatBuffersPlugin.print_results( results )
 
 # CONTEXT_SLOT_FILESYSTEM_CREATE
 # The "Create..." submenu of FileSystem dock's context menu.
@@ -359,11 +360,23 @@ class MyFileCreateMenu extends EditorContextMenuPlugin:
 # CONTEXT_SLOT_SCRIPT_EDITOR
 # Context menu of Script editor's script tabs.
 class MyScriptTabMenu extends EditorContextMenuPlugin:
+	var _plugin : FlatBuffersPlugin
+
+	func _init( plugin : FlatBuffersPlugin ) -> void:
+		_plugin = plugin
+
 	# _popup_menu() will be called with the path to the currently edited script,
 	# while option callback will receive reference to that script.
-	func _popup_menu(paths):
-		print( paths )
-		add_context_menu_item("script_tab_context_menu_test", func(thing): print( thing ) )#, icon )
+	func _popup_menu(paths : PackedStringArray):
+		if paths[0].get_extension() == 'fbs':
+			add_context_menu_item("flatc --gdscript", call_flatc_on_path.bind( paths, ['--gdscript'] ) )#, icon )
+			add_context_menu_item("flatc --cpp", call_flatc_on_path.bind( paths[0], ['--cpp'] ) )#, icon )
+			add_context_menu_item("flatc --help", call_flatc_on_path.bind( paths[0], ['--help'] ) )#, icon )
+			return
+
+	func call_flatc_on_path( script, path, args : Array ) -> void:
+		_plugin.flatc_generate( path, args )
+
 
 # CONTEXT_SLOT_SCRIPT_EDITOR_CODE
 # Context menu of Script editor's code editor.
