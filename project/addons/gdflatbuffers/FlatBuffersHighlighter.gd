@@ -8,6 +8,8 @@ const Reader = preload('res://addons/gdflatbuffers/scripts/reader.gd')
 const Token = preload('res://addons/gdflatbuffers/scripts/token.gd')
 const Tips = preload('res://addons/gdflatbuffers/scripts/tooltips.gd')
 const Regex = preload('res://addons/gdflatbuffers/scripts/regex.gd')
+const StackFrame = preload('res://addons/gdflatbuffers/scripts/stackframe.gd')
+const FrameStack = preload('res://addons/gdflatbuffers/scripts/framestack.gd')
 
 static var regex :
 	get():
@@ -25,96 +27,21 @@ enum LogLevel {
 	TRACE = 6,
 }
 
+func lpad( extra : int = 0 ) -> String:
+	return "".lpad( stack.size() -1 + extra, '\t' )
+
+func print_trace( message : String ):
+	var colour = _plugin.colours[LogLevel.TRACE].to_html()
+	print_rich( lpad() + "[color=%s]%s[/color]" % [colour, message] )
+
 func print_log(level : LogLevel, message : String ) -> bool:
 	if _plugin.verbosity < level: return false
 	var colour = _plugin.colours[level].to_html()
-	var padding = "".lpad(stack.size()-1, '\t') if level == LogLevel.TRACE else ""
-	print_rich( padding + "[color=%s]%s[/color]" % [colour, message] )
+	print_rich( "[color=%s]%s[/color]" % [colour, message] )
 	return true
 
 func log_level( level : LogLevel ) -> bool:
 	return _plugin.verbosity >= level
-
-#  ██████  ██████   █████  ███    ███ ███    ███  █████  ██████
-# ██       ██   ██ ██   ██ ████  ████ ████  ████ ██   ██ ██   ██
-# ██   ███ ██████  ███████ ██ ████ ██ ██ ████ ██ ███████ ██████
-# ██    ██ ██   ██ ██   ██ ██  ██  ██ ██  ██  ██ ██   ██ ██   ██
-#  ██████  ██   ██ ██   ██ ██      ██ ██      ██ ██   ██ ██   ██
-
-enum FrameType {
-	NONE, # so that SCHEMA isnt at zero which is conflated with bool
-	# schema grammer : https://flatbuffers.dev/flatbuffers_grammar.html
-	SCHEMA, # = include ( namespace_decl
-	#					| type_decl
-	#					| enum_decl
-	#					| root_decl
-	#					| file_extension_decl
-	#					| file_identifier_decl
-	#					| attribute_decl
-	#					| rpc_decl
-	#					| object )*
-	INCLUDE,# = include string_constant ;
-	NAMESPACE_DECL, # = namespace ident ( . ident )* ;
-	ATTRIBUTE_DECL, # = attribute ident | "</tt>ident<tt>" ;
-	TYPE_DECL, # = ( table | struct ) ident metadata { field_decl+ }
-	ENUM_DECL, # = ( enum ident : type | union ident ) metadata { commasep( enumval_decl ) }
-	ROOT_DECL, # = root_type ident ;
-	FIELD_DECL, # = ident : type [ = scalar ] metadata ;
-	RPC_DECL, # = rpc_service ident { rpc_method+ }
-	RPC_METHOD, # = ident ( ident ) : ident metadata ;
-	TYPE, # = bool | byte | ubyte | short | ushort | int | uint | float | long | ulong | double | int8 | uint8 | int16 | uint16 | int32 | uint32| int64 | uint64 | float32 | float64 | string | [ type ] | ident
-	ENUMVAL_DECL, # = ident [ = integer_constant ]
-	METADATA, # = [ ( commasep( ident [ : single_value ] ) ) ]
-	SCALAR, # = boolean_constant | integer_constant | float_constant
-	OBJECT, # = { commasep( ident : value ) }
-	SINGLE_VALUE, # = scalar | string_constant
-	VALUE, # = single_value | object | [ commasep( value ) ]
-	COMMASEP, #(x) = [ x ( , x )* ]
-	FILE_EXTENSION_DECL, # = file_extension string_constant ;
-	FILE_IDENTIFIER_DECL, # = file_identifier string_constant ;
-	STRING_CONSTANT, # = \".*?\\"
-	IDENT, # = [a-zA-Z_][a-zA-Z0-9_]*
-	#DIGIT, # [:digit:] = [0-9]
-	#XDIGIT, # [:xdigit:] = [0-9a-fA-F]
-	#DEC_INTEGER_CONSTANT, # = [-+]?[:digit:]+
-	#HEX_INTEGER_CONSTANT, # = [-+]?0[xX][:xdigit:]+
-	INTEGER_CONSTANT, # = dec_integer_constant | hex_integer_constant
-	#DEC_FLOAT_CONSTANT, # = [-+]?(([.][:digit:]+)|([:digit:]+[.][:digit:]*)|([:digit:]+))([eE][-+]?[:digit:]+)?
-	#HEX_FLOAT_CONSTANT, # = [-+]?0[xX](([.][:xdigit:]+)|([:xdigit:]+[.][:xdigit:]*)|([:xdigit:]+))([pP][-+]?[:digit:]+)
-	#SPECIAL_FLOAT_CONSTANT, # = [-+]?(nan|inf|infinity)
-	#FLOAT_CONSTANT, # = dec_float_constant | hex_float_constant | special_float_constant
-	#BOOLEAN_CONSTANT, # = true | false
-}
-
-
-var keywords : Array[StringName] = [
-	&'include', &'namespace', &'table', &'struct', &'enum',
-	&'union', &'root_type', &'file_extension', &'file_identifier', &'attribute',
-	&'rpc_service']
-
-var integer_types : Array[StringName] = [
-	&"byte", &"ubyte", &"short", &"ushort", &"int", &"uint", &"long", &"ulong",
-	&"int8", &"uint8", &"int16", &"uint16", &"int32", &"uint32", &"int64", &"uint64"]
-
-var float_types : Array[StringName] = [&"float", &"double", &"float32", &"float64"]
-
-var boolean_types : Array[StringName] = [&"bool"]
-
-var array_types: Array[StringName] = [
-	&"string",
-	&"String",
-	&"StringName",
-	&"NodePath", ]
-
-## NEEDS TO BE SET IN _INIT()
-var scalar_types: Array[StringName] # integer_types + float_types + boolean_types
-
-## Defined by the flatbuffer schemas as they are parsed.
-var included_files : Array = []
-var enum_types : Dictionary = {}
-var union_types : Array[StringName] = []
-var struct_types: Array[StringName] = []
-var table_types: Array[StringName] = []
 
 # ██   ██ ██  ██████  ██   ██ ██      ██  ██████  ██   ██ ████████ ███████ ██████
 # ██   ██ ██ ██       ██   ██ ██      ██ ██       ██   ██    ██    ██      ██   ██
@@ -132,9 +59,6 @@ var table_types: Array[StringName] = []
 
 ## The main Reader object for this file.
 var reader : Reader
-
-## The Reader object when performing a quick scan through the file for identifiers
-var qreader : Reader
 
 ## per line colour information, key is line number, value is a dictionary
 var dict : Dictionary[int, Dictionary]
@@ -155,9 +79,12 @@ var new_index_chunk : Array[bool]
 ## TODO They can probably be merged into the same field honestly.
 var stack_index : Array[bool] = [false]
 
+## The line number that the stack was restored from.
+var prev_idx : int = 0
+
 ## saved stacks, key is line number
 # TODO: I wonder if we can keep the stack in the highlight cache.
-var stack_list : Dictionary[int, Array] = {}
+var stack_list : Dictionary[int, FrameStack] = {}
 
 
 #           ██ ███    ██ ██ ████████
@@ -179,7 +106,7 @@ func _init( plugin : FlatBuffersPlugin = null ):
 	new_index_chunk.fill(false)
 
 	reader = Reader.new(self)
-	qreader = Reader.new(self)
+	stack = FrameStack.new(20) # TODO evaluate: 20 should be enough for now?
 
 	# This saves us from having to highlight everything manually.
 	reader.new_token.connect(func( token : Reader.Token ):
@@ -243,8 +170,9 @@ func _get_line_syntax_highlighting ( line_num : int ) -> Dictionary:
 
 	# Reset Variables
 	line_dict = {}
-	prev_stack = []
-	stack = Array([], TYPE_OBJECT, &"RefCounted", StackFrame)
+	prev_stack = null
+	prev_idx = 0
+	stack.clear()
 	dict[line_num] = line_dict
 	# Clear highlighting
 	get_text_edit().set_line_background_color(line_num, Color(0,0,0,0) )
@@ -277,19 +205,18 @@ func _get_line_syntax_highlighting ( line_num : int ) -> Dictionary:
 			return {}
 
 	## get the previous stack save, skip lines with empty stacks.
-	var stack_idx : int = line_num
-	while stack_idx > 0 and not prev_stack:
-		stack_idx -= 1
-		if not stack_index[stack_idx]: continue
-		prev_stack = stack_list.get( stack_idx )
+	prev_stack = get_prev_stack( line_num )
 
 	if prev_stack:
+		print_log( LogLevel.DEBUG, "Restoring stack from line %d" % [prev_idx + 1] )
 		stack = prev_stack.duplicate(true)
-		#print_log(LogLevel.TRACE, "Previous Stack found at line: %s" % [stack_idx-1] )
-
-	print_log(LogLevel.TRACE, stack_to_string(prev_stack) )
 
 	# Parse the line
+	if stack.is_empty():
+		stack.push( StackFrame.new(StackFrame.Type.SCHEMA) )
+
+	print_log(LogLevel.TRACE, "Stack:%s\n" % stack )
+
 	parse()
 
 	return line_dict
@@ -319,9 +246,9 @@ func syntax_warning( token : Reader.Token, reason = "" ):
 		get_text_edit().set_line_background_color(reader.line_n, colour.blend(Color(0,0,0,.5)) )
 	else: line_dict[token.col] = { 'color':colour }
 	if log_level(LogLevel.WARNING):
-		var frame_type = FrameType.find_key(stack.back().type) if stack.size() else '#'
+		var frame_type = '#' if stack.is_empty() else StackFrame.Type.find_key(stack.top().type)
 		print_log( LogLevel.WARNING, "%s:Warning in: %s - %s" % [frame_type, token, reason] )
-		print_log( LogLevel.DEBUG, stack_to_string() )
+		print_log( LogLevel.DEBUG, str(stack) )
 
 
 func syntax_error( token : Reader.Token, reason = "" ):
@@ -331,9 +258,9 @@ func syntax_error( token : Reader.Token, reason = "" ):
 		get_text_edit().set_line_background_color(reader.line_n, colour.blend(Color(0,0,0,.5)) )
 	else: line_dict[token.col] = { 'color':colour }
 	if log_level(LogLevel.ERROR):
-		var frame_type = FrameType.find_key(stack.back().type) if stack.size() else '#'
+		var frame_type = '#' if stack.is_empty() else StackFrame.Type.find_key(stack.top().type)
 		print_log( LogLevel.ERROR, "%s:Error in: %s - %s" % [frame_type, token, reason] )
-		print_log( LogLevel.DEBUG, stack_to_string() )
+		print_log( LogLevel.DEBUG, str(stack) )
 
 # ██████   █████  ██████  ███████ ███████ ██████
 # ██   ██ ██   ██ ██   ██ ██      ██      ██   ██
@@ -341,82 +268,89 @@ func syntax_error( token : Reader.Token, reason = "" ):
 # ██      ██   ██ ██   ██      ██ ██      ██   ██
 # ██      ██   ██ ██   ██ ███████ ███████ ██   ██
 
+
+var keywords : Array[StringName] = [
+	&'include', &'namespace', &'table', &'struct', &'enum',
+	&'union', &'root_type', &'file_extension', &'file_identifier', &'attribute',
+	&'rpc_service']
+
+var integer_types : Array[StringName] = [
+	&"byte", &"ubyte", &"short", &"ushort", &"int", &"uint", &"long", &"ulong",
+	&"int8", &"uint8", &"int16", &"uint16", &"int32", &"uint32", &"int64", &"uint64"]
+
+var float_types : Array[StringName] = [&"float", &"double", &"float32", &"float64"]
+
+var boolean_types : Array[StringName] = [&"bool"]
+
+var array_types: Array[StringName] = [
+	&"string",
+	&"String",
+	&"StringName",
+	&"NodePath", ]
+
+## NEEDS TO BE SET IN _INIT()
+var scalar_types: Array[StringName] # integer_types + float_types + boolean_types
+
+## Defined by the flatbuffer schemas as they are parsed.
+var included_files : Array = []
+var enum_types : Dictionary = {}
+var union_types : Array[StringName] = []
+var struct_types: Array[StringName] = []
+var table_types: Array[StringName] = []
+
+
 var parse_funcs : Dictionary = {
-	FrameType.NONE : syntax_error,
-	FrameType.SCHEMA : parse_schema,
-	FrameType.INCLUDE : parse_include,
-	FrameType.NAMESPACE_DECL : parse_namespace_decl,
-	FrameType.ATTRIBUTE_DECL : parse_attribute_decl,
-	FrameType.TYPE_DECL : parse_type_decl,
-	FrameType.ENUM_DECL : parse_enum_decl,
-	FrameType.ROOT_DECL : parse_root_decl,
-	FrameType.FIELD_DECL : parse_field_decl,
-	FrameType.RPC_DECL : parse_rpc_decl,
-	FrameType.RPC_METHOD : parse_rpc_method,
-	FrameType.TYPE : parse_type,
-	FrameType.ENUMVAL_DECL : parse_enumval_decl,
-	FrameType.METADATA : parse_metadata,
-	FrameType.SCALAR : parse_scalar,
-	FrameType.OBJECT : parse_object,
-	FrameType.SINGLE_VALUE : parse_single_value,
-	FrameType.VALUE : parse_value,
-	FrameType.COMMASEP : parse_commasep,
-	FrameType.FILE_EXTENSION_DECL : parse_file_extension_decl,
-	FrameType.FILE_IDENTIFIER_DECL : parse_file_identifier_decl,
-	FrameType.STRING_CONSTANT : parse_string_constant,
-	FrameType.IDENT : parse_ident,
-	#FrameType.DIGIT : parse_digit,
-	#FrameType.XDIGIT : parse_xdigit,
-	#FrameType.DEC_INTEGER_CONSTANT : parse_dec_integer_constant,
-	#FrameType.HEX_INTEGER_CONSTANT : parse_hex_integer_constant,
-	FrameType.INTEGER_CONSTANT : parse_integer_constant,
-	#FrameType.DEC_FLOAT_CONSTANT : parse_dec_float_constant,
-	#FrameType.HEX_FLOAT_CONSTANT : parse_hex_float_constant,
-	#FrameType.SPECIAL_FLOAT_CONSTANT : parse_special_float_constant,
-	#FrameType.FLOAT_CONSTANT : parse_float_constant,
-	#FrameType.BOOLEAN_CONSTANT : parse_boolean_constant,
+	StackFrame.Type.NONE : syntax_error,
+	StackFrame.Type.SCHEMA : parse_schema,
+	StackFrame.Type.INCLUDE : parse_include,
+	StackFrame.Type.NAMESPACE_DECL : parse_namespace_decl,
+	StackFrame.Type.ATTRIBUTE_DECL : parse_attribute_decl,
+	StackFrame.Type.TYPE_DECL : parse_type_decl,
+	StackFrame.Type.ENUM_DECL : parse_enum_decl,
+	StackFrame.Type.ROOT_DECL : parse_root_decl,
+	StackFrame.Type.FIELD_DECL : parse_field_decl,
+	StackFrame.Type.RPC_DECL : parse_rpc_decl,
+	StackFrame.Type.RPC_METHOD : parse_rpc_method,
+	StackFrame.Type.TYPE : parse_type,
+	StackFrame.Type.ENUMVAL_DECL : parse_enumval_decl,
+	StackFrame.Type.METADATA : parse_metadata,
+	StackFrame.Type.SCALAR : parse_scalar,
+	StackFrame.Type.OBJECT : parse_object,
+	StackFrame.Type.SINGLE_VALUE : parse_single_value,
+	StackFrame.Type.VALUE : parse_value,
+	StackFrame.Type.COMMASEP : parse_commasep,
+	StackFrame.Type.FILE_EXTENSION_DECL : parse_file_extension_decl,
+	StackFrame.Type.FILE_IDENTIFIER_DECL : parse_file_identifier_decl,
+	StackFrame.Type.STRING_CONSTANT : parse_string_constant,
+	StackFrame.Type.IDENT : parse_ident,
+	#StackFrame.Type.DIGIT : parse_digit,
+	#StackFrame.Type.XDIGIT : parse_xdigit,
+	#StackFrame.Type.DEC_INTEGER_CONSTANT : parse_dec_integer_constant,
+	#StackFrame.Type.HEX_INTEGER_CONSTANT : parse_hex_integer_constant,
+	StackFrame.Type.INTEGER_CONSTANT : parse_integer_constant,
+	#StackFrame.Type.DEC_FLOAT_CONSTANT : parse_dec_float_constant,
+	#StackFrame.Type.HEX_FLOAT_CONSTANT : parse_hex_float_constant,
+	#StackFrame.Type.SPECIAL_FLOAT_CONSTANT : parse_special_float_constant,
+	#StackFrame.Type.FLOAT_CONSTANT : parse_float_constant,
+	#StackFrame.Type.BOOLEAN_CONSTANT : parse_boolean_constant,
 }
 
-var kw_frame_map : Dictionary[StringName, FrameType] = {
-	&'include' : FrameType.INCLUDE,
-	&'namespace' : FrameType.NAMESPACE_DECL,
-	&'table' : FrameType.TYPE_DECL,
-	&'struct' : FrameType.TYPE_DECL,
-	&'enum' : FrameType.ENUM_DECL,
-	&'union' : FrameType.ENUM_DECL,
-	&'root_type' : FrameType.ROOT_DECL,
-	&'file_extension' : FrameType.FILE_EXTENSION_DECL,
-	&'file_identifier' : FrameType.FILE_IDENTIFIER_DECL,
-	&'attribute' : FrameType.ATTRIBUTE_DECL,
-	&'rpc_service' : FrameType.RPC_DECL,
+var kw_frame_map : Dictionary[StringName, StackFrame.Type] = {
+	&'include' : StackFrame.Type.INCLUDE,
+	&'namespace' : StackFrame.Type.NAMESPACE_DECL,
+	&'table' : StackFrame.Type.TYPE_DECL,
+	&'struct' : StackFrame.Type.TYPE_DECL,
+	&'enum' : StackFrame.Type.ENUM_DECL,
+	&'union' : StackFrame.Type.ENUM_DECL,
+	&'root_type' : StackFrame.Type.ROOT_DECL,
+	&'file_extension' : StackFrame.Type.FILE_EXTENSION_DECL,
+	&'file_identifier' : StackFrame.Type.FILE_IDENTIFIER_DECL,
+	&'attribute' : StackFrame.Type.ATTRIBUTE_DECL,
+	&'rpc_service' : StackFrame.Type.RPC_DECL,
 }
 
-var prev_stack : Array[StackFrame] = []
-var stack : Array[StackFrame] = []
-
-class StackFrame:
-	func _init( t : FrameType ) -> void: type = t
-	var type : FrameType
-	var bindings : Dictionary
-	var data : Dictionary
-
-	func _to_string() -> String:
-		var parts : Array = [ '/',
-			FrameType.find_key(type),
-			JSON.stringify( bindings ),
-			JSON.stringify( data ) ]
-		return "".join(parts).replace(',',', ').replace('{','{ ').replace('}',' }')
-
-
-func lpad( extra : int = 0 ) -> String:
-	return "".lpad( stack.size() -1 + extra, '\t' )
-
-
-func push_stack( type : FrameType, bindings : Dictionary = {} ):
-	var new_frame = StackFrame.new( type )
-	new_frame.bindings = bindings
-	print_log(LogLevel.TRACE, "Push: %s" % new_frame)
-	stack.append( new_frame )
+var prev_stack : FrameStack
+var stack : FrameStack
 
 
 ## start_frame() runs the appropriate stack frame function
@@ -426,41 +360,43 @@ func start_frame( frame : StackFrame, args ):
 			"" if frame.data.is_empty() else "⮱Resume:",
 			frame,
 			JSON.stringify( args ) ]
-		print_log( LogLevel.TRACE, " ".join(msg) )
-
+		print_trace( " ".join(msg) )
 	parse_funcs[ frame.type ].call( args )
 
 
 ## end_frame() pops the last stackframe from the stack
 ## if retval is not null, the top stack frame will have 'return' = retval added
-func end_frame( retval = null ) -> bool:
-	var frame = stack.back()
-	print_log( LogLevel.TRACE, "⮶End %s.end_frame(%s)" % [FrameType.find_key(frame.type), retval] )
-	stack.pop_back()
-	if stack.size() && retval: stack.back().data['return'] = retval
-	return true
+func end_frame( retval = null ):
+	print_trace( "⮶Return%s" % [" '%s'" % retval if retval else ""] )
+	stack.pop()
+	if not stack.is_empty() && retval: stack.top().data['return'] = retval
+
 
 func save_stack( line_num : int, cursor_pos : int = 0 ):
-	if stack.size() == prev_stack.size(): return
+	if prev_stack:
+		if stack.size() == prev_stack.size():
+			return
 	## FIXME: why would it matter if the stack sizes are the same? what if they are uniquely different?
 	##        I think perhaps I wasnt storing data in the stack before.
-	print_log( LogLevel.TRACE, "Stack saved to line %s | %s" % [line_num+1, stack_to_string( stack )] )
-
-	#var this_dict = dict.get( line_num, {} )
-	#this_dict['stack'] = copy_stack( stack )
-	#dict[line_num] = this_dict
-	#if verbose > 1: print_rich( "[b]Line %s |Saved: %s[/b]" % [line_num+1, stack_to_string( dict.get(line_num, {'stack':[]})['stack'] )] )
+	## I'd rather have a modified flag to see if the stack is changed.
 
 	if stack_index.size() < line_num: stack_index.append_array( new_index_chunk )
 	stack_list[line_num] = stack.duplicate(true)
 	stack_index[line_num] = true
+	print_log( LogLevel.TRACE, "Stack saved to line %s" % [line_num+1] )
+	print_log( LogLevel.TRACE, "Saved: %s" % [stack_list[line_num]] )
 
-func stack_to_string( _stack : Array[StackFrame] = stack ):
-	var strings : Array = ["Stack:"]
-	for frame in _stack:
-		var data = "" if frame.data.is_empty() else frame.data
-		strings.append( "  /%s%s" % [ FrameType.keys()[frame.type], data ] )
-	return "\n".join( strings )
+
+## get the previous stack save, skip lines with empty stacks.
+func get_prev_stack( line_num : int ) -> FrameStack:
+	prev_idx = line_num
+	prev_stack = null
+	while prev_idx > 0 and not prev_stack:
+		prev_idx -= 1
+		if not stack_index[prev_idx]: continue
+		prev_stack = stack_list.get( prev_idx )
+
+	return prev_stack
 
 ## returns true if token.t == t
 func check_token_t( token : Reader.Token, t : StringName, msg : String = "" ) -> bool:
@@ -481,12 +417,19 @@ func check_token_type( token : Reader.Token, type : Token.Type, msg : String = "
 	if not msg.is_empty(): print_log( LogLevel.ERROR, msg )
 	return false
 
+#   ██████   █████  ██████  ███████ ███████
+#   ██   ██ ██   ██ ██   ██ ██      ██
+#   ██████  ███████ ██████  ███████ █████
+#   ██      ██   ██ ██   ██      ██ ██
+#   ██      ██   ██ ██   ██ ███████ ███████
+
 var loop_detection : int = 0
 func parse():
-	if not stack.size(): push_stack(FrameType.SCHEMA)
+	if stack.is_empty(): return
+
 	loop_detection = 0
 	var end : bool = false # allow the end to be reached once so that EOF/EOL can be read by frames.
-	while stack.size() > 0:
+	while not stack.is_empty():
 		# Loop detection is reset when reader.new_token is triggered
 		loop_detection += 1
 		assert(loop_detection < 10, "Loop Detected")
@@ -497,8 +440,9 @@ func parse():
 			if end: break
 			end = true
 
-		start_frame( stack.back(), reader.peek_token() )
+		start_frame( stack.top(), reader.peek_token() )
 
+	print_log(LogLevel.TRACE, "")
 	save_stack(reader.line_n, 0 )
 
 # ███████  ██████ ██   ██ ███████ ███    ███  █████
@@ -511,26 +455,30 @@ func parse_schema( p_token : Reader.Token ):
 	#schema # = include* ( namespace_decl | type_decl | enum_decl | root_decl
 	#					 | file_extension_decl | file_identifier_decl
 	#					 | attribute_decl | rpc_decl | object )*
-	var frame : StackFrame = stack.back()
+	var frame : StackFrame = stack.top()
 
 	if p_token.eof(): return
 
+	var exclude = frame.data.get(&"exclude", 99999999)
 
-	if p_token.type != Token.Type.KEYWORD:
-		syntax_error( p_token, "Wanted Token.Type.KEYWORD" )
+	if p_token.t == &'include':
+		if p_token.line < exclude:
+			stack.push( StackFrame.new( StackFrame.Type.INCLUDE ) )
+			return
+		syntax_error( p_token, "Trying to use include mid file" )
 		reader.adv_line()
 		return
 
-	if p_token.t == &'include':
-		if frame.data.has(&'no_includes'):
-			syntax_error( p_token, "Trying to use include mid file" )
-			reader.adv_line()
-			return
-		push_stack( FrameType.INCLUDE )
+	if p_token.type == Token.Type.KEYWORD:
+		frame.data[&"exclude"] = min( exclude, p_token.line )
+		var type = kw_frame_map.get( p_token.t )
+		stack.push( StackFrame.new( type ) )
 		return
 
-	frame.data[&'no_includes'] = true
-	push_stack( kw_frame_map.get( p_token.t ))
+	syntax_error( p_token, "Wanted Token.Type.KEYWORD" )
+	reader.adv_line()
+	return
+
 
 # ██ ███    ██  ██████ ██      ██    ██ ██████  ███████
 # ██ ████   ██ ██      ██      ██    ██ ██   ██ ██
@@ -540,7 +488,7 @@ func parse_schema( p_token : Reader.Token ):
 
 func parse_include( p_token : Reader.Token ):
 	# INCLUDE = include string_constant ;
-	var frame : StackFrame = stack.back()
+	var frame : StackFrame = stack.top()
 
 	var token : Reader.Token = reader.get_token()
 	check_token_t(token, &'include')
@@ -565,7 +513,7 @@ func parse_include( p_token : Reader.Token ):
 
 func parse_namespace_decl( p_token : Reader.Token ):
 	#NAMESPACE_DECL = namespace ident ( . ident )* ;
-	var frame : StackFrame = stack.back()
+	var frame : StackFrame = stack.top()
 
 	var token : Reader.Token = reader.get_token()
 	check_token_t(token, &"namespace")
@@ -593,7 +541,7 @@ func parse_namespace_decl( p_token : Reader.Token ):
 
 func parse_attribute_decl( p_token : Reader.Token ):
 	# ATTRIBUTE_DECL = attribute ident | "</tt>ident<tt>" ;
-	var frame : StackFrame = stack.back()
+	var frame : StackFrame = stack.top()
 
 	var token : Reader.Token = reader.get_token()
 	check_token_t(token, &"attribute")
@@ -617,7 +565,7 @@ func parse_attribute_decl( p_token : Reader.Token ):
 
 func parse_type_decl( p_token : Reader.Token ):
 	#type_decl = ( table | struct ) ident [metadata] { field_decl+ }\
-	var frame : StackFrame = stack.back()
+	var frame : StackFrame = stack.top()
 
 	var decl_type : StringName = frame.data.get(&"decl_type", StringName())
 
@@ -640,7 +588,7 @@ func parse_type_decl( p_token : Reader.Token ):
 		token = reader.peek_token()
 		if token.t == &"(":
 			frame.data[&'next'] = &'{'
-			push_stack( FrameType.METADATA )
+			stack.push( StackFrame.new( StackFrame.Type.METADATA ) )
 			return
 
 		frame.data[&'next'] = &'{'
@@ -658,7 +606,7 @@ func parse_type_decl( p_token : Reader.Token ):
 	if frame.data.get(&'next') == &'field_decl':
 		if p_token.eof() : return
 		if p_token.t != &"}":
-			push_stack( FrameType.FIELD_DECL, {&"decl_type":decl_type} )
+			stack.push( StackFrame.new( StackFrame.Type.FIELD_DECL, {&"decl_type":decl_type} ) )
 			return
 		reader.get_token() # Consume the }
 		end_frame()
@@ -675,7 +623,7 @@ func parse_type_decl( p_token : Reader.Token ):
 
 func parse_enum_decl( p_token : Reader.Token ):
 	#enum_decl = ( enum ident : type | union ident ) metadata { commasep( enumval_decl ) }
-	var frame : StackFrame = stack.back()
+	var frame : StackFrame = stack.top()
 
 	var decl_type : StringName = frame.data.get(&"decl_type", StringName())
 	var decl_name : StringName = frame.data.get(&"decl_name", StringName())
@@ -704,13 +652,13 @@ func parse_enum_decl( p_token : Reader.Token ):
 		if decl_type == &"enum":
 			if token.t == &":":
 				reader.get_token() # consume token.
-				push_stack( FrameType.TYPE, { &"decl_type":decl_type } )
+				stack.push( StackFrame.new( StackFrame.Type.TYPE, { &"decl_type":decl_type } ) )
 				return
 
 	if frame.data.get(&'next') == &'meta':
 		frame.data[&'next'] = &'{'
 		if p_token.t == &"(":
-			push_stack(FrameType.METADATA)
+			stack.push(StackFrame.new( StackFrame.Type.METADATA ) )
 			return
 
 	if frame.data.get(&'next') == &'{':
@@ -730,10 +678,10 @@ func parse_enum_decl( p_token : Reader.Token ):
 		if check_token_type( p_token, Token.Type.IDENT ):
 			frame.data[&"next"] = &"comma"
 			match decl_type:
-				&"union": push_stack( FrameType.ENUMVAL_DECL,
-					{ &"decl_type":decl_type } )
-				&"enum": push_stack( FrameType.ENUMVAL_DECL,
-					{ &"decl_type":decl_type, &"decl_name":decl_name } )
+				&"union": stack.push( StackFrame.new( StackFrame.Type.ENUMVAL_DECL,
+					{ &"decl_type":decl_type } ) )
+				&"enum": stack.push( StackFrame.new( StackFrame.Type.ENUMVAL_DECL,
+					{ &"decl_type":decl_type, &"decl_name":decl_name } ) )
 			return
 
 		reader.adv_token(p_token) # move on
@@ -761,7 +709,7 @@ func parse_enum_decl( p_token : Reader.Token ):
 
 func parse_root_decl( p_token : Reader.Token ):
 	# ROOT_DECL = root_type ident ;
-	var frame : StackFrame = stack.back()
+	var frame : StackFrame = stack.top()
 
 	var token : Reader.Token = reader.get_token()
 	check_token_t(token, &"root_type")
@@ -781,7 +729,7 @@ func parse_root_decl( p_token : Reader.Token ):
 
 func parse_field_decl( p_token : Reader.Token ):
 	# field_decl = ident : type [ = scalar ] metadata;
-	var frame : StackFrame = stack.back()
+	var frame : StackFrame = stack.top()
 
 	# field_decl can start on a newline, so this function is called
 	# even on empty lines.
@@ -805,7 +753,8 @@ func parse_field_decl( p_token : Reader.Token ):
 		check_token_t( token, &":")
 
 		frame.data[&"next"] = &"default"
-		push_stack( FrameType.TYPE, { &"decl_type":decl_type, &"field_name":field_name } )
+		stack.push( StackFrame.new( StackFrame.Type.TYPE,
+			{ &"decl_type":decl_type, &"field_name":field_name } ) )
 		return
 
 	# Handle defaults
@@ -830,7 +779,7 @@ func parse_field_decl( p_token : Reader.Token ):
 	if frame.data.get(&"next") == &"meta":
 		frame.data[&"next"] = &";"
 		if p_token.t == &"(":
-			push_stack( FrameType.METADATA )
+			stack.push( StackFrame.new( StackFrame.Type.METADATA ) )
 			return
 
 	# finish
@@ -849,7 +798,7 @@ func parse_field_decl( p_token : Reader.Token ):
 #   ██   ██ ██       ██████ ███████ ██████  ███████  ██████ ███████
 
 func parse_rpc_decl( p_token : Reader.Token ):
-	var this_frame : StackFrame = stack.back()
+	var this_frame : StackFrame = stack.top()
 	syntax_warning( p_token, &"Unimplemented")
 	reader.adv_line()
 	return end_frame()
@@ -861,7 +810,7 @@ func parse_rpc_decl( p_token : Reader.Token ):
 #   ██   ██ ██       ██████ ███████ ██      ██ ███████    ██    ██   ██
 
 func parse_rpc_method( p_token : Reader.Token ):
-	var this_frame : StackFrame = stack.back()
+	var this_frame : StackFrame = stack.top()
 	syntax_warning( p_token, &"Unimplemented")
 	reader.adv_line()
 	return end_frame()
@@ -898,7 +847,7 @@ func parse_type( p_token : Reader.Token ):
 	#   z:float;
 	# }
 
-	var frame : StackFrame = stack.back()
+	var frame : StackFrame = stack.top()
 
 	# Find the type_decl frame and determine what we are parsing.
 	var decl_type : StringName = frame.bindings.get(&"decl_type", StringName())
@@ -969,7 +918,7 @@ func parse_type( p_token : Reader.Token ):
 
 func parse_enumval_decl( p_token : Reader.Token ):
 	# ENUMVAL_DECL = ident [ = integer_constant ]
-	var frame : StackFrame = stack.back()
+	var frame : StackFrame = stack.top()
 
 	var decl_name : String = frame.bindings.get(&"decl_name", StringName())
 	var decl_type : String = frame.bindings.get(&"decl_type", StringName())
@@ -1002,7 +951,7 @@ func parse_enumval_decl( p_token : Reader.Token ):
 func parse_metadata( p_token : Reader.Token ):
 	#metadata = [ ( commasep( ident [ : single_value ] ) ) ]
 	# single_value = scalar | string_constant
-	var frame : StackFrame = stack.back()
+	var frame : StackFrame = stack.top()
 
 	if frame.data.get(&"next") == null:
 		var token : Reader.Token = reader.get_token()
@@ -1035,7 +984,7 @@ func parse_metadata( p_token : Reader.Token ):
 
 func parse_scalar( p_token : Reader.Token ):
 	# SCALAR = boolean_constant | integer_constant | float_constant
-	var this_frame : StackFrame = stack.back()
+	var this_frame : StackFrame = stack.top()
 
 	var token : Reader.Token = reader.get_token()
 	if token.type == Token.Type.SCALAR:
@@ -1058,7 +1007,7 @@ func parse_scalar( p_token : Reader.Token ):
 #    ██████  ██████   █████  ███████  ██████    ██
 
 func parse_object( p_token : Reader.Token ):
-	var this_frame : StackFrame = stack.back()
+	var this_frame : StackFrame = stack.top()
 	syntax_warning( p_token, &"Unimplemented" )
 	reader.adv_line()
 	return end_frame()
@@ -1070,7 +1019,7 @@ func parse_object( p_token : Reader.Token ):
 #   ███████ ██ ██   ████  ██████  ███████ ███████
 
 func parse_single_value( p_token : Reader.Token ):
-	var this_frame : StackFrame = stack.back()
+	var this_frame : StackFrame = stack.top()
 	syntax_warning( p_token, &"Unimplemented" )
 	reader.adv_line()
 	return end_frame()
@@ -1082,7 +1031,7 @@ func parse_single_value( p_token : Reader.Token ):
 #     ████   ██   ██ ███████  ██████  ███████
 
 func parse_value( p_token : Reader.Token ):
-	var this_frame : StackFrame = stack.back()
+	var this_frame : StackFrame = stack.top()
 	syntax_warning( p_token, &"Unimplemented" )
 	reader.adv_line()
 	return end_frame()
@@ -1095,8 +1044,8 @@ func parse_value( p_token : Reader.Token ):
 
 func parse_commasep( p_token : Reader.Token ):
 	# COMMASEP(x) = [ x ( , x )* ]
-	var frame : StackFrame = stack.back()
-	var arg_type : FrameType = frame.data.get(&"args")
+	var frame : StackFrame = stack.top()
+	var arg_type : StackFrame.Type = frame.data.get(&"args")
 	if arg_type == null:
 		syntax_error(p_token, "commasep needs an argument")
 		return end_frame()
@@ -1105,7 +1054,7 @@ func parse_commasep( p_token : Reader.Token ):
 		return end_frame()
 
 	if frame.data.get(&"next") == null:
-		push_stack( arg_type )
+		stack.push( StackFrame.new( arg_type ) )
 		frame.data[&"next"] = &","
 		return
 	if frame.data.get(&"next") == &",":
@@ -1125,7 +1074,7 @@ func parse_commasep( p_token : Reader.Token ):
 #   ██      ██ ███████ ███████ ██ ███████ ██   ██    ██
 
 func parse_file_extension_decl( p_token : Reader.Token ):
-	var this_frame : StackFrame = stack.back()
+	var this_frame : StackFrame = stack.top()
 	syntax_warning( p_token, &"Unimplemented" )
 	reader.adv_line()
 	return end_frame()
@@ -1137,7 +1086,7 @@ func parse_file_extension_decl( p_token : Reader.Token ):
 #   ██      ██ ███████ ███████
 
 func parse_file_identifier_decl( p_token : Reader.Token ):
-	var this_frame : StackFrame = stack.back()
+	var this_frame : StackFrame = stack.top()
 	syntax_warning( p_token, &"Unimplemented" )
 	reader.adv_line()
 	return end_frame()
@@ -1149,7 +1098,7 @@ func parse_file_identifier_decl( p_token : Reader.Token ):
 #   ███████    ██    ██   ██ ██ ██   ████  ██████
 
 func parse_string_constant( p_token : Reader.Token ):
-	var frame : StackFrame = stack.back()
+	var frame : StackFrame = stack.top()
 	var token : Reader.Token = reader.get_token()
 
 	check_token_type(token, Token.Type.STRING)
@@ -1178,7 +1127,7 @@ func parse_ident( p_token : Reader.Token ):
 
 func parse_integer_constant( p_token : Reader.Token ):
 	# INTEGER_CONSTANT = dec_integer_constant | hex_integer_constant
-	var frame : StackFrame = stack.back()
+	var frame : StackFrame = stack.top()
 
 	var token : Reader.Token = reader.get_token()
 	if reader.is_integer( token.t ):
@@ -1195,9 +1144,9 @@ func parse_integer_constant( p_token : Reader.Token ):
 #  ██████   ██████  ██  ██████ ██   ██ ███████ ███████  ██████ ██   ██ ██   ████
 
 func using_file( file_path: String ) -> String:
-	if not file_path.is_valid_filename():
-		print_log(LogLevel.ERROR, "Invalid filename: '%s'" % file_path )
-		return ""
+	#if not file_path.is_valid_filename():
+		#print_log(LogLevel.ERROR, "Invalid filename: '%s'" % file_path )
+		#return ""
 
 	# a shortcut for godot things.
 	if file_path == "godot.fbs": file_path = 'res://addons/gdflatbuffers/godot.fbs'
@@ -1212,6 +1161,7 @@ func using_file( file_path: String ) -> String:
 			print_log(LogLevel.DEBUG, "Found: '%s'" % try_path)
 			return try_path
 
+	print_log( LogLevel.DEBUG, "Search Locations: %s" % [_plugin.include_paths])
 	return ""
 
 func quick_scan_file( filepath : String ) -> bool:
@@ -1236,7 +1186,8 @@ func quick_scan_file( filepath : String ) -> bool:
 func quick_scan_text( text : String ):
 	print_log( LogLevel.DEBUG, "[b]quick_scan_text[/b]")
 	scan_flag = true
-	# I need a function which scans the source fast to pick up names before the main scan happens.
+
+	var qreader : Reader = Reader.new(self)
 	qreader.reset( text )
 
 	while not qreader.at_end():
