@@ -51,7 +51,11 @@ enum Type {
 	#BOOLEAN_CONSTANT, # = true | false
 }
 
-func _init( t : Type, bindings : Dictionary = {} ) -> void: type = t
+func _init( t : Type, b : Dictionary = {} ) -> void:
+	type = t
+	for key in b.keys():
+		bindings[key] = b[key]
+
 
 var type : Type
 
