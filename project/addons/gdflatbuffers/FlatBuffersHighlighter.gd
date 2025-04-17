@@ -371,6 +371,9 @@ func end_frame( retval = null ):
 	stack.pop()
 	if not stack.is_empty() && retval: stack.top().data['return'] = retval
 
+func error_frame( token : Token, message: String ):
+	syntax_error(token, "decl_type != union | enum.")
+	end_frame(&"error")
 
 func save_stack( line_num : int, cursor_pos : int = 0 ):
 	if prev_stack:
@@ -925,17 +928,23 @@ func parse_enumval_decl( p_token : Reader.Token ):
 
 	var token : Reader.Token = reader.get_token()
 
-	if check_token_type(token, Token.Type.IDENT ):
-		if enum_types.has(decl_name):
-			var enum_vals : Array[StringName] = enum_types.get(decl_name)
-			enum_vals.append( token.t )
-		elif decl_type == &"union":
-			highlight(token, _plugin.colours[Token.Type.SCALAR])
-		else: syntax_error( token )
+	match decl_type:
+		&"union":
+			if check_token_type(token, Token.Type.IDENT ):
+				highlight(token, _plugin.colours[Token.Type.SCALAR])
 
-	token = reader.peek_token()
-	if token.t == &"=":
-		reader.adv_token(token) # consume ='='
+		&"enum":
+			if check_token_type(token, Token.Type.IDENT ):
+				if enum_types.has(decl_name):
+					var enum_vals : Array[StringName] = enum_types.get(decl_name)
+					enum_vals.append( token.t )
+				else: return error_frame( token, "enum_types.has(decl_name) is false")
+
+		_: return error_frame(token, "decl_type:'%s' != union | enum." % decl_type )
+
+	p_token = reader.peek_token()
+	if p_token.t == &"=":
+		token = reader.get_token() # consume ='='
 		token = reader.get_token()
 		if not reader.is_integer(token.t):
 			syntax_error(token, "enum values must be integer constants")
