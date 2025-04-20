@@ -1,11 +1,14 @@
 @tool
 class_name FlatBuffersPlugin extends EditorPlugin
 
+# Reference to self so we can do things since we are already instantiated.
+static var _prime : FlatBuffersPlugin
+
 ## A variable to help me turn on and off debug features and tests.
 var debug : bool = true
 
 # Supporting Assets
-const FB_LOGO_BW_TINY = preload('res://addons/gdflatbuffers/fpl_logo_tiny_bw.png')
+const ICON_BW_TINY = preload('res://addons/gdflatbuffers/fpl_logo_tiny_bw.png')
 
 # Supporting Scripts
 const FlatbufferSchemaHighlighter = preload('res://addons/gdflatbuffers/FlatBuffersHighlighter.gd')
@@ -121,7 +124,7 @@ func _get_plugin_name() -> String:
 
 func _get_plugin_icon() -> Texture2D:
 	print_log( LogLevel.TRACE, "%s._get_plugin_icon()" % name )
-	return preload('res://addons/gdflatbuffers/fpl_logo_tiny_bw.png')
+	return ICON_BW_TINY
 
 func get_property_info( property_name : StringName ) -> Dictionary:
 	var prop_list := get_property_list()
@@ -138,6 +141,7 @@ func get_property_info( property_name : StringName ) -> Dictionary:
 
 func _init() -> void:
 	name = "FlatBuffersPlugin"
+	if not _prime: _prime = self
 	#FIXME update editor property docks/filesystem/textfile_extensions to include fbs
 
 	init_settings()
@@ -287,9 +291,6 @@ func flatc_generate( schema_path : String, args : Array ) -> Variant:
 		push_error(msg)
 		return {'retcode':ERR_FILE_BAD_PATH, 'output': [msg] }
 
-	# --gdscript             Generate GDScript files for tables/structs
-	#var args : PackedStringArray = ["--gdscript"]
-
 	# -I <path>                Search for includes in the specified path.
 	#var dir_access := DirAccess.open("res://")
 	for ipath in include_paths + ["res://addons/gdflatbuffers/"]:
@@ -304,24 +305,31 @@ func flatc_generate( schema_path : String, args : Array ) -> Variant:
 	# the schema path
 	args.append( schema_path.replace('res://', './') )
 
-	var result : Dictionary = {
-		'flatc_path':flatc_exe,
-		'args':args,
-	}
 	var output : Array = []
-	result['retcode'] = OS.execute( flatc_exe, args, output, true )
-	result['output'] = output
+	var retcode = OS.execute( flatc_exe, args, output, true )
+	var log : Array[String]
+	for o : String in output:
+		log.append_array( o.split("\r") )
 
-	print( "flatc_generate result: ", JSON.stringify( result, '\t', false ) )
-	for o in output: print( o )
+	#print( "flatc_generate result: ", JSON.stringify( result, '\t', false ) )
+	print( "Compiling:    %s" % schema_path )
+	print( "Using:        %s" % flatc_exe )
+	print( "With Args:    %s" % " ".join( args ) )
+	print( "Return Code: '%d'" % retcode )
+	if retcode: print_rich( "[color=red][b]%s[/b][/color]" % "".join(log) )
+	else: print( "".join(log) )
 
 	#TODO Figure out a way to get the script in the editor to reload.
 	#  the only reliable way I have found to refresh the script in the editor
 	#  is to change the focus away from Godot and back again.
 
 	# This line refreshes the filesystem dock.
-	EditorInterface.get_resource_filesystem().scan()
-	return result
+	if not retcode: EditorInterface.get_resource_filesystem().scan()
+	return {
+		'flatc_path':flatc_exe,
+		'args':args,
+		'retcode':retcode
+	}
 
 #   ██████   ██████         ███    ███ ███████ ███    ██ ██    ██ ███████
 #   ██   ██ ██              ████  ████ ██      ████   ██ ██    ██ ██
@@ -344,7 +352,7 @@ class MyFileMenu extends EditorContextMenuPlugin:
 	func _popup_menu(paths):
 		for path in paths:
 			if path.get_extension() == 'fbs':
-				add_context_menu_item("flatc --gdscript", _plugin.flatc_multi.bind(['--gdscript']) )#, icon )
+				add_context_menu_item("flatc --gdscript", _plugin.flatc_multi.bind(['--gdscript']), ICON_BW_TINY  )
 				return
 
 
@@ -354,8 +362,7 @@ class MyFileCreateMenu extends EditorContextMenuPlugin:
 	# _popup_menu() and option callback will be called with list of paths of the
 	# currently selected files.
 	func _popup_menu(paths):
-		print( paths )
-		add_context_menu_item("script_tab_context_menu_test", func(thing): print( thing ) )#, icon )
+		add_context_menu_item("script_tab_context_menu_test", func(thing): print( thing ), ICON_BW_TINY )
 
 # CONTEXT_SLOT_SCRIPT_EDITOR
 # Context menu of Script editor's script tabs.
@@ -369,9 +376,10 @@ class MyScriptTabMenu extends EditorContextMenuPlugin:
 	# while option callback will receive reference to that script.
 	func _popup_menu(paths : PackedStringArray):
 		if paths[0].get_extension() == 'fbs':
-			add_context_menu_item("flatc --gdscript", call_flatc_on_path.bind( paths, ['--gdscript'] ) )#, icon )
-			add_context_menu_item("flatc --cpp", call_flatc_on_path.bind( paths[0], ['--cpp'] ) )#, icon )
-			add_context_menu_item("flatc --help", call_flatc_on_path.bind( paths[0], ['--help'] ) )#, icon )
+			add_context_menu_item("flatc --gdscript", call_flatc_on_path.bind( paths[0], ['--gdscript'] ), ICON_BW_TINY )
+			add_context_menu_item("flatc --cpp", call_flatc_on_path.bind( paths[0], ['--cpp'] ), ICON_BW_TINY )
+			add_context_menu_item("flatc --help", call_flatc_on_path.bind( paths[0], ['--help'] ), ICON_BW_TINY )
+			add_context_menu_item("flatc --version", call_flatc_on_path.bind( paths[0], ['--version'] ), ICON_BW_TINY )
 			return
 
 	func call_flatc_on_path( script, path, args : Array ) -> void:
@@ -386,4 +394,4 @@ class MyCodeEditMenu extends EditorContextMenuPlugin:
 	func _popup_menu(paths):
 		print( paths )
 		var code_edit = Engine.get_main_loop().root.get_node(paths[0]);
-		add_context_menu_item("code_edit_context_menu_test", func(thing): print( thing ) )#, icon )
+		add_context_menu_item("code_edit_context_menu_test", func(thing): print( thing ), ICON_BW_TINY )

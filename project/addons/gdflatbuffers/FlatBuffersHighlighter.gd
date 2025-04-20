@@ -31,6 +31,7 @@ func lpad( extra : int = 0 ) -> String:
 	return "".lpad( stack.size() -1 + extra, '\t' )
 
 func print_trace( message : String ):
+	if _plugin.verbosity < LogLevel.TRACE: return
 	var colour = _plugin.colours[LogLevel.TRACE].to_html()
 	print_rich( lpad() + "[color=%s]%s[/color]" % [colour, message] )
 

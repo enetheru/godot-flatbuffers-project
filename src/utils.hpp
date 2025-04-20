@@ -1,7 +1,3 @@
-//
-// Created by nicho on 25/05/2024.
-//
-
 #ifndef GODOT_FLATBUFFERS_EXTENSION_UTILS_HPP
 #define GODOT_FLATBUFFERS_EXTENSION_UTILS_HPP
 

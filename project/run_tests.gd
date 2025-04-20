@@ -4,9 +4,10 @@ extends EditorScript
 var fs := EditorInterface.get_resource_filesystem()
 var test_dir : EditorFileSystemDirectory = fs.get_filesystem_path( 'res://tests/' )
 var fbs_dir : EditorFileSystemDirectory = fs.get_filesystem_path( 'res://fbs_files/tests/' )
-
+var plugin : FlatBuffersPlugin
 
 func _run() -> void:
+	plugin = FlatBuffersPlugin._prime
 	print_rich( "\n[b]== GDFlatbuffer Plugin Testing ==[/b]\n" )
 	var schemas = []
 	var tests = []
@@ -29,7 +30,7 @@ func _run() -> void:
 		var category = schema.get_base_dir().get_file().to_pascal_case()
 		var file = schema.get_file()
 		var key = "/".join( [category, file] )
-		var result = FlatBuffersPlugin.flatc_generate( schema )
+		var result = plugin.flatc_generate( schema, ['--gdscript'] )
 		compile_results[key] = result
 		if result['retcode']:
 			print_rich("[b]# Error processing %s[/b]" % key )
