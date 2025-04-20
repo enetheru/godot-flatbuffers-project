@@ -5,6 +5,8 @@
 
 #include "flatbuffers/flatbuffers.h"
 
+#define BIND_STRUCT(type_name) ClassDB::bind_method( D_METHOD( "get_" #type_name, "voffset" ), &FlatBuffer::get_struct< type_name > );
+
 namespace godot_flatbuffers {
 class FlatBuffer final : public godot::RefCounted {
   GDCLASS( FlatBuffer, RefCounted ) // NOLINT(*-use-auto)
@@ -19,15 +21,6 @@ class FlatBuffer final : public godot::RefCounted {
 protected:
 
   static void _bind_methods();
-
-  // Bind Helper
-  template< typename T >
-  static void BindGetStructMethod( const godot::StringName &type_name ) {
-    using namespace godot;
-    //FIXME: Pretty sure the use of this template to copy the bytes completely breaks the endianness correction that could happen.
-    //  so its a temporary hack.
-    ClassDB::bind_method( D_METHOD( "Get"+type_name, "voffset" ), &FlatBuffer::GetStruct< T > );
-  }
 
 public:
   //Debug
@@ -53,7 +46,7 @@ public:
   [[nodiscard]] int64_t get_array_element_start( int64_t array_start, int64_t idx ) const;
 
   template< typename godot_struct >
-  [[nodiscard]] godot_struct GetStruct( const int64_t voffset ) const {
+  [[nodiscard]] godot_struct get_struct( const int64_t voffset ) const {
     const uoffset_t field_offset = get_field_offset( voffset );
     if( not field_offset) return {};
     const uoffset_t field_start = start + field_offset;

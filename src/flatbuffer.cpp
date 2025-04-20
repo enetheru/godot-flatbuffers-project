@@ -36,24 +36,24 @@ void FlatBuffer::_bind_methods() {
   ClassDB::bind_method( D_METHOD( "decode_String", "start_" ), &FlatBuffer::decode_String );
 
   //// Decode math types
-  BindGetStructMethod<Vector2>("Vector2");
-  BindGetStructMethod<Vector2i>("Vector2i");
-  BindGetStructMethod<Rect2>("Rect2");
-  BindGetStructMethod<Rect2i>("Rect2i");
-  BindGetStructMethod<Vector3>("Vector3");
-  BindGetStructMethod<Vector3i>("Vector3i");
-  BindGetStructMethod<Transform2D>("Transform2D");
-  BindGetStructMethod<Vector4>("Vector4");
-  BindGetStructMethod<Vector4i>("Vector4i");
-  BindGetStructMethod<Plane>("Plane");
-  BindGetStructMethod<Quaternion>("Quaternion");
-  BindGetStructMethod<AABB>("AABB");
-  BindGetStructMethod<Basis>("Basis");
-  BindGetStructMethod<Transform3D>("Transform3D");
-  BindGetStructMethod<Projection>("Projection");
+  BIND_STRUCT(Vector2)
+  BIND_STRUCT(Vector2i)
+  BIND_STRUCT(Rect2)
+  BIND_STRUCT(Rect2i)
+  BIND_STRUCT(Vector3)
+  BIND_STRUCT(Vector3i)
+  BIND_STRUCT(Transform2D)
+  BIND_STRUCT(Vector4)
+  BIND_STRUCT(Vector4i)
+  BIND_STRUCT(Plane)
+  BIND_STRUCT(Quaternion)
+  BIND_STRUCT(AABB)
+  BIND_STRUCT(Basis)
+  BIND_STRUCT(Transform3D)
+  BIND_STRUCT(Projection)
 
   //// Decode misc types
-  BindGetStructMethod<Color>("Color");
+  BIND_STRUCT(Color)
   // STRING_NAME,
   // NODE_PATH,
   // RID,

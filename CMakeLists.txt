@@ -96,7 +96,7 @@ endif ()
 # ╘════════════════════════════════════════════════════════════════════════════╛
 
 set( GODOTCPP_GIT_URL "https://github.com/godotengine/godot-cpp.git" CACHE STRING "Location of the godot-cpp git repository" )
-set( GODOTCPP_GIT_TAG "master" CACHE STRING "git hash, branch or tag to fetch" )
+set( GODOTCPP_GIT_TAG "4.4" CACHE STRING "git hash, branch or tag to fetch" )
 
 set( GODOTCPP_TARGET "template_debug" CACHE STRING "")
 set( GODOTCPP_BUILD_PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/lib/godot-cpp.build_profile.json" )
