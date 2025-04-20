@@ -1,20 +1,26 @@
 {
 	"nodes":[
-		{"id":"3c40f24606e80cd7","type":"text","text":"Recognition of fbs files","x":-120,"y":-200,"width":250,"height":60},
 		{"id":"da23e929e43fab8f","type":"text","text":"[[FileSystemDock]]","x":-120,"y":213,"width":250,"height":60},
 		{"id":"4f832fd143ffc48f","type":"text","text":"Right Click -> New Flatbuffer Schema","x":297,"y":123,"width":348,"height":60},
 		{"id":"6c4ff8cb730d657b","type":"text","text":"Right Click on *.fbs* ->GEnerate gdscript","x":297,"y":183,"width":351,"height":60,"color":"4"},
-		{"id":"9cf26592c512aaa5","type":"text","text":"icon for *.fbs* files","x":297,"y":243,"width":250,"height":55},
+		{"id":"9cf26592c512aaa5","type":"text","text":"icon for *.fbs* files","x":297,"y":243,"width":250,"height":55,"color":"4"},
 		{"id":"bc126bba689b5bd6","type":"text","text":"Tooltip for *.fbs* files","x":296,"y":298,"width":250,"height":60},
 		{"id":"748705eab59ac6c2","type":"text","text":"[[EditorSettings]]","x":-120,"y":469,"width":250,"height":60},
 		{"id":"30c933f00c2decac","type":"text","text":"Auto Generation of fbs from exported values","x":-120,"y":-300,"width":250,"height":60},
 		{"id":"22398628d2fc8641","type":"text","text":"[[ScriptEditor]]","x":-120,"y":20,"width":250,"height":60},
 		{"id":"f294e8033bf5edda","type":"text","text":"Syntax Highlighting","x":297,"y":25,"width":250,"height":50,"color":"4"},
 		{"id":"b8c597d61f362249","type":"text","text":"Editor","x":-600,"y":15,"width":250,"height":60},
-		{"id":"eee251c8afaad0e7","type":"text","text":"path to external flatc","x":296,"y":469,"width":250,"height":60,"color":"4"}
+		{"id":"3c40f24606e80cd7","type":"text","text":"Recognition of fbs files","x":-120,"y":-160,"width":250,"height":60},
+		{"id":"c61162a9247497bd","x":620,"y":460,"width":250,"height":60,"type":"text","text":"Filesystem"},
+		{"id":"d3807a1f93869c63","x":940,"y":460,"width":250,"height":60,"type":"text","text":"TextFile Extensions"},
+		{"id":"54aa86aa9ae20cdf","x":1260,"y":460,"width":250,"height":60,"type":"text","text":"Add fbs to list"},
+		{"id":"94c7c0ac323a622d","x":300,"y":460,"width":250,"height":60,"type":"text","text":"docks"},
+		{"id":"138a032f040899c1","x":638,"y":581,"width":250,"height":60,"type":"text","text":"flatbuffers"},
+		{"id":"eee251c8afaad0e7","type":"text","text":"path to external flatc","x":978,"y":581,"width":250,"height":60,"color":"4"},
+		{"id":"f3fbc4faa0fdd2c6","x":300,"y":580,"width":250,"height":60,"type":"text","text":"plugins"}
 	],
 	"edges":[
-		{"id":"74d0004b1107afc6","fromNode":"748705eab59ac6c2","fromSide":"right","toNode":"eee251c8afaad0e7","toSide":"left"},
+		{"id":"74d0004b1107afc6","fromNode":"138a032f040899c1","fromSide":"right","toNode":"eee251c8afaad0e7","toSide":"left"},
 		{"id":"e7a2755d94e15226","fromNode":"b8c597d61f362249","fromSide":"right","toNode":"748705eab59ac6c2","toSide":"left"},
 		{"id":"6f612d1c2728d3e7","fromNode":"b8c597d61f362249","fromSide":"right","toNode":"3c40f24606e80cd7","toSide":"left"},
 		{"id":"8b7cca8418dc09fa","fromNode":"b8c597d61f362249","fromSide":"right","toNode":"22398628d2fc8641","toSide":"left"},
@@ -24,6 +30,12 @@
 		{"id":"cba49849aa2c2c9d","fromNode":"da23e929e43fab8f","fromSide":"right","toNode":"4f832fd143ffc48f","toSide":"left"},
 		{"id":"42698cc538235e9b","fromNode":"da23e929e43fab8f","fromSide":"right","toNode":"6c4ff8cb730d657b","toSide":"left"},
 		{"id":"530a1306ddf5bc74","fromNode":"da23e929e43fab8f","fromSide":"right","toNode":"9cf26592c512aaa5","toSide":"left"},
-		{"id":"7cd0d7e3e2c789a1","fromNode":"da23e929e43fab8f","fromSide":"right","toNode":"bc126bba689b5bd6","toSide":"left"}
+		{"id":"7cd0d7e3e2c789a1","fromNode":"da23e929e43fab8f","fromSide":"right","toNode":"bc126bba689b5bd6","toSide":"left"},
+		{"id":"09dd0321e004cfa4","fromNode":"748705eab59ac6c2","fromSide":"right","toNode":"94c7c0ac323a622d","toSide":"left"},
+		{"id":"d9457366c610c5cf","fromNode":"94c7c0ac323a622d","fromSide":"right","toNode":"c61162a9247497bd","toSide":"left"},
+		{"id":"66d661d5e9c7bafb","fromNode":"c61162a9247497bd","fromSide":"right","toNode":"d3807a1f93869c63","toSide":"left"},
+		{"id":"0a77a44a479c0d80","fromNode":"d3807a1f93869c63","fromSide":"right","toNode":"54aa86aa9ae20cdf","toSide":"left"},
+		{"id":"9415e2a6e16343e9","fromNode":"748705eab59ac6c2","fromSide":"right","toNode":"f3fbc4faa0fdd2c6","toSide":"left"},
+		{"id":"bdb517cde448eafe","fromNode":"f3fbc4faa0fdd2c6","fromSide":"right","toNode":"138a032f040899c1","toSide":"left"}
 	]
 }

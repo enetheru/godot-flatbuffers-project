@@ -7,6 +7,7 @@ kanban-plugin: board
 ## gdextension
 
 - [ ] cleanup source generation so that it is just a copy paste of the addons folder
+- [ ] CMake: Change FetchContent to ExternalProject
 
 
 ## flatc Generator
