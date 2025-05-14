@@ -136,6 +136,13 @@ func _run() -> void:
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/P5P61CW89K)
 
+### Discord
+I'm frequently available in both the official and the unofficial discord channels for gdextension and C++
+as 'Enetheru' during Australian Central Standard Time. GMT+930
+
+* [GodotEngine #cplusplus-discuss](https://discord.com/channels/1235157165589794909/1259879534392774748)
+* [Godot Café #gdnative-gdextension](https://discord.com/channels/212250894228652034/342047011778068481)
+
 ### Upstream
 * https://flatbuffers.dev/index.html
 * https://github.com/google/flatbuffers
