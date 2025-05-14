@@ -45,3 +45,26 @@ objects to visually separate them.
 I'd like to add features and fix up the syntax highlighter, and add features to
 the code gen too. anyway, lots to do, but its being written here because i am
 working on other things.
+
+---
+
+Today I wanted a single function that does all the work, sort of like a create_root( blah )
+just like the shorthand except for the root object.
+
+---
+
+Optional methods to transform a flatbuffer into a dictionary,
+or to print the flatbuffer in its schema form with the values replaced by real ones.
+
+I also really badly need to perform performance testing.
+
+---
+
+Today I want to be able to test packedbyte array size against the minimum for
+any particular buffer. so having a function in the schema file to return that
+value would be handy
+
+I found that I might be able to change the function that creates the buffer
+object to test against the minimum before being allowed to be created.
+It strikes me that its likely that I can perform other tests, that the offsets
+are within the buffer object. or not zero
