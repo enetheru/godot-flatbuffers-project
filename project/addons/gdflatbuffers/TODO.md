@@ -68,3 +68,28 @@ I found that I might be able to change the function that creates the buffer
 object to test against the minimum before being allowed to be created.
 It strikes me that its likely that I can perform other tests, that the offsets
 are within the buffer object. or not zero
+
+---
+
+Today I saw that i had no implementaion of getting an item from an array.
+
+it looks something like this:
+
+```gdscript
+class TableName:
+	const parent = preload("schema_generated.gd")
+	const Other = parent.Other
+
+	func others_at( idx : int ) -> Other:
+		var field_start = get_field_start( vtable.VT_OTHERS )
+		var array_size = bytes.decode_u32( field_start )
+		var array_start = field_start + 4
+		assert(field_start, "Field is not present in buffer" )
+		assert( idx < array_size, "index is out of bounds")
+		var relative_offset = array_start + idx * 4
+		var offset = relative_offset + bytes.decode_u32( relative_offset )
+		return parent.get_Other( bytes, offset )
+```
+it would be nice to be able to get an array of the final type, rather than
+the type of flatbuffer. but that would require more inforamation than
+I currently have.
