@@ -93,3 +93,25 @@ class TableName:
 it would be nice to be able to get an array of the final type, rather than
 the type of flatbuffer. but that would require more inforamation than
 I currently have.
+
+---
+
+A discussion in the discord piqued my interest, and is something i need to look into
+
+```
+I remember you could go through variant and affect the original array.
+Found the example here https://github.com/godotengine/godot-proposals/issues/10830 .
+Also looks like 4.4 has https://github.com/godotengine/godot/pull/99201
+
+Yeah it is in 4.4, in variant_internal.cpp it is loading that added function, so it should work.
+https://github.com/godotengine/godot-cpp/blob/4.4/include/godot_cpp/variant/variant_internal.hpp
+
+From the PR:
+One example of a use-case for this function is mostly explained in GOP 10830: It allows for in-place modification of (wrapped ref-counted) COW variant arguments, i.e. arrays.
+
+And from the closed issue:
+With godotengine/godot#99201 merged, i no longer have a personal use-case for this feature. Instead of storing PackedArrayRefs, one can store a Variant and access its internal value using VariantInternal. If a new use-case emerges, please comment on this proposal, or open a new one linking to this one.
+I'll note that godotengine/godot#98373 should be functional and can be salvaged in this case.
+
+If you are on a lower version, then call on Variant is the best you have for in-place modification
+```
