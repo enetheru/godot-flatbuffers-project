@@ -15,12 +15,9 @@ size_flags_vertical = 3
 bbcode_enabled = true
 text = "Incase you happen to have loaded this project looking for inforamtion.
 
-The only thing in here is the run_tests.gd and supporting EditorScripts.
+The only thing worth interacting with is the res://editor_scripts/run_tests.gd and res://editor_scripts/enable_bpanel.gd
 
-If you open the run_tests.gd EditorScript you will be able to run it through the file menu ,or by right clicking on it in the scripts editor scripts panel.
+If you open either one you will be able to run it through the file menu ,or by right clicking on it in the scripts editor scripts panel.
 
-It has a series of tests it performs and dumps information to the console."
+It is the start of a testing regime, sadly a lot of things fail due to being a WIP"
 fit_content = true
-
-[node name="@RichTextLabel@35170" type="RichTextLabel" parent="."]
-layout_mode = 2
