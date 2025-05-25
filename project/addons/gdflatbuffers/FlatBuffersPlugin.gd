@@ -328,7 +328,8 @@ func flatc_generate( schema_path : String, args : Array ) -> Variant:
 	return {
 		'flatc_path':flatc_exe,
 		'args':args,
-		'retcode':retcode
+		'retcode':retcode,
+		'output':log
 	}
 
 #   ██████   ██████         ███    ███ ███████ ███    ██ ██    ██ ███████
@@ -395,3 +396,35 @@ class MyCodeEditMenu extends EditorContextMenuPlugin:
 		print( paths )
 		var code_edit = Engine.get_main_loop().root.get_node(paths[0]);
 		add_context_menu_item("code_edit_context_menu_test", func(thing): print( thing ), ICON_BW_TINY )
+
+#   ██████  ██████   █████  ███    ██ ███████ ██
+#   ██   ██ ██   ██ ██   ██ ████   ██ ██      ██
+#   ██████  ██████  ███████ ██ ██  ██ █████   ██
+#   ██   ██ ██      ██   ██ ██  ██ ██ ██      ██
+#   ██████  ██      ██   ██ ██   ████ ███████ ███████
+
+const BPANEL = preload('res://bpanel/bpanel.tscn')
+var bpanel_enabled : bool = false
+var bpanel_control : Control
+var bpanel_button : Button
+
+func enable_bottom_panel():
+	if bpanel_enabled: return
+	print_rich( "\n[b]== GDFlatbuffer Bottom Panel Enable ==[/b]\n" )
+	bpanel_control = BPANEL.instantiate()
+	bpanel_button = add_control_to_bottom_panel(bpanel_control, bpanel_control.name)
+	bpanel_button.name = bpanel_control.name
+	bpanel_enabled = true
+
+
+func disable_bottom_panel():
+	if not bpanel_enabled: return
+	print_rich( "\n[b]== GDFlatbuffer Bottom Panel Disable ==[/b]\n" )
+	remove_control_from_bottom_panel(bpanel_control)
+	bpanel_control.queue_free()
+	bpanel_enabled = false
+
+
+func bpanel_reload():
+	call_deferred( "disable_bottom_panel" )
+	call_deferred( "enable_bottom_panel" )
