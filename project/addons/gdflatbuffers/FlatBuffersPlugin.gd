@@ -30,6 +30,7 @@ var editor_settings_list = [
 	# Compiler
 	"compiler/flatc_exe",
 	"compiler/include_paths",
+	"compiler/generate_debug",
 	# Colours
 	"syntax_colors/unknown_color",
 	"syntax_colors/comment_color",
@@ -55,6 +56,7 @@ var editor_settings_list = [
 var print_syntax_errors : bool = true
 
 @export_global_file var flatc_exe : String = "addons/gdflatbuffers/bin/flatc.exe"
+var generate_debug : bool = false
 
 enum LogLevel {
 	SILENT = 0,
@@ -291,6 +293,9 @@ func flatc_generate( schema_path : String, args : Array ) -> Variant:
 		push_error(msg)
 		return {'retcode':ERR_FILE_BAD_PATH, 'output': [msg] }
 
+	# generate_debug
+	if generate_debug:
+		args.append("--gdscript-debug")
 	# -I <path>                Search for includes in the specified path.
 	#var dir_access := DirAccess.open("res://")
 	for ipath in include_paths + ["res://addons/gdflatbuffers/"]:
