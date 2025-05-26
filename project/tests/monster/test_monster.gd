@@ -59,9 +59,9 @@ func example_creating() -> PackedByteArray:
 #
 # // Use the `CreateWeapon` shortcut to create Weapons with all the fields set.
 # auto sword = CreateWeapon(builder, weapon_one_name, weapon_one_damage);
-	var sword = schema.CreateWeapon( builder, weapon_one_name, weapon_one_damage )
+	var sword = schema.create_Weapon( builder, weapon_one_name, weapon_one_damage )
 # auto axe = CreateWeapon(builder, weapon_two_name, weapon_two_damage);
-	var axe = schema.CreateWeapon( builder, weapon_two_name, weapon_two_damage )
+	var axe = schema.create_Weapon( builder, weapon_two_name, weapon_two_damage )
 #
 # Now let's create our monster, the orc. For this orc, lets make him red with
 # rage, positioned at (1.0, 2.0, 3.0), and give him a large pool of hit points
@@ -146,7 +146,7 @@ func example_creating() -> PackedByteArray:
 # auto orc = CreateMonster(builder, &position, mana, hp, name, inventory,
 #                         Color_Red, weapons, Equipment_Weapon, axe.Union(),
 #                         path);
-	var orc = schema.CreateMonster( builder, position, mana, hp, name, inventory,
+	var orc = schema.create_Monster( builder, position, mana, hp, name, inventory,
 							schema.Color_.RED, weapons, schema.Equipment.WEAPON, axe,
 							path )
 #
@@ -265,7 +265,7 @@ func example_reading( buffer : PackedByteArray ):
 #
 # // Get a pointer to the root object inside the buffer.
 # auto monster = GetMonster(buffer_pointer);
-	var monster = schema.GetMonster( buffer )
+	var monster = schema.get_Monster( buffer )
 	output.append( "monster: " + JSON.stringify( monster.debug(), '\t', false ) )
 #
 # // `monster` is of type `Monster *`.
@@ -361,7 +361,7 @@ func example_reading( buffer : PackedByteArray ):
 
 
 func reconstruct( buffer : PackedByteArray ):
-	var root_table : FlatBuffer = schema.GetRoot( buffer )
+	var root_table : FlatBuffer = schema.get_root( buffer )
 	output.append( "root_table: " + JSON.stringify( root_table.debug(), '\t', false ) )
 
 	# Perform testing on the reconstructed flatbuffer.

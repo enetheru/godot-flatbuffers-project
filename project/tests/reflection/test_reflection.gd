@@ -10,7 +10,7 @@ func _run() -> void:
 		print( error_string( FileAccess.get_open_error() ) )
 		return
 
-	var root_table = schema.GetRoot( bfbs )
+	var root_table = schema.get_root( bfbs )
 	output.append( "root_table: " + JSON.stringify( root_table.debug(), '\t', false ) )
 	if not silent:
 		print_rich( "\n[b]== Scalar Arrays ==[/b]\n" )

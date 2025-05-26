@@ -20,7 +20,7 @@ func short_way():
 	var my_array_offset : int
 	var array_offset : int
 
-	var offset = fb.CreateRootTable( builder, my_array_offset, array_offset )
+	var offset = fb.create_RootTable( builder, my_array_offset, array_offset )
 	builder.finish( offset )
 
 	## This must be called after `Finish()`.
@@ -45,7 +45,7 @@ func long_way():
 
 
 func reconstruction( buffer : PackedByteArray ):
-	var root_table := fb.GetRoot( buffer )
+	var root_table := fb.get_root( buffer )
 	output.append( "root_table: " + JSON.stringify( root_table.debug(), '\t', false ) )
 
 	TEST_EQ( 0, 1, "TODO Generate testing" )

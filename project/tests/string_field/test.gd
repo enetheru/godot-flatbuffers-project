@@ -15,7 +15,7 @@ var test_string : String = "This is a string that I am adding to te flatbuffer"
 func short_way():
 	var builder = FlatBufferBuilder.new()
 	var string_offset = builder.create_String( test_string )
-	var offset = fb.CreateRootTable( builder, string_offset )
+	var offset = fb.create_RootTable( builder, string_offset )
 	builder.finish( offset )
 
 	## This must be called after `Finish()`.
@@ -38,7 +38,7 @@ func long_way():
 
 
 func reconstruction( buffer : PackedByteArray ):
-	var root_table := fb.GetRoot( buffer )
+	var root_table := fb.get_root( buffer )
 
 	output.append( "root_table: " + JSON.stringify( root_table.debug(), '\t', false ) )
 

@@ -34,7 +34,16 @@ func _run() -> void:
 
 func short_way():
 	var builder = FlatBufferBuilder.new()
-	var offset = fb.CreateRootTable2( builder, root_table )
+
+	# singular table
+	var sub_offset = fb.create_SubTable(builder, 5 )
+
+	# array of tables
+	var array_of_offsets : PackedInt32Array = []
+	array_of_offsets.append( fb.create_SubTable(builder, 5 ) )
+	var offset_of_array = builder.create_vector_offset( array_of_offsets )
+
+	var offset = fb.create_RootTable( builder, sub_offset, offset_of_array )
 	builder.finish( offset )
 #
 	### This must be called after `Finish()`.
@@ -48,10 +57,10 @@ func long_way():
 	var offsets : PackedInt32Array
 	offsets.resize( root_table.table_array.size() )
 	for i in root_table.table_array.size():
-		offsets[i] = fb.CreateSubTable( builder, root_table.table_array[i].item )
+		offsets[i] = fb.create_SubTable( builder, root_table.table_array[i].item )
 
 	var table_array_offset = builder.create_vector_offset( offsets )
-	var subtable_offset = fb.CreateSubTable( builder, 5 )
+	var subtable_offset = fb.create_SubTable( builder, 5 )
 #
 	var root_builder = fb.RootTableBuilder.new( builder )
 	root_builder.add_subtable( subtable_offset )
@@ -64,7 +73,7 @@ func long_way():
 
 
 func reconstruction( buffer : PackedByteArray ):
-	var rt := fb.GetRoot( buffer )
+	var rt := fb.get_root( buffer )
 	output.append( "root_table: " + JSON.stringify( rt.debug(), '\t', false ) )
 
 	TEST_EQ( rt.subtable().item(), root_table.subtable.item, "result == input")

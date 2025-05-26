@@ -81,7 +81,7 @@ func create2():
 
 
 func reconstruct( buffer : PackedByteArray ):
-	var root_table : FlatBuffer = schema.GetRoot( buffer )
+	var root_table : FlatBuffer = schema.get_root( buffer )
 	output.append( "root_table: " + JSON.stringify( root_table.debug(), '\t', false ) )
 
 	# Perform testing on the reconstructed flatbuffer.

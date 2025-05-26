@@ -55,7 +55,7 @@ func create():
 	# var offset : int = schema.Create<Type>( builder, element, ... )
 	# ...
 
-	var offset : int = schema.CreateRootTable( builder, test_object.transform )
+	var offset : int = schema.create_RootTable( builder, test_object.transform )
 
 
 	# finalise flatbuffer builder
@@ -70,7 +70,7 @@ func create2():
 	var builder = FlatBufferBuilder.new()
 
 	# This call generates the root table using test_object properties
-	var offset = schema.CreateRootTable2( builder, test_object )
+	var offset = schema.create_RootTable( builder, test_object )
 
 	# Finalise flatbuffer builder
 	builder.finish( offset )
@@ -80,7 +80,7 @@ func create2():
 
 
 func reconstruct( buffer : PackedByteArray ):
-	var root_table : FlatBuffer = schema.GetRoot( buffer )
+	var root_table : FlatBuffer = schema.get_root( buffer )
 	output.append( "root_table: " + JSON.stringify( root_table.debug(), '\t', false ) )
 
 	# Perform testing on the reconstructed flatbuffer.

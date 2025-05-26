@@ -49,7 +49,7 @@ func short_way():
 	var floats_offset = builder.create_vector_float32( [FLT_MIN, FLT_MAX] )
 	var doubles_offset = builder.create_vector_float64( [DBL_MIN, DBL_MAX] )
 
-	var offset = fb.CreateRootTable(builder,
+	var offset = fb.create_RootTable(builder,
 		bytes_offset, ubytes_offset,
 		shorts_offset, ushorts_offset,
 		ints_offset, uints_offset,
@@ -99,7 +99,7 @@ func long_way():
 
 
 func reconstruction( buffer : PackedByteArray ):
-	var root_table := fb.GetRoot( buffer )
+	var root_table := fb.get_root( buffer )
 	output.append( "root_table: " + JSON.stringify( root_table.debug(), '\t', false ) )
 
 	# bytes

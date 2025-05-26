@@ -23,7 +23,7 @@ func short_way():
 
 	var builder = FlatBufferBuilder.new()
 	var strings_offset = builder.create_PackedStringArray( string_array )
-	var offset = fb.CreateRootTable(builder, strings_offset )
+	var offset = fb.create_RootTable(builder, strings_offset )
 	builder.finish( offset )
 
 	## This must be called after `Finish()`.
@@ -46,7 +46,7 @@ func long_way():
 	reconstruction( buf )
 
 func reconstruction( buffer : PackedByteArray ):
-	var root_table := fb.GetRoot( buffer )
+	var root_table := fb.get_root( buffer )
 	output.append( "root_table: " + JSON.stringify( root_table.debug(), '\t', false ) )
 
 	# Size of arrays should match

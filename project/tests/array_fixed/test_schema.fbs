@@ -1,13 +1,12 @@
 include "godot.fbs";
 
-table my_table {
-	value:int;
+table RootTable {
+	value:FixedArrayExample;
 }
 
-table RootTable{
+struct FixedArrayExample{
 	array_scalar:[int:32];
-	array_table:[Vector3:4];
-	array_table:[Color:123];
+	array_struct:[Vector3:4];
 }
 
 root_type RootTable;

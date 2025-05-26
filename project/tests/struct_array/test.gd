@@ -18,7 +18,7 @@ func short_way():
 
 	var my_struct = fb.MyStruct.new()
 
-	var offset = fb.CreateRootTable( builder, my_struct, builtin_ )
+	var offset = fb.create_RootTable( builder, my_struct, builtin_ )
 	builder.finish( offset )
 
 	## This must be called after `Finish()`.
@@ -39,7 +39,7 @@ func long_way():
 
 
 func reconstruction( buffer : PackedByteArray ):
-	var root_table := fb.GetRoot( buffer )
+	var root_table := fb.get_root( buffer )
 	output.append( "root_table: " + JSON.stringify( root_table.debug(), '\t', false ) )
 
 	TEST_EQ( root_table.builtin_struct(), builtin_, "builtin_struct()" )
