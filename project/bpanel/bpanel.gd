@@ -185,7 +185,7 @@ func create_info( file_item : TreeItem ) -> Control:
 	info_box.show()
 	if not info_box.is_node_ready(): await info_box.ready
 
-	info_box.label.text = "/".join([test_def.name, file_name])
+	info_box.set_title( "/".join([test_def.name, file_name]) )
 
 	return info_box
 
@@ -213,7 +213,6 @@ func process_selection( action_type : StringName = &"all"):
 
 func process_schema( file_item : TreeItem ):
 	var info_box : InfoBox = await create_info( file_item )
-	info_box.call_deferred( "grab_focus")
 	var test_def : Dictionary = file_item.get_metadata(0)
 	var schema_file : String = file_item.get_text(0)
 	var schema_path : String = "/".join([test_def.folder_path, schema_file])
@@ -224,19 +223,21 @@ func process_schema( file_item : TreeItem ):
 	results["latest"] = info_box
 	test_def.get_or_add( "results", {} ).set( file_item, results )
 
-
 	# Update the tree_item
+	var info_text : String = "\n".join(results.output)
 	if results.get('retcode', 1):
 		set_item_fail(file_item)
-		info_box.set_fail("\n".join(results.output))
+		info_box.set_fail(info_text)
+	elif 'warn' in info_text:
+		set_item_warning(file_item)
+		info_box.set_warning(info_text)
 	else:
 		set_item_success(file_item)
-		info_box.set_success("\n".join(results.output))
+		info_box.set_success(info_text)
 
 
 func process_test( file_item : TreeItem ):
 	var info_box : InfoBox = await create_info( file_item )
-	info_box.call_deferred( "grab_focus")
 	var test_def : Dictionary = file_item.get_metadata(0)
 	var script_file : String = file_item.get_text(0)
 	var script_path : String = "/".join([test_def.folder_path, script_file])
@@ -249,12 +250,16 @@ func process_test( file_item : TreeItem ):
 	test_def.get_or_add( "results", {} ).set( file_item, results )
 
 	# Update the tree_item
+	var info_text : String = "\n".join(results.output)
 	if results.get('retcode', 1):
 		set_item_fail(file_item)
-		info_box.set_fail("\n".join(results.output))
+		info_box.set_fail(info_text)
+	elif 'warn' in info_text:
+		set_item_warning(file_item)
+		info_box.set_warning(info_text)
 	else:
 		set_item_success(file_item)
-		info_box.set_success("\n".join(results.output))
+		info_box.set_success(info_text)
 
 
 func run_test_script( file_path : String ) -> Dictionary:
@@ -283,6 +288,12 @@ func set_item_fail( item : TreeItem ):
 	item.set_custom_bg_color(0, Color.DARK_RED, false)
 	item.set_custom_bg_color(1, Color.DARK_RED, false)
 
+func set_item_warning( item : TreeItem ):
+	item.set_text(1, "!")
+	item.set_custom_bg_color(0, Color.DARK_GOLDENROD, false)
+	item.set_custom_color(0, Color.DARK_SLATE_GRAY)
+	item.set_custom_bg_color(1, Color.DARK_GOLDENROD, false)
+	item.set_custom_color(1, Color.DARK_SLATE_GRAY)
 
 func set_item_success( item : TreeItem ):
 	item.set_text(1, "OK")
