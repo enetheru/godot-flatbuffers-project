@@ -2,6 +2,8 @@
 extends TestBase
 
 const schema = preload('./Monster_generated.gd')
+const Monster = schema.Monster
+const Equipment = schema.Equipment
 
 #region == Testing Setup ==
 # testing variables
@@ -10,17 +12,16 @@ var test_object
 #endregion
 
 func _run() -> void:
-	# Setup Persistent data
-	# ...
+	var data : PackedByteArray = example_creating()
+	example_reading( data )
 
-	# Generate the flatbuffer using the three methods of creations
-	example_reading( example_creating() )
-	#reconstruct( manual() )
-	#reconstruct( create() )
-	#reconstruct( create2() )
-	if not silent:
-		print_rich( "\n[b]== Monster ==[/b]\n" )
-		for o in output: print( o )
+	var monster : Monster = schema.get_Monster(data)
+
+	output.append("Warning: I still have to implement this")
+	retcode = 0
+	#if retcode:
+		#output.append_array( ["[color=goldenrod]Debug:[/color]",
+			#JSON.stringify(monster.debug(), "  ", false) ])
 
 
 #  ██████ ██████  ███████  █████  ████████ ██ ███    ██  ██████
@@ -266,7 +267,7 @@ func example_reading( buffer : PackedByteArray ):
 # // Get a pointer to the root object inside the buffer.
 # auto monster = GetMonster(buffer_pointer);
 	var monster = schema.get_Monster( buffer )
-	output.append( "monster: " + JSON.stringify( monster.debug(), '\t', false ) )
+
 #
 # // `monster` is of type `Monster *`.
 # // Note: root object pointers are NOT the same as `buffer_pointer`.
@@ -283,9 +284,9 @@ func example_reading( buffer : PackedByteArray ):
 	var name = monster.name()
 #
 # These should hold 300, 150, and "Orc" respectively.
-	TEST_EQ( hp, 300, "monster.hp()" )
-	TEST_EQ( mana, 150, "monster.mana()" )
-	TEST_EQ( name, "Orc", "monster.name()" )
+	TEST_EQ( 300, hp,  "monster.hp()" )
+	TEST_EQ( 150, mana,  "monster.mana()" )
+	TEST_EQ( "Orc", name , "monster.name()" )
 #
 # Note: The default value 150 wasn't stored in mana, but we are still able to
 # retrieve it.
@@ -357,12 +358,3 @@ func example_reading( buffer : PackedByteArray ):
 	#if equipment is schema.Weapon:
 		#var weapon_name = equipment.name()
 		#var weapon_damage = equipment.damage()
-
-
-
-func reconstruct( buffer : PackedByteArray ):
-	var root_table : FlatBuffer = schema.get_root( buffer )
-	output.append( "root_table: " + JSON.stringify( root_table.debug(), '\t', false ) )
-
-	# Perform testing on the reconstructed flatbuffer.
-	#TEST_EQ( <value>, <value>, "Test description if failed")

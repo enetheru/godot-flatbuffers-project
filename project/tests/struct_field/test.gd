@@ -1,51 +1,33 @@
 @tool
 extends TestBase
 
-const fb = preload('./test_schema_generated.gd')
+const schema = preload('./test_schema_generated.gd')
+const Struct = schema.MyStruct
+const RootTable = schema.RootTable
 
 var my_array : Array
 var builtin_array : Array
 
 func _run() -> void:
-	short_way()
-	long_way()
-	if not silent:
-		print_rich( "\n[b]== Struct ==[/b]\n" )
-		for o in output: print( o )
+	# struct
+	var struct = Struct.new()
+	struct.x = 35; struct.y = 73
 
+	TEST_EQ(35, struct.x, "struct.x")
+	TEST_EQ(73, struct.y, "struct.x")
 
-func short_way():
-	var builder = FlatBufferBuilder.new()
+	# Table
+	#var fbb = FlatBufferBuilder.new()
+	#var builder = schema.RootTableBuilder.new(fbb)
 
-	var my_array_offset : int
-	var array_offset : int
+	# FIXME struct arrays I believe are just contiguous data as we know the size
+	# of each element ahead of time. But for custom structs we need a mechanism
+	# to set that up.
 
-	var offset = fb.create_RootTable( builder, my_array_offset, array_offset )
-	builder.finish( offset )
+	# I have to double check how this is done.
+	# I dont think we need the vector of offsets, I think the elements are inline
 
-	## This must be called after `Finish()`.
-	var buf = builder.to_packed_byte_array()
-	reconstruction( buf )
+	# FIXME For scalars and builtin structs like Vector3 it works the same,
+	# except we can add the builtin methods.
 
-
-func long_way():
-	var builder = FlatBufferBuilder.new()
-
-	var my_array_offset : int
-	var array_offset : int
-
-	var root_builder = fb.RootTableBuilder.new( builder )
-	root_builder.add_my_array( my_array_offset )
-	root_builder.add_builtin_array( array_offset )
-	builder.finish( root_builder.finish() )
-
-	## This must be called after `Finish()`.
-	var buf = builder.to_packed_byte_array()
-	reconstruction( buf )
-
-
-func reconstruction( buffer : PackedByteArray ):
-	var root_table := fb.get_root( buffer )
-	output.append( "root_table: " + JSON.stringify( root_table.debug(), '\t', false ) )
-
-	TEST_EQ( 0, 1, "TODO Generate testing" )
+	output.append("Warning: I still have to implement this")

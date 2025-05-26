@@ -37,9 +37,16 @@ layout_mode = 2
 text = "Run Selected
 "
 
-[node name="VSeparator" type="VSeparator" parent="Buttons"]
+[node name="StatsCounter" type="RichTextLabel" parent="Buttons"]
 layout_mode = 2
 size_flags_horizontal = 3
+bbcode_enabled = true
+text = "Stats"
+fit_content = true
+scroll_active = false
+autowrap_mode = 0
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="ClearResults" type="Button" parent="Buttons"]
 layout_mode = 2
@@ -103,3 +110,27 @@ bbcode_enabled = true
 scroll_following = true
 context_menu_enabled = true
 selection_enabled = true
+
+[node name="PopupPanel" type="PopupPanel" parent="."]
+initial_position = 1
+size = Vector2i(520, 264)
+mouse_passthrough = true
+
+[node name="RichTextLabel" type="RichTextLabel" parent="PopupPanel"]
+custom_minimum_size = Vector2(512, 256)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 516.0
+offset_bottom = 260.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "Help Documentation"
+fit_content = true
+scroll_active = false
+autowrap_mode = 0

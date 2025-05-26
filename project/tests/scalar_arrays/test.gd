@@ -25,17 +25,20 @@ const DBL_MAX = 1.7976931348623158e+308
 const FLT_MIN = 1.175494351e-38
 const DBL_MIN = 2.2250738585072014e-308
 
-const fb = preload('./FBTestScalarArrays_generated.gd')
+const schema = preload('./FBTestScalarArrays_generated.gd')
+const RootTable = schema.RootTable
 
 func _run() -> void:
-	short_way()
-	long_way()
-	if not silent:
-		print_rich( "\n[b]== Scalar Arrays ==[/b]\n" )
-		for o in output: print( o )
+	var root_table : RootTable = short_way()
+	root_table = long_way()
+	if retcode:
+		output.append_array([
+			"root_table: ",
+			JSON.stringify( root_table.debug(), '  ', false )
+		])
 
 
-func short_way():
+func short_way() -> RootTable:
 	var builder = FlatBufferBuilder.new()
 
 	var bytes_offset = builder.create_vector_int8( [INT8_MIN, INT8_MAX] )
@@ -49,7 +52,7 @@ func short_way():
 	var floats_offset = builder.create_vector_float32( [FLT_MIN, FLT_MAX] )
 	var doubles_offset = builder.create_vector_float64( [DBL_MIN, DBL_MAX] )
 
-	var offset = fb.create_RootTable(builder,
+	var offset = schema.create_RootTable(builder,
 		bytes_offset, ubytes_offset,
 		shorts_offset, ushorts_offset,
 		ints_offset, uints_offset,
@@ -60,10 +63,10 @@ func short_way():
 	## This must be called after `Finish()`.
 	var buf = builder.to_packed_byte_array()
 
-	reconstruction( buf )
+	return reconstruction( buf )
 
 
-func long_way():
+func long_way() -> RootTable:
 	var builder = FlatBufferBuilder.new()
 
 	var bytes_offset = builder.create_vector_int8( [INT8_MIN, INT8_MAX] )
@@ -78,7 +81,7 @@ func long_way():
 	var doubles_offset = builder.create_vector_float64( [DBL_MIN, DBL_MAX] )
 
 
-	var root_builder = fb.RootTableBuilder.new( builder )
+	var root_builder = schema.RootTableBuilder.new( builder )
 	root_builder.add_bytes_( bytes_offset )
 	root_builder.add_ubytes( ubytes_offset )
 	root_builder.add_shorts( shorts_offset )
@@ -95,12 +98,11 @@ func long_way():
 	## This must be called after `Finish()`.
 	var buf = builder.to_packed_byte_array()
 
-	reconstruction( buf )
+	return reconstruction( buf )
 
 
-func reconstruction( buffer : PackedByteArray ):
-	var root_table := fb.get_root( buffer )
-	output.append( "root_table: " + JSON.stringify( root_table.debug(), '\t', false ) )
+func reconstruction( buffer : PackedByteArray ) -> RootTable:
+	var root_table : RootTable = schema.get_root( buffer )
 
 	# bytes
 	TEST_EQ( root_table.bytes__size(), 2, "bytes__size()")
@@ -176,12 +178,12 @@ func reconstruction( buffer : PackedByteArray ):
 
 	# floats
 	TEST_EQ( root_table.floats_size(), 2, "floats_size()")
-	TEST_EQ( root_table.floats_at(0), FLT_MIN, "floats_at(0)")
-	TEST_EQ( root_table.floats_at(1), FLT_MAX, "floats_at(1)")
+	TEST_APPROX( root_table.floats_at(0), FLT_MIN, "floats_at(0)")
+	TEST_APPROX( root_table.floats_at(1), FLT_MAX, "floats_at(1)")
 	var floats = root_table.floats()
 	TEST_EQ( floats.size(), 2, "floats.size()" )
-	TEST_EQ( floats[0], FLT_MIN, "floats[0]" )
-	TEST_EQ( floats[1], FLT_MAX, "floats[1]" )
+	TEST_APPROX( floats[0], FLT_MIN, "floats[0]" )
+	TEST_APPROX( floats[1], FLT_MAX, "floats[1]" )
 
 	# doubles
 	TEST_EQ( root_table.doubles_size(), 2, "doubles_size()")
@@ -191,3 +193,4 @@ func reconstruction( buffer : PackedByteArray ):
 	TEST_EQ( doubles.size(), 2, "doubles.size()" )
 	TEST_EQ( doubles[0], DBL_MIN, "doubles[0]" )
 	TEST_EQ( doubles[1], DBL_MAX, "doubles[1]" )
+	return root_table

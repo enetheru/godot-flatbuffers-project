@@ -61,10 +61,12 @@ var plugin : FlatBuffersPlugin = FlatBuffersPlugin._prime
 @onready var buttons : Dictionary[StringName, Button] = {
 	&"Reload": $Buttons/Reload,
 	&"Test" : $Buttons/Test,
+	&"ClearResults": $Buttons/ClearResults,
+	&"Help":$Buttons/Help
 }
+@onready var help_popup: PopupPanel = $PopupPanel
 
-@onready var clear_results: Button = $Buttons/ClearResults
-@onready var help: Button = $Buttons/Help
+@onready var stats_counter: RichTextLabel = $Buttons/StatsCounter
 
 # FIXME temporary for testing
 @onready var reload_panel: Button = $Buttons/Reload_panel
@@ -159,9 +161,8 @@ func _ready() -> void:
 	buttons[&"Reload"].pressed.connect( _on_reload_pressed )
 	buttons[&"Reload"].icon = reload_icon
 	buttons[&"Test"].pressed.connect( _on_test_pressed )
-
-	clear_results.pressed.connect( _on_clear_pressed )
-	#help.pressed.connect( )
+	buttons[&"ClearResults"].pressed.connect( _on_clear_pressed )
+	buttons[&"Help"].pressed.connect( help_popup.popup )
 
 	reload_panel.pressed.connect( plugin.bpanel_reload, CONNECT_DEFERRED )
 	# TODO add a popup with information about recursive expansion
@@ -180,6 +181,35 @@ func _ready() -> void:
 # ██ ████ ██ ████     ██   ███████ ██   ██ ██   ██ ██████
 # ██  ██  ██ ██       ██   ██   ██ ██   ██ ██   ██     ██
 # ██      ██ ██████   ██   ██   ██  █████  ██████  ██████
+
+var already_updating : bool = false
+func update_stats():
+	if already_updating: return
+	already_updating = true
+	stats_counter.clear()
+	var groups : int = 0
+	var results : int = 0
+	var failures : int = 0
+	var successes : int = 0
+	for test_def : Dictionary in test_list:
+		groups += 1
+		var result_list : Dictionary = test_def.get('results', {})
+		for key in result_list.keys():
+			results += 1
+			var retcode : int = result_list.get(key, {}).get('retcode', -1)
+			if retcode == 0: successes += 1
+			if retcode > 0: failures += 1
+
+	stats_counter.add_text("%d:" % groups)
+	stats_counter.add_image(folder_icon)
+	stats_counter.add_text(", %d:" % results)
+	stats_counter.add_image(script_icon)
+	stats_counter.add_text(", %d:" % failures)
+	stats_counter.add_image(error_icon)
+	stats_counter.add_text(", %d:" % successes)
+	stats_counter.add_image(success_icon)
+
+	already_updating = false
 
 func create_info( file_item : TreeItem ) -> Control:
 	var test_def : Dictionary = file_item.get_metadata(0)
@@ -233,12 +263,13 @@ func process_schema( file_item : TreeItem ):
 	if results.get('retcode', 1):
 		set_item_fail(file_item)
 		info_box.set_fail(info_text)
-	elif 'warn' in info_text:
+	elif 'warn' in info_text.to_lower():
 		set_item_warning(file_item)
 		info_box.set_warning(info_text)
 	else:
 		set_item_success(file_item)
 		info_box.set_success(info_text)
+	update_stats()
 
 
 func process_test( file_item : TreeItem ):
@@ -259,12 +290,13 @@ func process_test( file_item : TreeItem ):
 	if results.get('retcode', 1):
 		set_item_fail(file_item)
 		info_box.set_fail(info_text)
-	elif 'warn' in info_text:
+	elif 'warn' in info_text.to_lower():
 		set_item_warning(file_item)
 		info_box.set_warning(info_text)
 	else:
 		set_item_success(file_item)
 		info_box.set_success(info_text)
+	update_stats()
 
 
 func run_test_script( file_path : String ) -> Dictionary:
@@ -349,3 +381,5 @@ func regenerate_tree():
 		# Add script items
 		for file in test_def.test_scripts:
 			add_action_row( test_def, &"test", file, folder_item )
+
+	update_stats()

@@ -17,9 +17,6 @@ func _run() -> void:
 	reconstruct( manual() )
 	#reconstruct( create() )
 	#reconstruct( create2() )
-	if not silent:
-		print_rich( "\n[b]== Monster ==[/b]\n" )
-		for o in output: print( o )
 
 func manual() -> PackedByteArray:
 	# create new builder

@@ -17,6 +17,14 @@ func TEST_EQ( value1, value2, desc : String = "" ) -> bool:
 	if _verbose: print_rich( msg )
 	return true
 
+func TEST_APPROX( value1, value2, desc : String = "" ) -> bool:
+	if is_equal_approx(value1, value2): return false
+	retcode |= FAILED
+	var msg = "[b][color=salmon]TEST_EQ Failed: '%s'[/color][/b]\nwanted: '%s'\n   got: '%s'" % [desc, value1, value2 ]
+	output.append( msg )
+	if _verbose: print_rich( msg )
+	return true
+
 func TEST_TRUE( value, desc : String = "" ) -> bool:
 	if value: return false
 	retcode |= FAILED

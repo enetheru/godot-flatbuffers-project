@@ -8,9 +8,6 @@ var builtin_ := Vector3i(1,2,3)
 func _run() -> void:
 	short_way()
 	long_way()
-	if not silent:
-		print_rich( "\n[b]== Struct ==[/b]\n" )
-		for o in output: print( o )
 
 
 func short_way():
