@@ -208,7 +208,6 @@ func _ready() -> void:
 # ██      ██ ██████   ██   ██   ██  █████  ██████  ██████
 
 func create_info( file_item : TreeItem ) -> Control:
-	print( "Create Info")
 	var test_def : Dictionary = file_item.get_metadata(0)
 	var file_name : String = file_item.get_text(0)
 

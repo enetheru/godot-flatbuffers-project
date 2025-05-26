@@ -312,17 +312,17 @@ func flatc_generate( schema_path : String, args : Array ) -> Variant:
 
 	var output : Array = []
 	var retcode = OS.execute( flatc_exe, args, output, true )
-	var log : Array[String]
-	for o : String in output:
-		log.append_array( o.split("\r") )
 
-	#print( "flatc_generate result: ", JSON.stringify( result, '\t', false ) )
-	print( "Compiling:    %s" % schema_path )
-	print( "Using:        %s" % flatc_exe )
-	print( "With Args:    %s" % " ".join( args ) )
-	print( "Return Code: '%d'" % retcode )
-	if retcode: print_rich( "[color=red][b]%s[/b][/color]" % "".join(log) )
-	else: print( "".join(log) )
+	var report : Array = [
+		"Compiling:    %s" % schema_path,
+		"Using:        %s" % flatc_exe,
+		"With Args:    %s" % " ".join( args ),
+		"Return Code: '%d'" % retcode,
+		"%s" % output
+		]
+
+	if retcode:
+		print_rich( "[color=salmon][b]%s[/b][/color]" % output )
 
 	#TODO Figure out a way to get the script in the editor to reload.
 	#  the only reliable way I have found to refresh the script in the editor
@@ -334,7 +334,7 @@ func flatc_generate( schema_path : String, args : Array ) -> Variant:
 		'flatc_path':flatc_exe,
 		'args':args,
 		'retcode':retcode,
-		'output':log
+		'output':report
 	}
 
 #   ██████   ██████         ███    ███ ███████ ███    ██ ██    ██ ███████
