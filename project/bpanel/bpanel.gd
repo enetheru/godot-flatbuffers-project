@@ -151,13 +151,17 @@ func _on_gui_input( event ):
 	if not mb_event.pressed: return
 	#var column = tree.get_column_at_position(mb_event.position)
 	var item : TreeItem = tree.get_item_at_position(mb_event.position)
-	var test_def : Dictionary = item.get_metadata(0)
+
+	var metadata = item.get_metadata(0)
+	if not metadata: return
+	var test_def : Dictionary = metadata
 	var test_file : String = item.get_text(0)
 
 	# FIXME it would be nice if I could get the file open in the text editor
 	var file_path : String = "/".join([test_def.folder_path, test_file])
 	EditorInterface.get_file_system_dock().navigate_to_path(file_path)
 
+	if not test_def.has('results'): return
 	var results : Dictionary = test_def["results"].get(item, null)
 	if results: results["latest"].call_deferred( "grab_focus")
 

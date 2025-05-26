@@ -132,6 +132,50 @@ func _run() -> void:
 
 ```
 
+###  FAQ
+Some of these items are to remind myself even.
+
+#### PackedArrays
+I got caught out recently with my interpretation of the flatbuffer schema, and how it relates to data within the godot engine.
+BlatBuffers have both signed and unsigned bytes, however, PackedByteArray doesnt specify signedness and so I assume anything
+that uses bytes as the name is talking about data width and not mathematical primitives, signedness makes no sense to me but
+thats how the FlatBuffers schema is defined so I have to roll with that.
+
+So when generating code...
+```flatbuffers
+table TableName {
+    first:[byte];
+    second:[ubyte];
+```
+
+The access functions will need to decode the signed 8bit type and return an array. Whereas the second case it will slice
+the underlying packed byte array and return it as is, making it the more efficient option.
+
+Here is the mapping:
+```flatbuffers
+table mapping {
+    f2:[ubyte|uint8]; // PackedByteArray
+    f3:[int|int32]; // PackedInt32Array
+    f4:[long|int64]; // PackedInt64Array
+    f5:[float|float32]; // PackedFloat32Array
+    f6:[double|float64]; // PackedFloat64Array
+}
+```
+The remaining integer types (`[byte|int8|short|ushort|int16|uint16|uint|uint32|ulong|uint64]`) need to be decoded from the underlying bytes and so they all return Array, and it's best to
+access them individually with the *_at(index) method rather than getting the whole lot at once.
+
+#### Compiling
+To change the godot target add `-DGODOTCPP_TARGET:STRING=<target>` where `<target>` is one of
+`[template_debug, template_release, editor]`.
+
+Godot's `template_debug`/`template_release` target are completely different concept to `Debug`/`Release` in the typical
+C++ sense with symbols and less optimisation. `template_debug` is for developing and debugging in the editor, and
+providing debug versions to customers that provide more information. When in doubt, build in `Release` mode with `template_debug`
+
+your cmake command will probably have these two items in it somewhere: `-DCMAKE_BUILD_TYPE=Release`, `-DGODOTCPP_TARGET:STRING=template_debug`
+
+---
+
 ### Help me help you
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/P5P61CW89K)
