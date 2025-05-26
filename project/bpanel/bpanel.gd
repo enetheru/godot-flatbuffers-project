@@ -10,43 +10,16 @@ extends GridContainer
 #  ██  ██  ██  ██ ██      ██   ██ ██   ██   ██       ██
 # ████ ██      ██ ██       █████  ██   ██   ██   ██████
 
+const INFO_BOX = preload('res://bpanel/info_box.tscn')
+
 const Test = preload('res://tests/test.gd')
+const InfoBox = preload('res://bpanel/info_box.gd')
 
 # █████  ██████ ██████ ████ ███   ██ ████ ██████ ████  █████  ███   ██ ██████
 # ██  ██ ██     ██      ██  ████  ██  ██    ██    ██  ██   ██ ████  ██ ██
 # ██  ██ ████   ████    ██  ██ ██ ██  ██    ██    ██  ██   ██ ██ ██ ██ ██████
 # ██  ██ ██     ██      ██  ██  ████  ██    ██    ██  ██   ██ ██  ████     ██
 # █████  ██████ ██     ████ ██   ███ ████   ██   ████  █████  ██   ███ ██████
-
-class TestInfoBox extends PanelContainer:
-	var label : Label
-	var rtl : RichTextLabel
-	var stylebox : StyleBox = preload('res://bpanel/info_style_box.tres').duplicate()
-
-	func _ready() -> void:
-		focus_mode = Control.FOCUS_ALL
-		label = $Elements/Label
-		rtl = $Elements/RichTextLabel
-		add_theme_stylebox_override("panel", stylebox)
-		focus_entered.connect(func():
-			stylebox.bg_color = Color(0.275, 0.439, 0.584)
-			)
-		focus_exited.connect(func():
-			stylebox.bg_color = Color(0.216, 0.31, 0.4)
-			)
-
-	func set_success( txt : String ):
-		stylebox.border_color = Color.DARK_GREEN
-		rtl.clear()
-		rtl.append_text(txt)
-
-	func set_fail( txt : String ):
-		stylebox.border_color = Color.DARK_RED
-		rtl.clear()
-		rtl.push_color(Color.RED)
-		rtl.append_text(txt)
-		rtl.pop()
-
 
 #var test_dict : Dictionary = {
 	#"name": folder.to_pascal_case(),
@@ -101,8 +74,6 @@ var plugin : FlatBuffersPlugin = FlatBuffersPlugin._prime
 @onready var info_list: VBoxContainer = $TestOutput/InfoList
 @onready var info_scroller: ScrollContainer = $TestOutput/InfoList/ScrollContainer
 @onready var info_items: VBoxContainer = $TestOutput/InfoList/ScrollContainer/InfoItems
-@onready var test_info: PanelContainer = $TestOutput/InfoList/ScrollContainer/InfoItems/TestInfo
-
 
 @onready var rtl: RichTextLabel = $RichTextLabel
 
@@ -133,7 +104,6 @@ func _on_test_pressed():
 
 func _on_clear_pressed():
 	for child in info_items.get_children():
-		if child == test_info: continue
 		child.call_deferred("queue_free")
 
 func _on_multi_select( item : TreeItem, _column : int, is_selected : bool):
@@ -173,7 +143,6 @@ func _on_gui_input( event ):
 #  █████    ████   ██████ ██   ██ ██   ██ ████ ██████  ██████ ██████
 
 func _ready() -> void:
-	test_info.set_script( TestInfoBox )
 	# Icon helper snippet
 	#for type_name in etheme.get_type_list():
 		#for icon_name in etheme.get_icon_list(type_name):
@@ -211,7 +180,7 @@ func create_info( file_item : TreeItem ) -> Control:
 	var test_def : Dictionary = file_item.get_metadata(0)
 	var file_name : String = file_item.get_text(0)
 
-	var info_box : TestInfoBox = test_info.duplicate( DUPLICATE_SCRIPTS )
+	var info_box : InfoBox = INFO_BOX.instantiate()
 	info_items.add_child(info_box)
 	info_box.show()
 	if not info_box.is_node_ready(): await info_box.ready
@@ -243,7 +212,7 @@ func process_selection( action_type : StringName = &"all"):
 
 
 func process_schema( file_item : TreeItem ):
-	var info_box : TestInfoBox = await create_info( file_item )
+	var info_box : InfoBox = await create_info( file_item )
 	info_box.call_deferred( "grab_focus")
 	var test_def : Dictionary = file_item.get_metadata(0)
 	var schema_file : String = file_item.get_text(0)
@@ -266,7 +235,7 @@ func process_schema( file_item : TreeItem ):
 
 
 func process_test( file_item : TreeItem ):
-	var info_box : TestInfoBox = await create_info( file_item )
+	var info_box : InfoBox = await create_info( file_item )
 	info_box.call_deferred( "grab_focus")
 	var test_def : Dictionary = file_item.get_metadata(0)
 	var script_file : String = file_item.get_text(0)

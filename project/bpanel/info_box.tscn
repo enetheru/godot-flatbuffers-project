@@ -1,0 +1,44 @@
+[gd_scene load_steps=3 format=3 uid="uid://dt0eqt7nuorql"]
+
+[ext_resource type="Script" uid="uid://mgsgp4qs7iaa" path="res://bpanel/info_box.gd" id="1_hcdtn"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_qxq4t"]
+content_margin_left = 2.0
+content_margin_top = 2.0
+content_margin_right = 2.0
+content_margin_bottom = 2.0
+bg_color = Color(0.215686, 0.309804, 0.4, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0, 1, 0, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+corner_detail = 3
+shadow_offset = Vector2(1, 1)
+
+[node name="TestInfo" type="PanelContainer"]
+focus_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_qxq4t")
+script = ExtResource("1_hcdtn")
+
+[node name="Elements" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Label" type="RichTextLabel" parent="Elements"]
+layout_mode = 2
+bbcode_enabled = true
+text = "Title"
+fit_content = true
+scroll_active = false
+autowrap_mode = 0
+
+[node name="RichTextLabel" type="RichTextLabel" parent="Elements"]
+layout_mode = 2
+focus_mode = 2
+bbcode_enabled = true
+fit_content = true
+selection_enabled = true

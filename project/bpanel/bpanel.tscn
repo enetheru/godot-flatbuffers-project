@@ -1,7 +1,6 @@
-[gd_scene load_steps=6 format=3 uid="uid://c3qffhwtfrdcw"]
+[gd_scene load_steps=4 format=3 uid="uid://c3qffhwtfrdcw"]
 
-[ext_resource type="Script" uid="uid://qttpfq6tnap0" path="res://bpanel/bpanel.gd" id="1_xch87"]
-[ext_resource type="StyleBox" uid="uid://dys7tjax2dv0f" path="res://bpanel/info_style_box.tres" id="2_262i6"]
+[ext_resource type="Script" uid="uid://qttpfq6tnap0" path="res://bpanel/bpanel.gd" id="1_alnk0"]
 
 [sub_resource type="Image" id="Image_262i6"]
 data = {
@@ -15,15 +14,13 @@ data = {
 [sub_resource type="ImageTexture" id="ImageTexture_2td0n"]
 image = SubResource("Image_262i6")
 
-[sub_resource type="GDScript" id="GDScript_5nkoo"]
-
 [node name="GDFlatBufferTests" type="GridContainer"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_xch87")
+script = ExtResource("1_alnk0")
 
 [node name="Buttons" type="HBoxContainer" parent="."]
 layout_mode = 2
@@ -94,26 +91,6 @@ horizontal_scroll_mode = 0
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 8
-
-[node name="TestInfo" type="PanelContainer" parent="TestOutput/InfoList/ScrollContainer/InfoItems"]
-visible = false
-layout_mode = 2
-theme_override_styles/panel = ExtResource("2_262i6")
-script = SubResource("GDScript_5nkoo")
-
-[node name="Elements" type="VBoxContainer" parent="TestOutput/InfoList/ScrollContainer/InfoItems/TestInfo"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="TestOutput/InfoList/ScrollContainer/InfoItems/TestInfo/Elements"]
-layout_mode = 2
-text = "Title"
-
-[node name="RichTextLabel" type="RichTextLabel" parent="TestOutput/InfoList/ScrollContainer/InfoItems/TestInfo/Elements"]
-layout_mode = 2
-focus_mode = 2
-bbcode_enabled = true
-fit_content = true
-selection_enabled = true
 
 [node name="RichTextLabel" type="RichTextLabel" parent="."]
 visible = false

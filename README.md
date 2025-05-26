@@ -146,6 +146,7 @@ So when generating code...
 table TableName {
     first:[byte];
     second:[ubyte];
+}
 ```
 
 The access functions will need to decode the signed 8bit type and return an array. Whereas the second case it will slice
@@ -154,11 +155,11 @@ the underlying packed byte array and return it as is, making it the more efficie
 Here is the mapping:
 ```flatbuffers
 table mapping {
-    f2:[ubyte|uint8]; // PackedByteArray
-    f3:[int|int32]; // PackedInt32Array
-    f4:[long|int64]; // PackedInt64Array
-    f5:[float|float32]; // PackedFloat32Array
-    f6:[double|float64]; // PackedFloat64Array
+    f2:[uint8];     //[ubyte|uint8]     PackedByteArray
+    f3:[int32];     //[int|int32]       PackedInt32Array
+    f4:[int64];     //[long|int64]      PackedInt64Array
+    f5:[float32];   //[float|float32]   PackedFloat32Array
+    f6:[float64];   //[double|float64]  PackedFloat64Array
 }
 ```
 The remaining integer types (`[byte|int8|short|ushort|int16|uint16|uint|uint32|ulong|uint64]`) need to be decoded from the underlying bytes and so they all return Array, and it's best to
