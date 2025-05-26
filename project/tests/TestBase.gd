@@ -2,16 +2,19 @@
 class_name TestBase extends EditorScript
 
 #region == Test Stuff ==
-var silent : bool = false
+var _verbose : bool = false
 var retcode : int = OK
 var output : PackedStringArray = []
+
+func _init( verbose = false ) -> void:
+	_verbose = verbose
 
 func TEST_EQ( value1, value2, desc : String = "" ) -> bool:
 	if value1 == value2: return false
 	retcode |= FAILED
 	var msg = "[b][color=salmon]TEST_EQ Failed: '%s'[/color][/b]\nwanted: '%s'\n   got: '%s'" % [desc, value1, value2 ]
 	output.append( msg )
-	if not silent: print_rich( msg )
+	if _verbose: print_rich( msg )
 	return true
 
 func TEST_TRUE( value, desc : String = "" ) -> bool:
@@ -19,9 +22,9 @@ func TEST_TRUE( value, desc : String = "" ) -> bool:
 	retcode |= FAILED
 	var msg = "[b][color=salmon]TEST_TRUE Failed: '%s'[/color][/b]\nwanted: true | value != (0 & null)\n   got: '%s'" % [desc, value ]
 	output.append( msg )
-	if not silent: print_rich( msg )
+	if _verbose: print_rich( msg )
 	return true
-#endregion
+
 
 # ███████ ██   ██  █████  ███    ███ ██████  ██      ███████
 # ██       ██ ██  ██   ██ ████  ████ ██   ██ ██      ██
@@ -42,7 +45,7 @@ func TEST_TRUE( value, desc : String = "" ) -> bool:
 	#reconstruct( manual() )
 	#reconstruct( create() )
 	#reconstruct( create2() )
-	#if not silent:
+	#if not verbose:
 		#print_rich( "\n[b]== Monster ==[/b]\n" )
 		#for o in output: print( o )
 #

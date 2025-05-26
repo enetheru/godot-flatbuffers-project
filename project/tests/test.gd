@@ -22,9 +22,9 @@ func folder_filter( folder_path : String ) -> bool:
 func collect_tests( test_path : String ) -> Array[Dictionary]:
 	var tests : Array[Dictionary]
 
-	var parts : Array = [test_path]
 	var folders : Array = DirAccess.get_directories_at(test_path)
 	var folder_paths = folders.map(func(folder : String): return "/".join([test_path,folder]))
+	folder_paths.sort()
 	for folder_path : String in folder_paths.filter( folder_filter ):
 		var files : Array = DirAccess.get_files_at( folder_path )
 		var folder = folder_path.get_file()

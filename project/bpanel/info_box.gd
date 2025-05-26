@@ -27,14 +27,13 @@ func set_title( new_title : String ):
 	label.clear()
 	label.append_text(new_title)
 
-func set_success( txt : String ):
+func set_success( _txt : String ):
 	stylebox.border_color = Color.DARK_GREEN
 	label.clear()
 	label.add_image(success_icon)
 	label.append_text(title)
 	rtl.clear()
 	rtl.hide()
-	#rtl.append_text(txt)
 
 func set_warning( txt : String ):
 	stylebox.border_color = Color.DARK_KHAKI
@@ -42,9 +41,7 @@ func set_warning( txt : String ):
 	label.add_image(warning_icon)
 	label.append_text(title)
 	rtl.clear()
-	rtl.push_color(Color.GOLDENROD)
 	rtl.append_text(txt)
-	rtl.pop()
 
 func set_fail( txt : String ):
 	stylebox.border_color = Color.DARK_RED
@@ -52,6 +49,4 @@ func set_fail( txt : String ):
 	label.add_image(error_icon)
 	label.append_text(title)
 	rtl.clear()
-	rtl.push_color(Color.RED)
 	rtl.append_text(txt)
-	rtl.pop()

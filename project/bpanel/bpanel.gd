@@ -44,7 +44,7 @@ const InfoBox = preload('res://bpanel/info_box.gd')
 
 var plugin : FlatBuffersPlugin = FlatBuffersPlugin._prime
 
-@onready var test_runner = Test.new()
+@onready var test_runner := Test.new()
 
 # Icons
 @export var schema_icon: Texture2D
@@ -121,6 +121,7 @@ func _on_gui_input( event ):
 	if not mb_event.pressed: return
 	#var column = tree.get_column_at_position(mb_event.position)
 	var item : TreeItem = tree.get_item_at_position(mb_event.position)
+	if not item: return
 
 	var metadata = item.get_metadata(0)
 	if not metadata: return
@@ -131,9 +132,13 @@ func _on_gui_input( event ):
 	var file_path : String = "/".join([test_def.folder_path, test_file])
 	EditorInterface.get_file_system_dock().navigate_to_path(file_path)
 
-	if not test_def.has('results'): return
-	var results : Dictionary = test_def["results"].get(item, null)
-	if results: results["latest"].call_deferred( "grab_focus")
+	var results : Dictionary = test_def.get('results', {})
+	var item_results : Dictionary = results.get(item, {})
+
+	var latest_info_box : InfoBox
+	if item_results.has('latest') and item_results.get('latest'):
+		latest_info_box = item_results.get('latest', null)
+	if latest_info_box: latest_info_box.call_deferred( "grab_focus")
 
 
 #  █████  ██    ██ ██████ ██████  ██████  ████ ██████  ██████ ██████
@@ -263,14 +268,17 @@ func process_test( file_item : TreeItem ):
 
 
 func run_test_script( file_path : String ) -> Dictionary:
-	var result : Dictionary = {'path':file_path}
+	var result : Dictionary = {
+		'path':file_path,
+		'retcode': 1,
+		'output': []
+	}
 	var script : GDScript = load( file_path )
 	if not script.can_instantiate():
 		result['retcode'] = FAILED
 		result['output'] = ["Cannot instantiate '%s'" % file_path ]
 		return result
-	var instance = script.new()
-	instance.silent = true
+	var instance : TestBase = script.new()
 	instance._run()
 	result['retcode'] = instance.retcode
 	result['output'] = instance.output
