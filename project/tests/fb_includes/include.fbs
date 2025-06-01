@@ -1,17 +1,11 @@
 //include "res://tests/includes/absolute.fbs";
 // Absolute paths are not supported at this time.
 // It would require flatc.exe to understand godot path specifiers res:// and usr://
-include "relative.fbs";
-include "../monster/Monster.fbs";
-
-table Local {
-	var : int;
-}
+include "other.fbs";
 
 table RootTable {
-	from_local : Local;
-	from_relative : Relative;
-//  from_absolute : Absolute;
+	external:Other;
+	external_array:[Other];
 }
 
 root_type RootTable;

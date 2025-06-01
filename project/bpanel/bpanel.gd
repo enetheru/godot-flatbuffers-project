@@ -273,6 +273,26 @@ func process_schema( file_item : TreeItem ):
 	# Generate the script
 	var results : Dictionary = plugin.flatc_generate( schema_path, ['--gdscript'] )
 
+	while results.get('retcode', true): # already an error
+		var genpath = schema_path.get_basename() + "_generated.gd"
+		if not FileAccess.file_exists(genpath):
+			results['output'].append("Error: Godot cant find: " + genpath)
+			results['retcode'] = 1
+			break
+		var new_script_resource : GDScript = load(genpath)
+		if not new_script_resource: # load failed
+			results['output'].append("Error: Unable to load: " + genpath)
+			results['retcode'] = 1
+			break
+		var test = new_script_resource.new()
+		if not test:
+			results['output'].append("Error: Unable to new(): " + genpath)
+			results['retcode'] = 1
+			break
+		else:
+			print( test )
+		break
+
 	results["latest"] = info_box
 	test_def.get_or_add( "results", {} ).set( file_item, results )
 

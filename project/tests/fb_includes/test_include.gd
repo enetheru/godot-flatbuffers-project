@@ -1,7 +1,7 @@
 @tool
 extends TestBase
 
-const schema = preload('./includes_generated.gd')
+const schema = preload('./include_generated.gd')
 
 #region == Testing Setup ==
 # testing variables

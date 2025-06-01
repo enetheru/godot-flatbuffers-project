@@ -2,7 +2,7 @@
 extends TestBase
 
 const schema = preload('./test_schema_generated.gd')
-const Struct = schema.MyStruct
+const Struct = schema.CustomStruct
 const RootTable = schema.RootTable
 
 var my_array : Array

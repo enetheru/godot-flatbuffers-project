@@ -1,7 +1,7 @@
 @tool
 extends TestBase
 
-const schema = preload( './test_schema_generated.gd' )
+const schema = preload( 'test_schema_generated.gd' )
 
 var test_object = Node3D.new()
 

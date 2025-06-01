@@ -29,8 +29,16 @@ const schema = preload('./FBTestScalarArrays_generated.gd')
 const RootTable = schema.RootTable
 
 func _run() -> void:
-	var root_table : RootTable = short_way()
-	root_table = long_way()
+	var bytes : PackedByteArray = short_way()
+	print( bytes )
+	var root_table : RootTable = schema.get_root(bytes)
+	print( JSON.stringify( root_table.debug(), '  ', false ) )
+	check( root_table )
+
+	bytes = long_way()
+	root_table = schema.get_root(bytes)
+	check( root_table )
+
 	if retcode:
 		output.append_array([
 			"root_table: ",
@@ -38,7 +46,7 @@ func _run() -> void:
 		])
 
 
-func short_way() -> RootTable:
+func short_way() -> PackedByteArray:
 	var builder = FlatBufferBuilder.new()
 
 	var bytes_offset = builder.create_vector_int8( [INT8_MIN, INT8_MAX] )
@@ -60,13 +68,10 @@ func short_way() -> RootTable:
 		floats_offset, doubles_offset )
 	builder.finish( offset )
 
-	## This must be called after `Finish()`.
-	var buf = builder.to_packed_byte_array()
-
-	return reconstruction( buf )
+	return builder.to_packed_byte_array()
 
 
-func long_way() -> RootTable:
+func long_way() -> PackedByteArray:
 	var builder = FlatBufferBuilder.new()
 
 	var bytes_offset = builder.create_vector_int8( [INT8_MIN, INT8_MAX] )
@@ -96,101 +101,97 @@ func long_way() -> RootTable:
 	builder.finish( root_builder.finish() )
 
 	## This must be called after `Finish()`.
-	var buf = builder.to_packed_byte_array()
-
-	return reconstruction( buf )
+	return builder.to_packed_byte_array()
 
 
-func reconstruction( buffer : PackedByteArray ) -> RootTable:
-	var root_table : RootTable = schema.get_root( buffer )
+func check( root_table : RootTable ):
 
 	# bytes
-	TEST_EQ( root_table.bytes__size(), 2, "bytes__size()")
-	TEST_EQ( root_table.bytes__at(0), INT8_MIN, "bytes__at(0)")
-	TEST_EQ( root_table.bytes__at(1), INT8_MAX, "bytes__at(1)")
+	TEST_EQ( 2, root_table.bytes__size(), "bytes__size()")
+	TEST_EQ( INT8_MIN, root_table.bytes__at(0),  "bytes__at(0)")
+	TEST_EQ( INT8_MAX, root_table.bytes__at(1),  "bytes__at(1)")
 	var bytes = root_table.bytes_()
-	TEST_EQ( bytes.size(), 2, "bytes.size()" )
-	TEST_EQ( bytes[0], INT8_MIN, "bytes[0]" )
-	TEST_EQ( bytes[1], INT8_MAX, "bytes[1]" )
+	TEST_EQ( 2, bytes.size(),  "bytes.size()" )
+	TEST_EQ( INT8_MIN, bytes[0],  "bytes[0]" )
+	TEST_EQ( INT8_MAX, bytes[1],  "bytes[1]" )
 
 	# ubytes
-	TEST_EQ( root_table.ubytes_size(), 2, "ubytes_size()" )
-	TEST_EQ( root_table.ubytes_at(0), 0, "ubytes_at(0)" )
-	TEST_EQ( root_table.ubytes_at(1), UINT8_MAX, "ubytes_at(1)" )
+	TEST_EQ( 2, root_table.ubytes_size(), "ubytes_size()" )
+	TEST_EQ( 0, root_table.ubytes_at(0), "ubytes_at(0)" )
+	TEST_EQ( UINT8_MAX, root_table.ubytes_at(1), "ubytes_at(1)" )
 	var ubytes = root_table.ubytes()
-	TEST_EQ( ubytes.size(), 2, "ubytes.size()" )
-	TEST_EQ( ubytes[0], 0, "ubytes[0]" )
-	TEST_EQ( ubytes[1], UINT8_MAX, "ubytes[1]" )
+	TEST_EQ( 2, ubytes.size(), "ubytes.size()" )
+	TEST_EQ( 0, ubytes[0], "ubytes[0]" )
+	TEST_EQ( UINT8_MAX, ubytes[1], "ubytes[1]" )
 
 	# shorts
-	TEST_EQ( root_table.shorts_size(), 2, "shorts_size()")
-	TEST_EQ( root_table.shorts_at(0), INT16_MIN, "shorts_at(0)")
-	TEST_EQ( root_table.shorts_at(1), INT16_MAX, "shorts_at(1)")
+	TEST_EQ( 2, root_table.shorts_size(), "shorts_size()")
+	TEST_EQ( INT16_MIN, root_table.shorts_at(0), "shorts_at(0)")
+	TEST_EQ( INT16_MAX, root_table.shorts_at(1), "shorts_at(1)")
 	var shorts = root_table.shorts()
-	TEST_EQ( shorts.size(), 2, "shorts.size()" )
-	TEST_EQ( shorts[0], INT16_MIN, "shorts[0]" )
-	TEST_EQ( shorts[1], INT16_MAX, "shorts[1]" )
+	TEST_EQ( 2, shorts.size(), "shorts.size()" )
+	TEST_EQ( INT16_MIN, shorts[0], "shorts[0]" )
+	TEST_EQ( INT16_MAX, shorts[1], "shorts[1]" )
 
 	# ushorts
-	TEST_EQ( root_table.ushorts_size(), 2, "ushorts_size()" )
-	TEST_EQ( root_table.ushorts_at(0), 0, "ushorts_at(0)" )
-	TEST_EQ( root_table.ushorts_at(1), UINT16_MAX, "ushorts_at(1)" )
+	TEST_EQ( 2, root_table.ushorts_size(), "ushorts_size()" )
+	TEST_EQ( 0, root_table.ushorts_at(0), "ushorts_at(0)" )
+	TEST_EQ( UINT16_MAX, root_table.ushorts_at(1), "ushorts_at(1)" )
 	var ushorts = root_table.ushorts()
-	TEST_EQ( ushorts.size(), 2, "ushorts.size()" )
-	TEST_EQ( ushorts[0], 0, "ushorts[0]" )
-	TEST_EQ( ushorts[1], UINT16_MAX, "ushorts[1]" )
+	TEST_EQ( 2, ushorts.size(), "ushorts.size()" )
+	TEST_EQ( 0, ushorts[0], "ushorts[0]" )
+	TEST_EQ( UINT16_MAX, ushorts[1], "ushorts[1]" )
 
 	# ints
-	TEST_EQ( root_table.ints_size(), 2, "ints_size()")
-	TEST_EQ( root_table.ints_at(0), INT32_MIN, "ints_at(0)")
-	TEST_EQ( root_table.ints_at(1), INT32_MAX, "ints_at(1)")
+	TEST_EQ( 2, root_table.ints_size(), "ints_size()")
+	TEST_EQ( INT32_MIN, root_table.ints_at(0), "ints_at(0)")
+	TEST_EQ( INT32_MAX, root_table.ints_at(1), "ints_at(1)")
 	var ints = root_table.ints()
-	TEST_EQ( ints.size(), 2, "ints.size()" )
-	TEST_EQ( ints[0], INT32_MIN, "ints[0]" )
-	TEST_EQ( ints[1], INT32_MAX, "ints[1]" )
+	TEST_EQ( 2, ints.size(), "ints.size()" )
+	TEST_EQ( INT32_MIN, ints[0], "ints[0]" )
+	TEST_EQ( INT32_MAX, ints[1], "ints[1]" )
 
 	# uints
-	TEST_EQ( root_table.uints_size(), 2, "uints_size()" )
-	TEST_EQ( root_table.uints_at(0), 0, "uints_at(0)" )
-	TEST_EQ( root_table.uints_at(1), UINT32_MAX, "uints_at(1)" )
+	TEST_EQ( 2, root_table.uints_size(), "uints_size()" )
+	TEST_EQ( 0, root_table.uints_at(0), "uints_at(0)" )
+	TEST_EQ( UINT32_MAX, root_table.uints_at(1), "uints_at(1)" )
 	var uints = root_table.uints()
-	TEST_EQ( uints.size(), 2, "uints.size()" )
-	TEST_EQ( uints[0], 0, "uints[0]" )
-	TEST_EQ( uints[1], UINT32_MAX, "uints[1]" )
+	TEST_EQ( 2, uints.size(), "uints.size()" )
+	TEST_EQ( 0, uints[0], "uints[0]" )
+	TEST_EQ( UINT32_MAX, uints[1], "uints[1]" )
 
 	# int64s
-	TEST_EQ( root_table.int64s_size(), 2, "int64s_size()")
-	TEST_EQ( root_table.int64s_at(0), INT64_MIN, "int64s_at(0)")
-	TEST_EQ( root_table.int64s_at(1), INT64_MAX, "int64s_at(1)")
+	TEST_EQ( 2, root_table.int64s_size(), "int64s_size()")
+	TEST_EQ( INT64_MIN, root_table.int64s_at(0), "int64s_at(0)")
+	TEST_EQ( INT64_MAX, root_table.int64s_at(1), "int64s_at(1)")
 	var int64s = root_table.int64s()
-	TEST_EQ( int64s.size(), 2, "int64s.size()" )
-	TEST_EQ( int64s[0], INT64_MIN, "int64s[0]" )
-	TEST_EQ( int64s[1], INT64_MAX, "int64s[1]" )
+	TEST_EQ( 2, int64s.size(), "int64s.size()" )
+	TEST_EQ( INT64_MIN, int64s[0], "int64s[0]" )
+	TEST_EQ( INT64_MAX, int64s[1], "int64s[1]" )
 
 	# uint64s
-	TEST_EQ( root_table.uint64s_size(), 2, "uint64s_size()" )
-	TEST_EQ( root_table.uint64s_at(0), 0, "uint64s_at(0)" )
-	TEST_EQ( root_table.uint64s_at(1), UINT64_MAX, "uint64s_at(1)" )
+	TEST_EQ( 2, root_table.uint64s_size(), "uint64s_size()" )
+	TEST_EQ( 0, root_table.uint64s_at(0), "uint64s_at(0)" )
+	TEST_EQ( UINT64_MAX, root_table.uint64s_at(1), "uint64s_at(1)" )
 	var uint64s = root_table.uint64s()
-	TEST_EQ( uint64s.size(), 2, "uint64s.size()" )
-	TEST_EQ( uint64s[0], 0, "uint64s[0]" )
-	TEST_EQ( uint64s[1], UINT64_MAX, "uint64s[1]" )
+	TEST_EQ( 2, uint64s.size(), "uint64s.size()" )
+	TEST_EQ( 0, uint64s[0], "uint64s[0]" )
+	TEST_EQ( UINT64_MAX, uint64s[1], "uint64s[1]" )
 
 	# floats
-	TEST_EQ( root_table.floats_size(), 2, "floats_size()")
-	TEST_APPROX( root_table.floats_at(0), FLT_MIN, "floats_at(0)")
-	TEST_APPROX( root_table.floats_at(1), FLT_MAX, "floats_at(1)")
+	TEST_EQ( 2, root_table.floats_size(), "floats_size()")
+	TEST_APPROX( FLT_MIN, root_table.floats_at(0), "floats_at(0)")
+	TEST_APPROX( FLT_MAX, root_table.floats_at(1), "floats_at(1)")
 	var floats = root_table.floats()
-	TEST_EQ( floats.size(), 2, "floats.size()" )
-	TEST_APPROX( floats[0], FLT_MIN, "floats[0]" )
-	TEST_APPROX( floats[1], FLT_MAX, "floats[1]" )
+	TEST_EQ( 2, floats.size(), "floats.size()" )
+	TEST_APPROX( FLT_MIN, floats[0], "floats[0]" )
+	TEST_APPROX( FLT_MAX, floats[1], "floats[1]" )
 
 	# doubles
-	TEST_EQ( root_table.doubles_size(), 2, "doubles_size()")
-	TEST_EQ( root_table.doubles_at(0), DBL_MIN, "doubles_at(0)")
-	TEST_EQ( root_table.doubles_at(1), DBL_MAX, "doubles_at(1)")
+	TEST_EQ( 2, root_table.doubles_size(), "doubles_size()")
+	TEST_EQ( DBL_MIN, root_table.doubles_at(0), "doubles_at(0)")
+	TEST_EQ( DBL_MAX, root_table.doubles_at(1), "doubles_at(1)")
 	var doubles = root_table.doubles()
-	TEST_EQ( doubles.size(), 2, "doubles.size()" )
-	TEST_EQ( doubles[0], DBL_MIN, "doubles[0]" )
-	TEST_EQ( doubles[1], DBL_MAX, "doubles[1]" )
-	return root_table
+	TEST_EQ( 2, doubles.size(), "doubles.size()" )
+	TEST_EQ( DBL_MIN, doubles[0], "doubles[0]" )
+	TEST_EQ( DBL_MAX, doubles[1], "doubles[1]" )
