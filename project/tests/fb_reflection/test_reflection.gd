@@ -6,7 +6,7 @@ const Schema = schema.Schema
 
 func _run() -> void:
 
-	var filename : String = "./Reflection.bfbs"
+	var filename : String = "res://tests/fb_reflection/Reflection.bfbs"
 
 	var bfbs : PackedByteArray = FileAccess.get_file_as_bytes( filename )
 	if bfbs.is_empty():

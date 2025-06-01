@@ -15,13 +15,10 @@ func _run() -> void:
 	var data : PackedByteArray = example_creating()
 	example_reading( data )
 
-	var monster : Monster = schema.get_Monster(data)
+	var monster : Monster = schema.get_root(data)
 
-	output.append("Warning: I still have to implement this")
-	retcode = 0
-	#if retcode:
-		#output.append_array( ["[color=goldenrod]Debug:[/color]",
-			#JSON.stringify(monster.debug(), "  ", false) ])
+	output.append_array( ["[color=goldenrod]Debug:[/color]",
+		JSON.stringify(monster.debug(), "  ", false) ])
 
 
 #  ██████ ██████  ███████  █████  ████████ ██ ███    ██  ██████
@@ -147,9 +144,9 @@ func example_creating() -> PackedByteArray:
 # auto orc = CreateMonster(builder, &position, mana, hp, name, inventory,
 #                         Color_Red, weapons, Equipment_Weapon, axe.Union(),
 #                         path);
-	var orc = schema.create_Monster( builder, position, mana, hp, name, inventory,
-							schema.Color_.RED, weapons, schema.Equipment.WEAPON, axe,
-							path )
+	#FIXME var orc = schema.create_Monster( builder, position, mana, hp, name, inventory,
+							#schema.Color_.RED, weapons, schema.Equipment.WEAPON, axe,
+							#path )
 #
 # Note how we create Vec3 struct in-line in the table. Unlike tables, structs
 # are simple combinations of scalars that are always stored inline, just like
@@ -175,25 +172,25 @@ func example_creating() -> PackedByteArray:
 # // You can use this code instead of `CreateMonster()`, to create our orc
 # // manually.
 # MonsterBuilder monster_builder(builder);
-	#NOTE var monster_builder = schema.MonsterBuilder.new( builder )
+	var monster_builder = schema.MonsterBuilder.new( builder )
 # monster_builder.add_pos(&position);
-	#NOTE monster_builder.add_pos( position )
+	monster_builder.add_pos( position )
 # monster_builder.add_hp(hp);
-	#NOTE monster_builder.add_hp(hp)
+	monster_builder.add_hp(hp)
 # monster_builder.add_name(name);
-	#NOTE monster_builder.add_name(name)
+	monster_builder.add_name(name)
 # monster_builder.add_inventory(inventory);
-	#NOTE monster_builder.add_inventory(inventory)
+	monster_builder.add_inventory(inventory)
 # monster_builder.add_color(Color_Red);
-	#NOTE monster_builder.add_color(schema.Color_.RED)
+	monster_builder.add_color(schema.Color_.RED)
 # monster_builder.add_weapons(weapons);
-	#NOTE monster_builder.add_weapons(weapons)
+	monster_builder.add_weapons(weapons)
 # monster_builder.add_equipped_type(Equipment_Weapon);
-	#NOTE monster_builder.add_equipped_type(schema.Equipment.WEAPON)
+	monster_builder.add_equipped_type(schema.Equipment.WEAPON)
 # monster_builder.add_equipped(axe.Union());
-	#NOTE monster_builder.add_equipped(axe)
+	monster_builder.add_equipped(axe)
 # auto orc = monster_builder.Finish();
-	#NOTE var orc = monster_builder.finish()
+	var orc = monster_builder.finish()
 
 #
 # Before finishing the serialization, let's take a quick look at FlatBuffer
@@ -266,7 +263,7 @@ func example_reading( buffer : PackedByteArray ):
 #
 # // Get a pointer to the root object inside the buffer.
 # auto monster = GetMonster(buffer_pointer);
-	var monster = schema.get_Monster( buffer )
+	var monster = schema.get_root( buffer )
 
 #
 # // `monster` is of type `Monster *`.
