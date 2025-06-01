@@ -135,6 +135,10 @@ func _run() -> void:
 ###  FAQ
 Some of these items are to remind myself even.
 
+#### Generation fails with no error
+Today I was reminded that if generating a file with no `root_type` nothing happens and there is no error.
+Definitely something I want to fix in the future.
+
 #### PackedArrays
 I got caught out recently with my interpretation of the flatbuffer schema, and how it relates to data within the godot engine.
 BlatBuffers have both signed and unsigned bytes, however, PackedByteArray doesnt specify signedness and so I assume anything
