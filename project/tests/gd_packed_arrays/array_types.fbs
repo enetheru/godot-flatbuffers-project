@@ -1,0 +1,55 @@
+include "godot.fbs";
+// This test is to show how scalar, struct arrays, and lastly strings are
+// transformed into gdscript deserialisation code
+
+// I'll skip the aliased types and simply use the [u]int[width] versions
+table TestTable {
+	// scalars
+	fbool:[bool];               // Array[bool]
+	fint8:[int8];               // Array[int]
+	fint16:[int16];             // Array[int]
+	fuint16:[uint16];           // Array[int]
+	fuint32:[uint32];           // Array[int]
+	fint64:[int64];             // Array[int]
+	// scalars with specialty types in godot
+	fuint8:[uint8];             // PackedByteArray
+	fint32:[int32];             // PackedInt32Array
+	fuint64:[uint64];           // PackedInt64Array
+	ffloat32:[float32];         // PackedFloat32Array
+	ffloat64:[float64];         // PackedFloat64Array
+	// specialty string array type
+	fstring:[string];           // PackedStringArray
+	// the variants that are technically structs and can be treated as such
+	// in fbs starting with the ones that have godot specialty types
+	fcolor:[Color];             // PackedColorArray
+	fvector2:[Vector2];         // PackedVector2Array
+	fvector3:[Vector3];         // PackedVector3Array
+	fvector4:[Vector4];         // PackedVector4Array
+	// and the rest
+	faabb:[AABB];               // Array[AABB]
+	fbasis:[Basis];             // Array[Basis]
+	fplane:[Plane];             // Array[Plane]
+	fprojection:[Projection];   // Array[Projection]
+	fquaternion:[Quaternion];   // Array[Quaternion]
+	frect2:[Rect2];             // Array[Rect2]
+	frect2i:[Rect2i];           // Array[Rect2i]
+	ftransform2d:[Transform2D]; // Array[Transform2D]
+	ftransform3d:[Transform3D]; // Array[Transform3D]
+	fvector2i:[Vector2i];       // Array[Vector2i]
+	fvector3i:[Vector3i];       // Array[Vector3i]
+	fvector4i:[Vector4i];       // Array[Vector4i]
+
+	// Unsupported Cases
+	//fArray:[Array];             // Array[Array]
+	//fCallable:[Callable];       // Array[Callable]
+	//fObject:[Object];           // Array[Object]
+	//fSignal:[Signal];           // Array[Signal]
+
+	// Future actions
+	//fDictionary:[Dictionary];   // Array[Dictionary]
+	//fNodePath:[NodePath];       // Array[NodePath]
+	//fRID:[RID];                 // Array[RID]
+	//fstringname:[StringName];   // Array[StringName]
+}
+
+root_type TestTable;

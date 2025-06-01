@@ -16,10 +16,6 @@ func _run() -> void:
 	# Generate the flatbuffer using the three methods of creation
 	reconstruct( manual() )
 	reconstruct( create() )
-	reconstruct( create2() )
-	if not silent:
-		print_rich( "\n[b]== Simple Test ==[/b]\n" )
-		for o in output: print( o )
 
 func manual() -> PackedByteArray:
 	# create new builder
@@ -55,7 +51,7 @@ func create():
 	# var offset : int = schema.Create<Type>( builder, element, ... )
 	# ...
 
-	var offset : int = schema.CreateRootTable( builder, 5 )
+	var offset : int = schema.create_RootTable( builder, 5 )
 
 
 	# finalise flatbuffer builder
@@ -65,22 +61,8 @@ func create():
 	return builder.to_packed_byte_array()
 
 
-func create2():
-	# create new builder
-	var builder = FlatBufferBuilder.new()
-
-	# This call generates the root table using test_object properties
-	var offset = schema.CreateRootTable2( builder, test_object )
-
-	# Finalise flatbuffer builder
-	builder.finish( offset )
-
-	# export data
-	return builder.to_packed_byte_array()
-
-
 func reconstruct( buffer : PackedByteArray ):
-	var root_table : FlatBuffer = schema.GetRoot( buffer )
+	var root_table : FlatBuffer = schema.get_root( buffer )
 	output.append( "root_table: " + JSON.stringify( root_table.debug(), '\t', false ) )
 
 	# Perform testing on the reconstructed flatbuffer.

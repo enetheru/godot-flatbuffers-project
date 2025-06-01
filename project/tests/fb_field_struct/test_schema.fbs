@@ -1,0 +1,29 @@
+include "godot.fbs";
+
+struct CustomStruct{
+	x : int;
+	y : float;
+}
+
+table RootTable{
+	custom_struct:[CustomStruct];
+	// Builtin Variant Structs
+	faabb:AABB;
+	fbasis:Basis;
+	fcolor:Color;
+	fplane:Plane;
+	fprojection:Projection;
+	fquaternion:Quaternion;
+	frect2:Rect2;
+	frect2i:Rect2i;
+	ftransform2d:Transform2D;
+	ftransform3d:Transform3D;
+	fvector2:Vector2;
+	fvector2i:Vector2i;
+	fvector3:Vector3;
+	fvector3i:Vector3i;
+	fvector4:Vector4;
+	vector4i:Vector4i;
+}
+
+root_type RootTable;
