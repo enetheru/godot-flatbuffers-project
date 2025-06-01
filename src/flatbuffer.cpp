@@ -2,6 +2,21 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <utility>
 
+// get the data from the bytes directly
+#define BIND_DECODE_STRUCT(type_name) ClassDB::bind_method( D_METHOD( "decode_" #type_name, "start_" ), &FlatBuffer::decode_struct< type_name > );
+
+// get the data as a field
+#define BIND_GET_STRUCT(type_name) ClassDB::bind_method( D_METHOD( "get_" #type_name, "voffset" ), &FlatBuffer::get_struct< type_name > );
+
+// get the data from an array
+#define BIND_AT_STRUCT(type_name) ClassDB::bind_method( D_METHOD( "at_" #type_name, "voffset", "index" ), &FlatBuffer::at_struct< type_name > );
+
+#define BIND_POD(type_name) \
+  BIND_DECODE_STRUCT(type_name) \
+  BIND_GET_STRUCT(type_name) \
+  BIND_AT_STRUCT(type_name)
+
+
 namespace godot_flatbuffers {
 
 
@@ -36,24 +51,26 @@ void FlatBuffer::_bind_methods() {
   ClassDB::bind_method( D_METHOD( "decode_String", "start_" ), &FlatBuffer::decode_String );
 
   //// Decode math types
-  BIND_STRUCT(Vector2)
-  BIND_STRUCT(Vector2i)
-  BIND_STRUCT(Rect2)
-  BIND_STRUCT(Rect2i)
-  BIND_STRUCT(Vector3)
-  BIND_STRUCT(Vector3i)
-  BIND_STRUCT(Transform2D)
-  BIND_STRUCT(Vector4)
-  BIND_STRUCT(Vector4i)
-  BIND_STRUCT(Plane)
-  BIND_STRUCT(Quaternion)
-  BIND_STRUCT(AABB)
-  BIND_STRUCT(Basis)
-  BIND_STRUCT(Transform3D)
-  BIND_STRUCT(Projection)
+  BIND_POD(Vector2)
+  BIND_POD(Vector2i)
+  BIND_POD(Rect2)
+  BIND_POD(Rect2i)
+  BIND_POD(Vector3)
+  BIND_POD(Vector3i)
+  BIND_POD(Transform2D)
+  BIND_POD(Vector4)
+  BIND_POD(Vector4i)
+  BIND_POD(Plane)
+  BIND_POD(Quaternion)
+  BIND_POD(AABB)
+  BIND_POD(Basis)
+  BIND_POD(Transform3D)
+  BIND_POD(Projection)
 
   //// Decode misc types
-  BIND_STRUCT(Color)
+  BIND_POD(Color)
+
+  //// Things to think about
   // STRING_NAME,
   // NODE_PATH,
   // RID,
@@ -123,8 +140,12 @@ int64_t FlatBuffer::get_array_size( const int64_t vtable_offset ) const {
 }
 
 int64_t FlatBuffer::get_array_element_start( const int64_t array_start, const int64_t idx ) const {
-  // TODO we could check for out of bounds here.
-  //  int64_t array_size = bytes.decode_u32( array_start );
+#ifdef DEBUG_ENABLED
+  int64_t array_size = bytes.decode_u32( array_start );
+  assert( array_start < bytes.size() - 4 );
+  assert( idx < array_size );
+  assert( array_start + array_size * 4 < bytes.size() );
+#endif
 
   const int64_t data    = array_start + 4;
   const int64_t element = data + idx * 4;
@@ -181,6 +202,8 @@ godot::PackedInt64Array FlatBuffer::decode_PackedInt64Array( const int64_t start
   const int64_t array_start = start_ + 4;
   return bytes.slice( array_start, array_start + length ).to_int64_array();
 }
+
+
 
 godot::PackedStringArray FlatBuffer::decode_PackedStringArray( const int64_t start_ ) const {
   const int64_t size = bytes.decode_u32( start_ );

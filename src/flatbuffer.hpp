@@ -5,7 +5,6 @@
 
 #include "flatbuffers/flatbuffers.h"
 
-#define BIND_STRUCT(type_name) ClassDB::bind_method( D_METHOD( "get_" #type_name, "voffset" ), &FlatBuffer::get_struct< type_name > );
 
 namespace godot_flatbuffers {
 class FlatBuffer final : public godot::RefCounted {
@@ -45,13 +44,36 @@ public:
 
   [[nodiscard]] int64_t get_array_element_start( int64_t array_start, int64_t idx ) const;
 
-  template< typename godot_struct >
-  [[nodiscard]] godot_struct get_struct( const int64_t voffset ) const {
+  // Template to simplify decoding pod data types from the bytes
+  template< typename PODType >
+  [[nodiscard]] PODType decode_struct( const int64_t start_ ) const {
+    assert(start_ + sizeof( PODType ) < bytes.size() );
+    const auto p = const_cast< uint8_t * >(bytes.ptr() + start_);
+    return *reinterpret_cast< PODType * >(p);
+  }
+
+  // Template to simplify getting the type from
+  template< typename PODType >
+  [[nodiscard]] PODType get_struct( const int64_t voffset ) const {
     const uoffset_t field_offset = get_field_offset( voffset );
     if( not field_offset) return {};
     const uoffset_t field_start = start + field_offset;
-    const auto p = const_cast< uint8_t * >(bytes.ptr() + field_start);
-    return *reinterpret_cast< godot_struct * >(p);
+    return decode_struct<PODType>( field_start );
+  }
+
+  // template for struct array access
+  // Arrays are vectors of uint32 indexes pointing to the resultant object.
+  template< typename PODType >
+  [[nodiscard]] PODType at_struct( const int64_t voffset, const uint32_t index ) const {
+    // Starting with getting the array
+    const uoffset_t array_offset = get_field_start( voffset );
+    if( not array_offset) return {};
+
+    //now using the index, get the data, for a POD array, the object is inline.
+    uint64_t array_data = array_offset + 4;
+    uint64_t element_start = array_data + index * sizeof( PODType );
+
+    return decode_struct<PODType>( element_start );
   }
 
   [[nodiscard]] godot::String decode_String( int64_t start_ ) const;
