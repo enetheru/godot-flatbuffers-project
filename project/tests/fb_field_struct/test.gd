@@ -16,18 +16,17 @@ func _run() -> void:
 	TEST_EQ(35, struct.x, "struct.x")
 	TEST_EQ(73, struct.y, "struct.x")
 
-	# Table
-	#var fbb = FlatBufferBuilder.new()
-	#var builder = schema.RootTableBuilder.new(fbb)
+	# construct Table
+	var fbb = FlatBufferBuilder.new()
+	var offset = schema.create_RootTable( fbb, struct )
+	fbb.finish(offset)
 
-	# FIXME struct arrays I believe are just contiguous data as we know the size
-	# of each element ahead of time. But for custom structs we need a mechanism
-	# to set that up.
+	# get packed bytes
+	var bytes := fbb.to_packed_byte_array()
 
-	# I have to double check how this is done.
-	# I dont think we need the vector of offsets, I think the elements are inline
+	var table : RootTable = schema.get_root(bytes)
 
-	# FIXME For scalars and builtin structs like Vector3 it works the same,
-	# except we can add the builtin methods.
+	var output_struct : Struct =  table.custom_struct()
 
-	output.append("Warning: I still have to implement this")
+	TEST_EQ( struct.x, output_struct.x )
+	TEST_EQ( struct.y, output_struct.y )

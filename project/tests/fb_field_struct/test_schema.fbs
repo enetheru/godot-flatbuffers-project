@@ -6,7 +6,7 @@ struct CustomStruct{
 }
 
 table RootTable{
-	custom_struct:[CustomStruct];
+	custom_struct:CustomStruct;
 }
 
 root_type RootTable;
