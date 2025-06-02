@@ -14,99 +14,133 @@
         <link title="Official Flatbuffer Documentation">https://flatbuffers.dev/</link>
 	</tutorials>
 	<methods>
-		<method name="GetAABB" qualifiers="const">
+		<method name="at_AABB" qualifiers="const">
 			<return type="AABB" />
 			<param index="0" name="voffset" type="int" />
-			<description> Decode an [AABB] using the vtable offset
+			<param index="1" name="index" type="int" />
+			<description>
 			</description>
 		</method>
-		<method name="GetBasis" qualifiers="const">
+		<method name="at_Basis" qualifiers="const">
 			<return type="Basis" />
 			<param index="0" name="voffset" type="int" />
+			<param index="1" name="index" type="int" />
 			<description>
 			</description>
 		</method>
-		<method name="GetColor" qualifiers="const">
+		<method name="at_Color" qualifiers="const">
 			<return type="Color" />
 			<param index="0" name="voffset" type="int" />
+			<param index="1" name="index" type="int" />
 			<description>
 			</description>
 		</method>
-		<method name="GetPlane" qualifiers="const">
+		<method name="at_Plane" qualifiers="const">
 			<return type="Plane" />
 			<param index="0" name="voffset" type="int" />
+			<param index="1" name="index" type="int" />
 			<description>
 			</description>
 		</method>
-		<method name="GetProjection" qualifiers="const">
+		<method name="at_Projection" qualifiers="const">
 			<return type="Projection" />
 			<param index="0" name="voffset" type="int" />
+			<param index="1" name="index" type="int" />
 			<description>
 			</description>
 		</method>
-		<method name="GetQuaternion" qualifiers="const">
+		<method name="at_Quaternion" qualifiers="const">
 			<return type="Quaternion" />
 			<param index="0" name="voffset" type="int" />
+			<param index="1" name="index" type="int" />
 			<description>
 			</description>
 		</method>
-		<method name="GetRect2" qualifiers="const">
+		<method name="at_Rect2" qualifiers="const">
 			<return type="Rect2" />
 			<param index="0" name="voffset" type="int" />
+			<param index="1" name="index" type="int" />
 			<description>
 			</description>
 		</method>
-		<method name="GetRect2i" qualifiers="const">
+		<method name="at_Rect2i" qualifiers="const">
 			<return type="Rect2i" />
 			<param index="0" name="voffset" type="int" />
+			<param index="1" name="index" type="int" />
 			<description>
 			</description>
 		</method>
-		<method name="GetTransform2D" qualifiers="const">
+		<method name="at_Transform2D" qualifiers="const">
 			<return type="Transform2D" />
 			<param index="0" name="voffset" type="int" />
+			<param index="1" name="index" type="int" />
 			<description>
 			</description>
 		</method>
-		<method name="GetTransform3D" qualifiers="const">
+		<method name="at_Transform3D" qualifiers="const">
 			<return type="Transform3D" />
 			<param index="0" name="voffset" type="int" />
+			<param index="1" name="index" type="int" />
 			<description>
 			</description>
 		</method>
-		<method name="GetVector2" qualifiers="const">
+		<method name="at_Vector2" qualifiers="const">
 			<return type="Vector2" />
 			<param index="0" name="voffset" type="int" />
+			<param index="1" name="index" type="int" />
 			<description>
 			</description>
 		</method>
-		<method name="GetVector2i" qualifiers="const">
+		<method name="at_Vector2i" qualifiers="const">
 			<return type="Vector2i" />
 			<param index="0" name="voffset" type="int" />
+			<param index="1" name="index" type="int" />
 			<description>
 			</description>
 		</method>
-		<method name="GetVector3" qualifiers="const">
+		<method name="at_Vector3" qualifiers="const">
 			<return type="Vector3" />
 			<param index="0" name="voffset" type="int" />
+			<param index="1" name="index" type="int" />
 			<description>
 			</description>
 		</method>
-		<method name="GetVector3i" qualifiers="const">
+		<method name="at_Vector3i" qualifiers="const">
 			<return type="Vector3i" />
 			<param index="0" name="voffset" type="int" />
+			<param index="1" name="index" type="int" />
 			<description>
 			</description>
 		</method>
-		<method name="GetVector4" qualifiers="const">
+		<method name="at_Vector4" qualifiers="const">
 			<return type="Vector4" />
 			<param index="0" name="voffset" type="int" />
+			<param index="1" name="index" type="int" />
 			<description>
 			</description>
 		</method>
-		<method name="GetVector4i" qualifiers="const">
+		<method name="at_Vector4i" qualifiers="const">
 			<return type="Vector4i" />
 			<param index="0" name="voffset" type="int" />
+			<param index="1" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_AABB" qualifiers="const">
+			<return type="AABB" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_Basis" qualifiers="const">
+			<return type="Basis" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_Color" qualifiers="const">
+			<return type="Color" />
+			<param index="0" name="start_" type="int" />
 			<description>
 			</description>
 		</method>
@@ -147,9 +181,184 @@
 			<description>
 			</description>
 		</method>
+		<method name="decode_Plane" qualifiers="const">
+			<return type="Plane" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_Projection" qualifiers="const">
+			<return type="Projection" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_Quaternion" qualifiers="const">
+			<return type="Quaternion" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_Rect2" qualifiers="const">
+			<return type="Rect2" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_Rect2i" qualifiers="const">
+			<return type="Rect2i" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
 		<method name="decode_String" qualifiers="const">
 			<return type="String" />
 			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_Transform2D" qualifiers="const">
+			<return type="Transform2D" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_Transform3D" qualifiers="const">
+			<return type="Transform3D" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_Vector2" qualifiers="const">
+			<return type="Vector2" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_Vector2i" qualifiers="const">
+			<return type="Vector2i" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_Vector3" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_Vector3i" qualifiers="const">
+			<return type="Vector3i" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_Vector4" qualifiers="const">
+			<return type="Vector4" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="decode_Vector4i" qualifiers="const">
+			<return type="Vector4i" />
+			<param index="0" name="start_" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_AABB" qualifiers="const">
+			<return type="AABB" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+				Decode an [AABB] using the vtable offset
+			</description>
+		</method>
+		<method name="get_Basis" qualifiers="const">
+			<return type="Basis" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_Color" qualifiers="const">
+			<return type="Color" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_Plane" qualifiers="const">
+			<return type="Plane" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_Projection" qualifiers="const">
+			<return type="Projection" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_Quaternion" qualifiers="const">
+			<return type="Quaternion" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_Rect2" qualifiers="const">
+			<return type="Rect2" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_Rect2i" qualifiers="const">
+			<return type="Rect2i" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_Transform2D" qualifiers="const">
+			<return type="Transform2D" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_Transform3D" qualifiers="const">
+			<return type="Transform3D" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_Vector2" qualifiers="const">
+			<return type="Vector2" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_Vector2i" qualifiers="const">
+			<return type="Vector2i" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_Vector3" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_Vector3i" qualifiers="const">
+			<return type="Vector3i" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_Vector4" qualifiers="const">
+			<return type="Vector4" />
+			<param index="0" name="voffset" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_Vector4i" qualifiers="const">
+			<return type="Vector4i" />
+			<param index="0" name="voffset" type="int" />
 			<description>
 			</description>
 		</method>
@@ -180,11 +389,11 @@
 		</method>
 	</methods>
 	<members>
-		<member name="bytes" type="PackedByteArray" setter="set_bytes" getter="get_bytes" default="PackedByteArray()">
-            The data to interpret. While this may say [Variant], it should only ever be set with [PackedByteArray].
+		<member name="bytes" type="Variant" setter="set_bytes" getter="get_bytes" default="null">
+			The data to interpret. While this may say [Variant], it should only ever be set with [PackedByteArray].
 		</member>
 		<member name="start" type="int" setter="set_start" getter="get_start" default="0">
-            Is the offset from the start of [member bytes] to the start of the flatbuffer table which will be decoded as uint32_t as an offset to the vtable.
+			Is the offset from the start of [member bytes] to the start of the flatbuffer table which will be decoded as uint32_t as an offset to the vtable.
 		</member>
 	</members>
 </class>
