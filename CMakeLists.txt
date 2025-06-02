@@ -34,6 +34,8 @@ include(CMakePrintHelpers)
 include(cmake/findGodotExecutable.cmake)
 include(cmake/godot-dump.cmake)
 
+find_package(Python3 3.4 REQUIRED) # pathlib should be present
+
 #[==============[ Git ]==============]
 find_program(GIT_EXECUTABLE NAMES "git" DOC "" NO_CACHE REQUIRED)
 if( NOT EXISTS "${GIT_EXECUTABLE}" )
@@ -140,7 +142,15 @@ add_library( ${GDE_NAME} SHARED )
 target_sources( ${GDE_NAME}
     PRIVATE
         ${SOURCES}
+        ${DOC_SOURCE_PATH}
 )
+
+# conditionally add doc data to compile output
+if(GODOTCPP_TARGET MATCHES "editor|template_debug")
+    file(GLOB_RECURSE DOC_XML LIST_DIRECTORIES NO CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/doc_classes/*.xml")
+    target_doc_sources( ${GDE_NAME} ${DOC_XML} )
+endif()
+
 
 target_link_libraries( ${GDE_NAME} PRIVATE godot-cpp FlatBuffers::FlatBuffers )
 

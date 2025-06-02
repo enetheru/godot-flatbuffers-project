@@ -3,26 +3,33 @@ Godot Flatbuffers
 Serialise to, and from, flatbuffer objects.
 
 This is a work in progress, and I would appreciate any and all feedback relating to it.
-if there are any requests please drop them in an issue and I'll look into it.
+
+**If there are any requests please drop them in an issue and I'll look into it.**
 
 The project consists of three main areas:
 
-1. The modifications to the flatc compiler which generates gdscript [here](https://github.com/enetheru/flatbuffers)
-  * `flatc --gdscript <schema.fbs>`
+1. The modifications to the flatc compiler which generates gdscript
+   * `flatc --gdscript <schema.fbs>`
+   * [enetheru/flatbuffers](https://github.com/enetheru/flatbuffers) is acquired automatically during CMake configuration.
 1. The gdextension binary plugin - This Github Project
-  * FlatbufferBuilder Object
-  * Flatbuffer Object
+   * `FlatbufferBuilder` Godot Object Class
+   * `Flatbuffer` Godot Object Class
 1. The Godot editor addon - `project/addons/gdflatbuffers`
-  * Syntax Highlighting of flatbuffer schema files `*.fbs`
-  * Context menu's for calling flatc to generate gdscript from flatbuffer schema
+   * Syntax Highlighting of flatbuffer schema files `*.fbs`
+   * Context menu's for calling flatc to generate gdscript from flatbuffer schema
+
 
 ### Installation
 Due to the work in progress nature, there are no release binaries yet.
 
 I've tried to make compilation as straight forward as possible, dependencies are pulled using CMake's FetchContent.
 
-I do know that at least on windows flatbuffers likes mingw, if you run into trouble please hit me up in issues,
-or in godot discord gdextension/c++ channels.
+After CMake configure completes, you will need to build two targets: `flatc` and `gdflatbuffers`
+
+Then copy or link the `project/addons/gdflatbuffers` folder into your `project/addons` folder
+
+I do know that at least on windows `flatc` builds using mingw, if you run into trouble please hit me up in issues,
+or in godot discord gdextension/c++ channels linked at the bottom of this document.
 
 ### Basic Usage
 
@@ -187,7 +194,9 @@ your cmake command will probably have these two items in it somewhere: `-DCMAKE_
 
 ### Discord
 I'm frequently available in both the official and the unofficial discord channels for gdextension and C++
-as 'Enetheru' during Australian Central Standard Time. GMT+930
+as 'Enetheru' during Australian Central Standard Time GMT+930. Keep in mind that these channels are for gdextension
+development discussion, if your question is directly about this project then its best to either @ me with a very short
+message, or private message me. I am very responsive.
 
 * [GodotEngine #cplusplus-discuss](https://discord.com/channels/1235157165589794909/1259879534392774748)
 * [Godot Café #gdnative-gdextension](https://discord.com/channels/212250894228652034/342047011778068481)

@@ -1,16 +1,23 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <class name="FlatBuffer" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
-	</brief_description>
+        Abstract base class for interpreting flatbuffer serialised data.
+    </brief_description>
 	<description>
+        This base class is to be overridden by code generated from the flatc schema compiler.
+        It provides utilities for the generated gdscript overloads to interpret binary data in [member bytes] in the
+        manner described schema file.
+        This [FlatBuffer] object is a non owning view of the [PackedByteArray].
 	</description>
 	<tutorials>
+        <link title="Rudimentary Example">https://github.com/enetheru/godot-flatbuffers/blob/main/README.md</link>
+        <link title="Official Flatbuffer Documentation">https://flatbuffers.dev/</link>
 	</tutorials>
 	<methods>
 		<method name="GetAABB" qualifiers="const">
 			<return type="AABB" />
 			<param index="0" name="voffset" type="int" />
-			<description>
+			<description> Decode an [AABB] using the vtable offset
 			</description>
 		</method>
 		<method name="GetBasis" qualifiers="const">
@@ -107,6 +114,7 @@
 			<return type="PackedByteArray" />
 			<param index="0" name="start_" type="int" />
 			<description>
+                Decode a [PackedByteArray] from [member bytes] at position [param start_]. The first four bytes at [param start_] are decoded as uint32_t and are the size of the buffer.
 			</description>
 		</method>
 		<method name="decode_PackedFloat32Array" qualifiers="const">
@@ -170,16 +178,13 @@
 			<description>
 			</description>
 		</method>
-		<method name="get_memory_address" qualifiers="const">
-			<return type="String" />
-			<description>
-			</description>
-		</method>
 	</methods>
 	<members>
 		<member name="bytes" type="PackedByteArray" setter="set_bytes" getter="get_bytes" default="PackedByteArray()">
+            The data to interpret. While this may say [Variant], it should only ever be set with [PackedByteArray].
 		</member>
 		<member name="start" type="int" setter="set_start" getter="get_start" default="0">
+            Is the offset from the start of [member bytes] to the start of the flatbuffer table which will be decoded as uint32_t as an offset to the vtable.
 		</member>
 	</members>
 </class>

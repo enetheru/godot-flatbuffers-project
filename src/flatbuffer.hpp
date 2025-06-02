@@ -14,8 +14,11 @@ class FlatBuffer final : public godot::RefCounted {
   typedef uint16_t voffset_t;
   typedef uint32_t uoffset_t;
 
-  godot::PackedByteArray bytes; // I need to make this a reference somehow
-  int64_t                start{};
+  godot::Variant variant;
+
+  const godot::PackedByteArray *bytes;
+
+  int64_t        start{};
 
 protected:
 
@@ -26,9 +29,9 @@ public:
   [[nodiscard]] godot::String get_memory_address() const;
 
   // Get and Set of properties
-  void set_bytes( godot::PackedByteArray bytes_ );
+  void set_bytes(const godot::Variant &variant );
 
-  auto get_bytes() -> const godot::PackedByteArray &;
+  auto get_bytes() const -> godot::Variant;
 
   void set_start( int64_t start_ );
 
@@ -47,8 +50,8 @@ public:
   // Template to simplify decoding pod data types from the bytes
   template< typename PODType >
   [[nodiscard]] PODType decode_struct( const int64_t start_ ) const {
-    assert(start_ + sizeof( PODType ) < bytes.size() );
-    const auto p = const_cast< uint8_t * >(bytes.ptr() + start_);
+    assert(start_ + sizeof( PODType ) <= bytes->size() );
+    const auto p = const_cast< uint8_t * >(bytes->ptr() + start_);
     return *reinterpret_cast< PODType * >(p);
   }
 
