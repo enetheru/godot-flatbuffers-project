@@ -4,6 +4,7 @@
 #include <godot_cpp/classes/ref_counted.hpp>
 
 #include "flatbuffers/flatbuffers.h"
+#include "godot_cpp/variant/variant_internal.hpp"
 
 
 namespace godot_flatbuffers {
@@ -25,17 +26,21 @@ protected:
   static void _bind_methods();
 
 public:
-  //Debug
+#ifdef DEBUG
   [[nodiscard]] godot::String get_memory_address() const;
+#endif
 
   // Get and Set of properties
-  void set_bytes(const godot::Variant &variant );
+  [[nodiscard]]
+  auto get_bytes() const -> godot::Variant{ return variant; }
+  auto set_bytes(const godot::Variant &variant )  -> void {
+    bytes = godot::VariantInternal::get_byte_array( &variant );
+    this->variant = variant ;
+  }
 
-  auto get_bytes() const -> godot::Variant;
-
-  void set_start( int64_t start_ );
-
-  [[nodiscard]] auto get_start() const -> int64_t;
+  [[nodiscard]]
+  auto get_start() const -> int64_t { return start; }
+  auto set_start( const int64_t start_ ) -> void { start = start_; }
 
   // Field offset and position
   [[nodiscard]] int64_t get_field_offset( int64_t vtable_offset ) const;
@@ -47,52 +52,51 @@ public:
 
   [[nodiscard]] int64_t get_array_element_start( int64_t array_start, int64_t idx ) const;
 
-  // Template to simplify decoding pod data types from the bytes
-  template< typename PODType >
-  [[nodiscard]] PODType decode_struct( const int64_t start_ ) const {
-    assert(start_ + sizeof( PODType ) <= bytes->size() );
+  auto overwrite_bytes( godot::Variant source, int from, int dest, int size ) const -> godot::Error;
+
+  // Template to simplify encoding godot types into bytes at start_
+  // Very simple, performs a raw memcpy to the byte array after checking it has enough room.
+  // Specialisations exist in the cpp file
+  template< typename GType >
+  auto encode_gtype( const int64_t start_, const GType &value ) -> void {
+    ERR_FAIL_INDEX_EDMSG(start_ + sizeof(GType), bytes->size(), "Not enough room in the buffer to encode object");
+    const auto mem = const_cast<godot::PackedByteArray*>(bytes)->ptrw() + start_;
+    memcpy( mem , &value, sizeof(GType)  );
+  }
+
+  // Template to simplify decoding godot data types from bytes
+  // Very simple, checks we have enough data in the array and returns the bytes interpreted as the type
+  // Specialisations exist in the cpp file
+  template< typename GType > [[nodiscard]]
+  auto decode_gtype( const int64_t start_ ) const -> GType {
+    assert(start_ + sizeof( GType ) <= bytes->size() );
     const auto p = const_cast< uint8_t * >(bytes->ptr() + start_);
-    return *reinterpret_cast< PODType * >(p);
+    return *reinterpret_cast< GType * >(p);
   }
 
   // Template to simplify getting the type from
-  template< typename PODType >
-  [[nodiscard]] PODType get_struct( const int64_t voffset ) const {
+  template< typename GType > [[nodiscard]]
+  auto get_gtype( const int64_t voffset ) const -> GType {
     const uoffset_t field_offset = get_field_offset( voffset );
     if( not field_offset) return {};
     const uoffset_t field_start = start + field_offset;
-    return decode_struct<PODType>( field_start );
+    return decode_gtype<GType>( field_start );
   }
 
   // template for struct array access
   // Arrays are vectors of uint32 indexes pointing to the resultant object.
-  template< typename PODType >
-  [[nodiscard]] PODType at_struct( const int64_t voffset, const uint32_t index ) const {
+  template< typename GType > [[nodiscard]]
+  auto at_gtype( const int64_t voffset, const uint32_t index ) const -> GType {
     // Starting with getting the array
     const uoffset_t array_offset = get_field_start( voffset );
     if( not array_offset) return {};
 
-    //now using the index, get the data, for a POD array, the object is inline.
-    uint64_t array_data = array_offset + 4;
-    uint64_t element_start = array_data + index * sizeof( PODType );
+    // now using the index, get the data, for a POD array, the object is inline.
+    const uint64_t array_data    = array_offset + 4;
+    const uint64_t element_start = array_data + index * sizeof( GType );
 
-    return decode_struct<PODType>( element_start );
+    return decode_gtype<GType>( element_start );
   }
-
-  [[nodiscard]] godot::String decode_String( int64_t start_ ) const;
-
-  [[nodiscard]] godot::PackedByteArray decode_PackedByteArray( int64_t start_ ) const;
-
-  [[nodiscard]] godot::PackedFloat32Array decode_packed_float32_array( int64_t start_ ) const;
-
-  [[nodiscard]] godot::PackedFloat64Array decode_packed_float64_array( int64_t start_ ) const;
-
-  [[nodiscard]] godot::PackedInt32Array decode_PackedInt32Array( int64_t start_ ) const;
-
-  [[nodiscard]] godot::PackedInt64Array decode_PackedInt64Array( int64_t start_ ) const;
-
-  [[nodiscard]] godot::PackedStringArray decode_PackedStringArray( int64_t start_ ) const;
-
 };
 } //namespace godot_flatbuffers
 

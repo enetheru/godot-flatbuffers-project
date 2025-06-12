@@ -1,26 +1,95 @@
 #include "flatbuffer.hpp"
 #include <godot_cpp/core/class_db.hpp>
+
+#ifdef DEBUG
 #include <utility>
+
+godot::String FlatBuffer::get_memory_address() const {
+  const auto i = reinterpret_cast< std::uintptr_t >(bytes->ptr());
+  return godot::vformat( "%X", i );
+}
+#endif
+
+#include <source_location>
+
 
 #include "godot_cpp/variant/variant_internal.hpp"
 
-// get the data from the bytes directly
-#define BIND_DECODE_STRUCT(type_name) ClassDB::bind_method( D_METHOD( "decode_" #type_name, "start_" ), &FlatBuffer::decode_struct< type_name > );
-
-// get the data as a field
-#define BIND_GET_STRUCT(type_name) ClassDB::bind_method( D_METHOD( "get_" #type_name, "voffset" ), &FlatBuffer::get_struct< type_name > );
-
-// get the data from an array
-#define BIND_AT_STRUCT(type_name) ClassDB::bind_method( D_METHOD( "at_" #type_name, "voffset", "index" ), &FlatBuffer::at_struct< type_name > );
-
-#define BIND_POD(type_name) \
-  BIND_DECODE_STRUCT(type_name) \
-  BIND_GET_STRUCT(type_name) \
-  BIND_AT_STRUCT(type_name)
-
-
 namespace godot_flatbuffers {
 
+// MARK: Specialisation
+// ║ ___              _      _ _          _   _
+// ║/ __|_ __  ___ __(_)__ _| (_)___ __ _| |_(_)___ _ _
+// ║\__ \ '_ \/ -_) _| / _` | | (_-</ _` |  _| / _ \ ' \
+// ║|___/ .__/\___\__|_\__,_|_|_/__/\__,_|\__|_\___/_||_|
+// ╙────|_|──────────────────────────────────────────────
+
+template<> [[nodiscard]]
+auto FlatBuffer::decode_gtype( const int64_t start_ ) const -> godot::PackedByteArray {
+  const int64_t size        = bytes->decode_u32( start_ );
+  const int64_t array_start = start_ + 4;
+  return bytes->slice( array_start, array_start + size );
+}
+
+#define DECODE_PACKED_GTYPE( gtype, scalar, to_array_func ) \
+template<> [[nodiscard]] \
+auto FlatBuffer::decode_gtype( const int64_t start_ ) const -> godot::gtype { \
+  const int64_t length      = bytes->decode_u32( start_ ) * sizeof( scalar ); \
+  const int64_t array_start = start_ + 4; \
+  return bytes->slice( array_start, array_start + length ).to_array_func(); \
+}
+
+// Ony a few of these functions exist in 'godot_cpp\variant\packed_byte_array.hpp'
+DECODE_PACKED_GTYPE( PackedFloat32Array, float, to_float32_array )
+DECODE_PACKED_GTYPE( PackedFloat64Array, double, to_float64_array )
+DECODE_PACKED_GTYPE( PackedInt32Array, uint32_t, to_int32_array )
+DECODE_PACKED_GTYPE( PackedInt64Array, uint64_t, to_int64_array )
+
+
+template<> [[nodiscard]]
+auto FlatBuffer::decode_gtype( const int64_t start_ ) const -> godot::String{
+  return bytes->slice( start_ + 4, start_ + 4 + bytes->decode_u32( start_ ) ).get_string_from_utf8();
+}
+
+
+template<> [[nodiscard]]
+auto FlatBuffer::decode_gtype( const int64_t start_ ) const -> godot::PackedStringArray {
+  const int64_t size = bytes->decode_u32( start_ );
+  const int64_t data = start_ + sizeof( uint32_t ); // NOLINT(*-narrowing-conversions)
+
+  godot::PackedStringArray string_array;
+  for( int i = 0; i < size; ++i ) {
+    const int64_t  element = data + i * sizeof( uint32_t ); // NOLINT(*-narrowing-conversions)
+    const uint32_t offset  = bytes->decode_u32( element );
+    string_array.append( decode_gtype<godot::String>( element + offset ) );
+  }
+  return string_array;
+}
+
+// MARK: Bind Methods
+// ║ ___ _         _   __  __     _   _            _
+// ║| _ |_)_ _  __| | |  \/  |___| |_| |_  ___  __| |___
+// ║| _ \ | ' \/ _` | | |\/| / -_)  _| ' \/ _ \/ _` (_-<
+// ║|___/_|_||_\__,_| |_|  |_\___|\__|_||_\___/\__,_/__/
+// ╙───────────────────────────────────────────────────────────────────────────
+
+// get the data from the bytes directly
+#define BIND_GTYPE_ENCODE(type_name) ClassDB::bind_method( D_METHOD( "encode_" #type_name, "start_", "value" ), &FlatBuffer::encode_gtype< type_name > );
+
+// get the data from the bytes directly
+#define BIND_GTYPE_DECODE(type_name) ClassDB::bind_method( D_METHOD( "decode_" #type_name, "start_" ), &FlatBuffer::decode_gtype< type_name > );
+
+// get the data as a field
+#define BIND_GTYPE_GET(type_name) ClassDB::bind_method( D_METHOD( "get_" #type_name, "voffset" ), &FlatBuffer::get_gtype< type_name > );
+
+// get the data from an array
+#define BIND_GTYPE_AT(type_name) ClassDB::bind_method( D_METHOD( "at_" #type_name, "voffset", "index" ), &FlatBuffer::at_gtype< type_name > );
+
+#define BIND_GTYPE(type_name) \
+BIND_GTYPE_ENCODE(type_name) \
+BIND_GTYPE_DECODE(type_name) \
+BIND_GTYPE_GET(type_name) \
+BIND_GTYPE_AT(type_name)
 
 void FlatBuffer::_bind_methods() {
   using namespace godot;
@@ -47,32 +116,33 @@ void FlatBuffer::_bind_methods() {
   ClassDB::bind_method( D_METHOD( "get_array_size", "vtable_offset" ), &FlatBuffer::get_array_size );
   ClassDB::bind_method( D_METHOD( "get_array_element_start", "array_start", "idx" ), &FlatBuffer::get_array_element_start );
 
+  //Overwrite Bytes
+  ClassDB::bind_method( D_METHOD( "overwrite_bytes", "source", "from", "to", "size" ), &FlatBuffer::overwrite_bytes );
+
   //// decode atomic types
-  // BOOL,
-  // INT,
-  // FLOAT,
-  // STRING,
-  ClassDB::bind_method( D_METHOD( "decode_String", "start_" ), &FlatBuffer::decode_String );
+  // BOOL, INT, FLOAT, are handled natively by godot::PackedByteArray
+  // godot_cpp\variant\packed_byte_array.hpp
+  BIND_GTYPE(String)
 
   //// Decode math types
-  BIND_POD(Vector2)
-  BIND_POD(Vector2i)
-  BIND_POD(Rect2)
-  BIND_POD(Rect2i)
-  BIND_POD(Vector3)
-  BIND_POD(Vector3i)
-  BIND_POD(Transform2D)
-  BIND_POD(Vector4)
-  BIND_POD(Vector4i)
-  BIND_POD(Plane)
-  BIND_POD(Quaternion)
-  BIND_POD(AABB)
-  BIND_POD(Basis)
-  BIND_POD(Transform3D)
-  BIND_POD(Projection)
+  BIND_GTYPE(Vector2)
+  BIND_GTYPE(Vector2i)
+  BIND_GTYPE(Rect2)
+  BIND_GTYPE(Rect2i)
+  BIND_GTYPE(Vector3)
+  BIND_GTYPE(Vector3i)
+  BIND_GTYPE(Transform2D)
+  BIND_GTYPE(Vector4)
+  BIND_GTYPE(Vector4i)
+  BIND_GTYPE(Plane)
+  BIND_GTYPE(Quaternion)
+  BIND_GTYPE(AABB)
+  BIND_GTYPE(Basis)
+  BIND_GTYPE(Transform3D)
+  BIND_GTYPE(Projection)
 
   //// Decode misc types
-  BIND_POD(Color)
+  BIND_GTYPE(Color)
 
   //// Things to think about
   // STRING_NAME,
@@ -85,28 +155,25 @@ void FlatBuffer::_bind_methods() {
   // ARRAY,
 
   // Decode typed arrays
-  // PACKED_BYTE_ARRAY,
-  ClassDB::bind_method( D_METHOD( "decode_PackedByteArray", "start_" ), &FlatBuffer::decode_PackedByteArray );
-  // PACKED_INT32_ARRAY,
-  ClassDB::bind_method( D_METHOD( "decode_PackedInt32Array", "start_" ), &FlatBuffer::decode_PackedInt32Array );
-  // PACKED_INT64_ARRAY,
-  ClassDB::bind_method( D_METHOD( "decode_PackedInt64Array", "start_" ), &FlatBuffer::decode_PackedInt64Array );
-  // PACKED_FLOAT32_ARRAY,
-  ClassDB::bind_method( D_METHOD( "decode_PackedFloat32Array", "start_" ), &FlatBuffer::decode_packed_float32_array );
-  // PACKED_FLOAT64_ARRAY,
-  ClassDB::bind_method( D_METHOD( "decode_PackedFloat64Array", "start_" ), &FlatBuffer::decode_packed_float64_array );
-  // PACKED_STRING_ARRAY,
-  ClassDB::bind_method( D_METHOD( "decode_PackedStringArray", "start_" ), &FlatBuffer::decode_PackedStringArray );
+  BIND_GTYPE(PackedByteArray)
+  BIND_GTYPE(PackedInt32Array)
+  BIND_GTYPE(PackedInt64Array)
+  BIND_GTYPE(PackedFloat32Array)
+  BIND_GTYPE(PackedFloat64Array)
+  BIND_GTYPE(PackedStringArray)
+
   // PACKED_VECTOR2_ARRAY,
   // PACKED_VECTOR3_ARRAY,
   // PACKED_COLOR_ARRAY,
   // PACKED_VECTOR4_ARRAY,
 }
 
-godot::String FlatBuffer::get_memory_address() const {
-  const auto i = reinterpret_cast< std::uintptr_t >(bytes->ptr());
-  return godot::vformat( "%X", i );
-}
+// MARK: Function Definitions
+// ║ ___               ___       __
+// ║| __|  _ _ _  __  |   \ ___ / _|___
+// ║| _| || | ' \/ _| | |) / -_)  _(_-<
+// ║|_| \_,_|_||_\__| |___/\___|_| /__/
+// ╙───────────────────────────────────
 
 // Returns the field offset relative to 'start'.
 // If this is a scalar or a struct, it will be where the data is
@@ -143,88 +210,31 @@ int64_t FlatBuffer::get_array_size( const int64_t vtable_offset ) const {
   return bytes->decode_u32( field_start );
 }
 
-int64_t FlatBuffer::get_array_element_start( const int64_t array_start, const int64_t idx ) const {
+int64_t FlatBuffer::get_array_element_start(const int64_t array_start, const int64_t idx) const {
 #ifdef DEBUG_ENABLED
-  int64_t array_size = bytes->decode_u32( array_start );
-  assert( array_start < bytes->size() - 4 );
-  assert( idx < array_size );
-  assert( array_start + array_size * 4 < bytes->size() );
+  const int64_t array_size = bytes->decode_u32(array_start);
+  assert(array_start < bytes->size() - 4);
+  assert(idx < array_size);
+  assert(array_start + array_size * 4 < bytes->size());
 #endif
 
   const int64_t data    = array_start + 4;
   const int64_t element = data + idx * 4;
-  const int64_t value   = bytes->decode_u32( element );
+  const int64_t value   = bytes->decode_u32(element);
 
   return element + value;
 }
 
-// Property Get and Set Functions
-void FlatBuffer::set_bytes( const godot::Variant &variant ) {
-  bytes = godot::VariantInternal::get_byte_array(&variant);
-  this->variant = variant ;
-}
+auto FlatBuffer::overwrite_bytes(godot::Variant source, const int from, const int dest, const int size) const -> godot::Error {
+  ERR_FAIL_COND_V_EDMSG( source.get_type() != godot::Variant::PACKED_BYTE_ARRAY, godot::ERR_INVALID_PARAMETER,
+    "overwrite_bytes source must be a PackedByteArray" );
+  ERR_FAIL_INDEX_V_EDMSG(dest+size, bytes->size(), godot::ERR_INVALID_PARAMETER,
+    "Not enough memory for overwrite_bytes");
 
-godot::Variant FlatBuffer::get_bytes() const {
-  return variant;
-}
-
-void FlatBuffer::set_start( const int64_t start_ ) {
-  start = start_;
-}
-
-int64_t FlatBuffer::get_start() const {
-  return start;
-}
-
-// Decode Functions
-
-godot::PackedByteArray FlatBuffer::decode_PackedByteArray( const int64_t start_ ) const {
-  const int64_t size        = bytes->decode_u32( start_ );
-  const int64_t array_start = start_ + 4;
-  return bytes->slice( array_start, array_start + size );
-}
-
-godot::PackedFloat32Array FlatBuffer::decode_packed_float32_array( const int64_t start_ ) const {
-  const int64_t length      = bytes->decode_u32( start_ ) * sizeof( float ); // NOLINT(*-narrowing-conversions)
-  const int64_t array_start = start_ + 4;
-  return bytes->slice( array_start, array_start + length ).to_float32_array();
-}
-
-godot::PackedFloat64Array FlatBuffer::decode_packed_float64_array( const int64_t start_ ) const {
-  const int64_t length      = bytes->decode_u32( start_ ) * sizeof( double ); // NOLINT(*-narrowing-conversions)
-  const int64_t array_start = start_ + 4;
-  return bytes->slice( array_start, array_start + length ).to_float64_array();
-}
-
-godot::PackedInt32Array FlatBuffer::decode_PackedInt32Array( const int64_t start_ ) const {
-  const int64_t length      = bytes->decode_u32( start_ ) * sizeof( int32_t ); // NOLINT(*-narrowing-conversions)
-  const int64_t array_start = start_ + 4;
-  return bytes->slice( array_start, array_start + length ).to_int32_array();
-}
-
-godot::PackedInt64Array FlatBuffer::decode_PackedInt64Array( const int64_t start_ ) const {
-  const int64_t length      = bytes->decode_u32( start_ ) * sizeof( int64_t ); // NOLINT(*-narrowing-conversions)
-  const int64_t array_start = start_ + 4;
-  return bytes->slice( array_start, array_start + length ).to_int64_array();
-}
-
-
-
-godot::PackedStringArray FlatBuffer::decode_PackedStringArray( const int64_t start_ ) const {
-  const int64_t size = bytes->decode_u32( start_ );
-  const int64_t data = start_ + sizeof( uint32_t ); // NOLINT(*-narrowing-conversions)
-
-  godot::PackedStringArray string_array;
-  for( int i = 0; i < size; ++i ) {
-    const int64_t  element = data + i * sizeof( uint32_t ); // NOLINT(*-narrowing-conversions)
-    const uint32_t offset  = bytes->decode_u32( element );
-    string_array.append( decode_String( element + offset ) );
-  }
-  return string_array;
-}
-
-godot::String FlatBuffer::decode_String( const int64_t start_ ) const {
-  return bytes->slice( start_ + 4, start_ + 4 + bytes->decode_u32( start_ ) ).get_string_from_utf8();
+  const auto source_bytes = godot::VariantInternal::get_byte_array(&source)->ptr();
+  const auto dest_bytes = const_cast<godot::PackedByteArray*>(bytes)->ptrw();
+  memcpy(dest_bytes + dest, source_bytes + from, size);
+  return godot::OK;
 }
 
 } // end namespace godot_flatbuffers

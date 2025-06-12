@@ -1,0 +1,17 @@
+include "godot.fbs";
+
+struct Item {
+	id:uint64;
+	pos:Vector3;
+}
+
+struct Bag {
+	item:Item;
+	items:[Item:2];
+}
+
+table RootTable {
+	container:Bag;
+}
+
+root_type RootTable;
