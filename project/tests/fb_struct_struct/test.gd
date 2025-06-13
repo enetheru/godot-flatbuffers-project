@@ -51,9 +51,13 @@ func _run() -> void:
 	print("\n== Serialisation Finished ==\n")
 
 	var root_table : RootTable = schema.get_root(bytes)
+	print("root_table.bytes: ", bytes_view(root_table.bytes) )
+	print("last thing seen.")
+	print( "root_table: ", JSON.stringify( root_table.debug(), "  ", false ) )
 
 	var bag_recon : Bag = root_table.container()
-	print("bag.bytes:\n", bytes_view(bag_recon.bytes) )
+	var bytes2 : PackedByteArray = bag_recon.bytes
+	print("bag.bytes:\n", bytes_view(bytes2) )
 
 	var item_recon : Item = bag_recon.item
 	print("item.bytes:\n", bytes_view(item_recon.bytes) )
@@ -63,6 +67,7 @@ func _run() -> void:
 	print("item_recon.pos: " , item_recon.pos )
 	TEST_EQ(item.id, item_recon.id, "Item Recon.id")
 
+	retcode = runcode
 	if retcode:
 		output.append_array([
 			"root_table: ",

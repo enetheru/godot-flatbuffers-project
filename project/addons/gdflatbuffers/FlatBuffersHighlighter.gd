@@ -503,6 +503,10 @@ func parse_include( p_token : Reader.Token ):
 
 		if not using_file( filename ):
 			syntax_error(token, "Unable to locate file: %s" % filename )
+		else:
+			quick_scan_text( get_text_edit().text )
+
+
 
 	token = reader.get_token()
 	check_token_t(token, &";")

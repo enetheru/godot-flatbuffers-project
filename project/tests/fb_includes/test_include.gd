@@ -1,7 +1,7 @@
 @tool
 extends TestBase
 
-const schema = preload('./include_generated.gd')
+const schema = preload('include_generated.gd')
 
 #region == Testing Setup ==
 # testing variables
@@ -17,6 +17,7 @@ func _run() -> void:
 	reconstruct( manual() )
 	#reconstruct( create() )
 	#reconstruct( create2() )
+	retcode = runcode
 
 func manual() -> PackedByteArray:
 	# create new builder

@@ -27,6 +27,7 @@ var context_menus : Dictionary[EditorContextMenuPlugin.ContextMenuSlot,EditorCon
 var editor_settings_path : String = "plugin/FlatBuffers/"
 var editor_settings_list = [
 	"verbosity",
+	"debug",
 	# Compiler
 	"compiler/flatc_exe",
 	"compiler/include_paths",
@@ -148,9 +149,9 @@ func _init() -> void:
 
 	init_settings()
 	context_menus = {
-		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM: MyFileMenu.new(self),
+		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM: MyFileMenu.new(),
 		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM_CREATE:MyFileCreateMenu.new(),
-		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_SCRIPT_EDITOR:MyScriptTabMenu.new(self),
+		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_SCRIPT_EDITOR:MyScriptTabMenu.new(),
 		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_SCRIPT_EDITOR_CODE:MyCodeEditMenu.new(),
 	}
 	print_log( LogLevel.TRACE, "%s._init() - Completed" % name )
@@ -273,15 +274,16 @@ func _exit_tree() -> void:
 #   ██      ███████ ██   ██    ██     ██████ ██ ███████ ██   ██ ███████
 
 func flatc_multi( paths : Array, args : Array ) -> Array:
+	print_log( LogLevel.TRACE, "%s.flatc_multi(%s, %s)" % [name, paths, args] )
 	var results : Array
 	for path : String in paths:
-		var abs_path : String = ProjectSettings.globalize_path( path )
 		if path.get_extension() == 'fbs':
-			results.append( flatc_generate( abs_path, args ) )
+			results.append( flatc_generate( path, args ) )
 	return results
 
 
-func flatc_generate( schema_path : String, args : Array ) -> Variant:
+func flatc_generate( schema_path : String, args : Array ) -> Dictionary:
+	print_log( LogLevel.TRACE, "%s.flatc_generate(%s, %s)" % [name, schema_path, args] )
 	# Make sure we have the flac compiler
 	if not FileAccess.file_exists(flatc_exe):
 		var msg = "flatc compiler is not found at '%s'" % flatc_exe
@@ -310,19 +312,32 @@ func flatc_generate( schema_path : String, args : Array ) -> Variant:
 	# the schema path
 	args.append( schema_path.replace('res://', './') )
 
+	var report : Dictionary = {
+		'schema': schema_path,
+		'flatc_path':flatc_exe,
+		'args':args,
+	}
+
+	if debug or verbosity >= LogLevel.NOTICE:
+		print( JSON.stringify(report, "  ", false) )
+
 	var output : Array = []
 	var retcode = OS.execute( flatc_exe, args, output, true )
 
-	var report : Array = [
-		"Compiling:    %s" % schema_path,
-		"Using:        %s" % flatc_exe,
-		"With Args:    %s" % " ".join( args ),
-		"Return Code: '%d'" % retcode,
-		"%s" % output
-		]
+	report['retcode'] = retcode
+	report['output'] = '\n'.join(output).split('\n', false)
+
+	if debug or verbosity >= LogLevel.NOTICE:
+		print( JSON.stringify({
+			'retcode': retcode,
+			'output': '\n'.join(output).split('\n', false),
+		}, "  ", false) )
 
 	if retcode:
-		print_rich( "[color=salmon][b]%s[/b][/color]" % output )
+		print_rich('\n'.join(["[color=salmon][b]",
+		"ERROR: flatc failed with code '%s'[/b]" % [retcode],
+		"\toutput: " + '\n'.join(output) + "[/color]"
+		]))
 
 	#TODO Figure out a way to get the script in the editor to reload.
 	#  the only reliable way I have found to refresh the script in the editor
@@ -330,12 +345,7 @@ func flatc_generate( schema_path : String, args : Array ) -> Variant:
 
 	# This line refreshes the filesystem dock.
 	if not retcode: EditorInterface.get_resource_filesystem().scan()
-	return {
-		'flatc_path':flatc_exe,
-		'args':args,
-		'retcode':retcode,
-		'output':report
-	}
+	return report
 
 #   ██████   ██████         ███    ███ ███████ ███    ██ ██    ██ ███████
 #   ██   ██ ██              ████  ████ ██      ████   ██ ██    ██ ██
@@ -348,17 +358,13 @@ func flatc_generate( schema_path : String, args : Array ) -> Variant:
 # filesystem context menu
 # EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM
 class MyFileMenu extends EditorContextMenuPlugin:
-	var _plugin : FlatBuffersPlugin
-
-	func _init( plugin : FlatBuffersPlugin ) -> void:
-		_plugin = plugin
-
 	# _popup_menu() and option callback will be called with list of paths of the
 	# currently selected files.
 	func _popup_menu(paths):
+		var fbp := FlatBuffersPlugin._prime
 		for path in paths:
 			if path.get_extension() == 'fbs':
-				add_context_menu_item("flatc --gdscript", _plugin.flatc_multi.bind(['--gdscript']), ICON_BW_TINY  )
+				add_context_menu_item("flatc --gdscript", fbp.flatc_multi.bind(['--gdscript']), ICON_BW_TINY  )
 				return
 
 
@@ -373,23 +379,20 @@ class MyFileCreateMenu extends EditorContextMenuPlugin:
 # CONTEXT_SLOT_SCRIPT_EDITOR
 # Context menu of Script editor's script tabs.
 class MyScriptTabMenu extends EditorContextMenuPlugin:
-	var _plugin : FlatBuffersPlugin
-
-	func _init( plugin : FlatBuffersPlugin ) -> void:
-		_plugin = plugin
-
 	# _popup_menu() will be called with the path to the currently edited script,
 	# while option callback will receive reference to that script.
 	func _popup_menu(paths : PackedStringArray):
+		var fbp := FlatBuffersPlugin._prime
 		if paths[0].get_extension() == 'fbs':
 			add_context_menu_item("flatc --gdscript", call_flatc_on_path.bind( paths[0], ['--gdscript'] ), ICON_BW_TINY )
-			add_context_menu_item("flatc --cpp", call_flatc_on_path.bind( paths[0], ['--cpp'] ), ICON_BW_TINY )
-			add_context_menu_item("flatc --help", call_flatc_on_path.bind( paths[0], ['--help'] ), ICON_BW_TINY )
-			add_context_menu_item("flatc --version", call_flatc_on_path.bind( paths[0], ['--version'] ), ICON_BW_TINY )
-			return
+			if fbp.debug:
+				add_context_menu_item("flatc --cpp", call_flatc_on_path.bind( paths[0], ['--cpp'] ), ICON_BW_TINY )
+				add_context_menu_item("flatc --help", call_flatc_on_path.bind( paths[0], ['--help'] ), ICON_BW_TINY )
+				add_context_menu_item("flatc --version", call_flatc_on_path.bind( paths[0], ['--version'] ), ICON_BW_TINY )
 
-	func call_flatc_on_path( script, path, args : Array ) -> void:
-		_plugin.flatc_generate( path, args )
+	func call_flatc_on_path( _ignore, path : String, args : Array ) -> void:
+		var fbp := FlatBuffersPlugin._prime
+		fbp.flatc_generate( path, args )
 
 
 # CONTEXT_SLOT_SCRIPT_EDITOR_CODE
@@ -397,10 +400,14 @@ class MyScriptTabMenu extends EditorContextMenuPlugin:
 class MyCodeEditMenu extends EditorContextMenuPlugin:
 	# _popup_menu() will be called with the path to the CodeEdit node.
 	# The option callback will receive reference to that node.
-	func _popup_menu(paths):
-		print( paths )
-		var code_edit = Engine.get_main_loop().root.get_node(paths[0]);
-		add_context_menu_item("code_edit_context_menu_test", func(thing): print( thing ), ICON_BW_TINY )
+	func _popup_menu( paths : PackedStringArray ):
+		var fbp := FlatBuffersPlugin._prime
+		if not fbp.debug: return
+		print("paths.size: ", paths.size() )
+		print("paths:\n\t", '\n\t'.join(paths) )
+		var code_edit : CodeEdit = Engine.get_main_loop().root.get_node(paths[0]);
+		print("selected_text: '%s'" % code_edit.get_selected_text() )
+		add_context_menu_item("flatbuffers testing", func(thing): print( thing ), ICON_BW_TINY )
 
 #   ██████  ██████   █████  ███    ██ ███████ ██
 #   ██   ██ ██   ██ ██   ██ ████   ██ ██      ██

@@ -41,6 +41,7 @@ func test_neg_one():
 	TEST_EQ(fbo.f_double(), -1, "f_double()" )
 
 	# provide debug info if an error occurs.
+	retcode = runcode
 	if retcode:
 		output.append_array( ["[color=goldenrod]Debug:[/color]",
 			JSON.stringify(fbo.debug(), "  ", false) ])

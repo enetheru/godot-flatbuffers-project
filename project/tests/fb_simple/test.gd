@@ -16,6 +16,7 @@ func _run() -> void:
 	# Generate the flatbuffer using the three methods of creation
 	reconstruct( manual() )
 	reconstruct( create() )
+	retcode = runcode
 
 func manual() -> PackedByteArray:
 	# create new builder

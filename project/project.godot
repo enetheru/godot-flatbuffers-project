@@ -15,6 +15,10 @@ run/main_scene="uid://dmx2xuigcpvt4"
 config/features=PackedStringArray("4.4")
 config/icon="uid://djn0qm2ewvf7d"
 
+[debug]
+
+settings/stdout/verbose_stdout=true
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/Todo_Manager/plugin.cfg", "res://addons/gdflatbuffers/plugin.cfg", "res://addons/zylann.editor_debugger/plugin.cfg")

@@ -1,0 +1,15 @@
+include "godot.fbs";
+
+struct Custom{
+	x : int;
+	y : float;
+}
+
+table RootTable{
+	custom : [Custom];
+	builtin : [Vector3i];
+	packable : [Color];
+	tail : int64 = -1;
+}
+
+root_type RootTable;

@@ -15,6 +15,7 @@ func _run() -> void:
 
 	short_way()
 	long_way()
+	retcode = runcode
 
 func short_way():
 

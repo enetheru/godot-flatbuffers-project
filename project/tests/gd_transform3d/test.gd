@@ -9,6 +9,7 @@ func _run() -> void:
 	# Setup Persistent data
 	test_object.rotate(Vector3(randf(), randf(), randf()).normalized(), randf())
 	reconstruct( manual() )
+	retcode = runcode
 
 func manual() -> PackedByteArray:
 	# create new builder

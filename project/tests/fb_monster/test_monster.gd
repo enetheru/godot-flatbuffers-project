@@ -1,7 +1,7 @@
 @tool
 extends TestBase
 
-const schema = preload('./Monster_generated.gd')
+const schema = preload('Monster_generated.gd')
 const Monster = schema.Monster
 const Equipment = schema.Equipment
 
@@ -19,6 +19,7 @@ func _run() -> void:
 
 	output.append_array( ["[color=goldenrod]Debug:[/color]",
 		JSON.stringify(monster.debug(), "  ", false) ])
+	retcode = runcode
 
 
 #  ██████ ██████  ███████  █████  ████████ ██ ███    ██  ██████

@@ -16,7 +16,9 @@ func _run() -> void:
 		return
 
 	var root_table : Schema = schema.get_root( bfbs )
-	if root_table: return
+	if root_table:
+		retcode = runcode
+		return
 
 	retcode = 1
 	output.append_array( [

@@ -39,6 +39,7 @@ func _run() -> void:
 	root_table = schema.get_root(bytes)
 	check( root_table )
 
+	retcode = runcode
 	if retcode:
 		output.append_array([
 			"root_table: ",
