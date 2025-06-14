@@ -7,8 +7,25 @@ var runcode : int = OK
 var retcode : int = FAILED
 var output : PackedStringArray = []
 
-func _init( verbose = false ) -> void:
-	_verbose = verbose
+## Handy Constants
+const u32 = 2083138172				# |**|
+const u32_ = 2084585596				# |@@|
+const u64 = 8947009970309311100		# |******|
+const u64_ = 8953226703912583292	# |@@@@@@|
+
+func _init() -> void:
+	_verbose = FlatBuffersPlugin._prime.verbosity >= FlatBuffersPlugin.LogLevel.NOTICE
+
+func logd( msg = "" ):
+	if msg is Array: msg = '\n'.join(msg)
+	if FlatBuffersPlugin._prime.debug:
+		print_rich( msg )
+
+func logp( msg ):
+	if msg is Array: msg = '\n'.join(msg)
+	output.append( msg )
+	if not FlatBuffersPlugin._prime.debug:
+		if _verbose: print_rich( msg )
 
 func TEST_EQ( want_v, got_v, desc : String = "" ) -> bool:
 	if want_v == got_v: return false

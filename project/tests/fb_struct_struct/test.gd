@@ -7,70 +7,59 @@ const Bag = schema.Bag
 const RootTable = schema.RootTable
 
 func _run() -> void:
-	var test_int : int = 32;
-	var test_vec : Vector3 = Vector3(1,2,3)
+	var test_int : int = u64
+	var test_vec : Vector3i = Vector3i(u32,u32,u32)
 	var test_bytes : PackedByteArray
-	test_bytes.resize(20)
+	test_bytes.resize(24)
 	test_bytes.encode_u64(0, test_int)
-	test_bytes.encode_float(8, test_vec.x )
-	test_bytes.encode_float(12, test_vec.y )
-	test_bytes.encode_float(16, test_vec.z )
-	print("test_bytes:\n", bytes_view(test_bytes) )
-	print()
+	test_bytes.encode_s32(8, test_vec.x )
+	test_bytes.encode_s32(12, test_vec.y )
+	test_bytes.encode_s32(16, test_vec.z )
+	logd(["test_bytes:", bytes_view(test_bytes)] )
+	logd()
 
+	var id : int = u64_;
+	var pos = Vector3(u32_,u32_,u32_)
+	logd("id: %d" % [id] )
+	logd("pos: %s" % [pos] )
+	logd()
 
-	_verbose = true
-	var id : int = 32;
-	var pos = Vector3(1,2,3)
-	print("id: %d" % id )
-	print("pos: " , pos )
-	print()
-
-	var item = Item.new()
-	item.id = id
-	item.pos = pos
-	print("item.id: %d" % item.id )
-	print("item.pos: " , item.pos )
-	print("item:\n", bytes_view(item.bytes) )
-	print()
+	var item = schema.create_Item(id, pos)
+	logd("item.id: %d" % item.id )
+	logd(["item.pos: %s" % item.pos] )
+	logd(["item:", bytes_view(item.bytes)] )
+	logd()
 	TEST_EQ(id, item.id, "struct encoding (id:int)")
 	TEST_EQ(pos, item.pos, "struct encoding (pos:vector3)")
 
-	var bag = Bag.new()
-	bag.item = item
-	print("bag.bytes:\n", bytes_view(bag.bytes) )
-
-
-	var fbb = FlatBufferBuilder.new()
-	var offset = schema.create_RootTable(fbb, bag)
-	fbb.finish(offset)
-
-	var bytes : PackedByteArray = fbb.to_packed_byte_array()
-	print("bytes:\n", bytes_view(bytes) )
-
-	print("\n== Serialisation Finished ==\n")
-
-	var root_table : RootTable = schema.get_root(bytes)
-	print("root_table.bytes: ", bytes_view(root_table.bytes) )
-	print("last thing seen.")
-	print( "root_table: ", JSON.stringify( root_table.debug(), "  ", false ) )
-
-	var bag_recon : Bag = root_table.container()
-	var bytes2 : PackedByteArray = bag_recon.bytes
-	print("bag.bytes:\n", bytes_view(bytes2) )
-
-	var item_recon : Item = bag_recon.item
-	print("item.bytes:\n", bytes_view(item_recon.bytes) )
-	print("item.id: " , item.id )
-	print("item.pos: " , item.pos )
-	print("item_recon.id: " , item_recon.id )
-	print("item_recon.pos: " , item_recon.pos )
-	TEST_EQ(item.id, item_recon.id, "Item Recon.id")
-
+	var bag = schema.create_Bag( item, [] )
+	logd(["bag.bytes:", bytes_view(bag.bytes)] )
+#
+	#var fbb = FlatBufferBuilder.new()
+	#var offset = schema.create_RootTable(fbb, bag)
+	#fbb.finish(offset)
+#
+	#var bytes : PackedByteArray = fbb.to_packed_byte_array()
+	#logd(["bytes:", bytes_view(bytes)] )
+#
+	#logd("\n== Serialisation Finished ==\n")
+#
+	#var root_table : RootTable = schema.get_root(bytes)
+	#logd(["root_table.bytes: ", bytes_view(root_table.bytes)] )
+	#logd("last thing seen.")
+	#logd([ "root_table: " + JSON.stringify( root_table.debug(), "  ", false ) ])
+#
+	#var bag_recon : Bag = root_table.container()
+	#var bytes2 : PackedByteArray = bag_recon.bytes
+	#logd(["bag.bytes:", bytes_view(bytes2)] )
+#
+	#var item_recon : Item = bag_recon.item
+	#logd(["item.bytes:", bytes_view(item_recon.bytes) ])
+	#logd(["item.id: %s" % item.id] )
+	#logd(["item.pos: %s" % item.pos] )
+	#logd(["item_recon.id: %s" % item_recon.id ])
+	#logd(["item_recon.pos: %s" % item_recon.pos] )
+	#TEST_EQ(item.id, item_recon.id, "Item Recon.id")
+	#TEST_EQ(item.pos, item_recon.pos, "Item Recon.pos")
+#
 	retcode = runcode
-	if retcode:
-		output.append_array([
-			"root_table: ",
-			#JSON.stringify( root_table.debug(), '  ', false )
-		])
-		print_rich( '\n'.join( output ) )

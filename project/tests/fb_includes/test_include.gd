@@ -1,86 +1,94 @@
 @tool
 extends TestBase
 
+
+const other_schema = preload('other_generated.gd')
+# == other.fbs ==
+#include "godot.fbs";
+#table Other {
+	#value:Vector3;
+#}
+#root_type Other;
+
 const schema = preload('include_generated.gd')
-
-#region == Testing Setup ==
-# testing variables
-
-var test_object
-#endregion
+# == include.fbs ==
+#include "other.fbs";
+#table RootTable {
+	#external:Other;
+	#external_array:[Other];
+#}
+#root_type RootTable;
 
 func _run() -> void:
-	# Setup Persistent data
-	# ...
+	logd("== Testing Includes ==")
+	var vec : Vector3i = Vector3i(u32,u32,u32)
+	logd("Starting Vector3i: %s" % vec)
+	logd("\n== Creating 'Other' ==")
+	var fbb = FlatBufferBuilder.new()
+	var offset = other_schema.create_Other(fbb, vec)
+	fbb.finish( offset )
+	logd("finished creating flatbuffer object 'Other'")
+	var other_bytes = fbb.to_packed_byte_array()
+	logd(["bytes: %s" % bytes_view( other_bytes ) ])
 
-	# Generate the flatbuffer using the three methods of creations
-	reconstruct( manual() )
-	#reconstruct( create() )
-	#reconstruct( create2() )
+	logd("\nDecoding flatbuffer object 'Other'")
+	var other := other_schema.get_root(other_bytes)
+	var other_vec = other.value()
+	logd("decoded vector: %s" % other_vec)
+
+	TEST_EQ(vec.x, other_vec.x)
+	TEST_EQ(vec.y, other_vec.y)
+	TEST_EQ(vec.z, other_vec.z)
+	TEST_EQ(vec, other_vec)
+
+	logd("\n== Creating 'RootTable' ==")
+	var vectors : Array = [
+		Vector3i(1,2,u32_),
+		Vector3i(4,u32_,6),
+		Vector3i(u32_,8,9)]
+
+	logd(["Using starting vec: %s" % vec, "And these ones for the array:"])
+	for tvec in vectors:
+		logd("\t%s" % [tvec])
+
+	fbb.reset()
+	var e_offset = other_schema.create_Other(fbb, vec)
+	var offsets : PackedInt32Array
+	offsets.resize(vectors.size())
+	for i in vectors.size():
+		offsets[i] = other_schema.create_Other(fbb, vectors[i])
+
+	var ea_offset : int = fbb.create_vector_offset( offsets )
+	var root_offset = schema.create_RootTable( fbb, e_offset, ea_offset )
+	fbb.finish( root_offset )
+
+	logd("Finished creating flatbuffer object 'RootTable'")
+	var root_bytes = fbb.to_packed_byte_array()
+	logd(["bytes: %s" % bytes_view( root_bytes ) ])
+
+	logd("\nDecoding flatbuffer object 'RootTable'")
+	var rtable := schema.get_root(root_bytes)
+	var rtable_ext: = rtable.external()
+	var rte_vec = rtable_ext.value()
+	logd("decoding rtable.external().value(): %s" % rte_vec )
+
+	TEST_EQ(vec.x, rte_vec.x)
+	TEST_EQ(vec.y, rte_vec.y)
+	TEST_EQ(vec.z, rte_vec.z)
+	TEST_EQ(vec, rte_vec)
+
+	var earray := rtable.external_array()
+	logd(["decoding rtable.external_array(): size:%d" % earray.size()])
+
+	logd(["decoding elements using rtable.external_array()"])
+	for temp in earray:
+		logd("\t%s" % [temp.value()])
+
+	logd(["decoding elements using root_table.external_array_at(idx)"])
+	for i in rtable.external_array_size():
+		var tother = rtable.external_array_at(i)
+		var tvec = tother.value()
+		logd("\t%d: %s" % [i, tvec])
+		TEST_EQ(vectors[i], tvec )
+
 	retcode = runcode
-
-func manual() -> PackedByteArray:
-	# create new builder
-	var builder = FlatBufferBuilder.new()
-
-	# create all the composite objects here
-	# var offset : int = schema.Create<Type>( builder, element, ... )
-	# ...
-
-	# Start the root object builder
-	var root_builder = schema.RootTableBuilder.new( builder )
-
-	# Add all the root object items
-	# root_builder.add_<field_name>( inline object )
-	# root_builder.add_<field_name>( offset )
-	# ...
-
-	# Finish the root builder
-	var root_offset = root_builder.finish()
-
-	# Finalise the builder
-	builder.finish( root_offset )
-
-	# export data
-	return builder.to_packed_byte_array()
-
-
-func create():
-	# create new builder
-	var builder = FlatBufferBuilder.new()
-
-	# create all the composite objects here
-	# var offset : int = schema.Create<Type>( builder, element, ... )
-	# ...
-
-	#var offset : int = schema.CreateRootTable( builder, element, ... )
-	var offset : int
-
-	# finalise flatbuffer builder
-	builder.finish( offset )
-
-	# export data
-	return builder.to_packed_byte_array()
-
-
-func create2():
-	# create new builder
-	var builder = FlatBufferBuilder.new()
-
-	# This call generates the root table using test_object properties
-	#var offset = schema.CreateRootTable2( builder, test_object )
-	var offset : int
-
-	# Finalise flatbuffer builder
-	builder.finish( offset )
-
-	# export data
-	return builder.to_packed_byte_array()
-
-
-func reconstruct( buffer : PackedByteArray ):
-	var root_table : FlatBuffer = schema.get_root( buffer )
-	output.append( "root_table: " + JSON.stringify( root_table.debug(), '\t', false ) )
-
-	# Perform testing on the reconstructed flatbuffer.
-	#TEST_EQ( <value>, <value>, "Test description if failed")
