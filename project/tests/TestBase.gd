@@ -28,9 +28,11 @@ func logp( msg ):
 		if _verbose: print_rich( msg )
 
 func TEST_EQ( want_v, got_v, desc : String = "" ) -> bool:
-	if want_v == got_v: return false
+	if want_v == got_v:
+		logd("TEST_EQ('%s' == '%s')" % [want_v, got_v])
+		return false
 	runcode |= FAILED
-	var msg = "[b][color=salmon]TEST_EQ Failed: '%s'[/color][/b]\nwanted: '%s'\n   got: '%s'" % [desc, want_v, got_v ]
+	var msg = "[b][color=salmon]Failed: '%s'[/color][/b]\nwanted: '%s'\n   got: '%s'" % [desc, want_v, got_v ]
 	output.append( msg )
 	if _verbose: print_rich( msg )
 	return true
