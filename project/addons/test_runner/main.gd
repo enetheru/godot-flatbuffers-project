@@ -1,5 +1,5 @@
 @tool
-extends GridContainer
+extends VBoxContainer
 
 # Test Runner
 # TODO - make the script names clickable to load them up in the editor.
@@ -10,10 +10,12 @@ extends GridContainer
 #  ██  ██  ██  ██ ██      ██   ██ ██   ██   ██       ██
 # ████ ██      ██ ██       █████  ██   ██   ██   ██████
 
-const INFO_BOX = preload('res://bpanel/info_box.tscn')
+const InfoBox = preload('info_box.gd')
+
+const INFO_BOX = preload('info_box.tscn')
 
 const Test = preload('res://tests/test.gd')
-const InfoBox = preload('res://bpanel/info_box.gd')
+
 
 # █████  ██████ ██████ ████ ███   ██ ████ ██████ ████  █████  ███   ██ ██████
 # ██  ██ ██     ██      ██  ████  ██  ██    ██    ██  ██   ██ ████  ██ ██
@@ -67,9 +69,6 @@ var plugin : FlatBuffersPlugin = FlatBuffersPlugin._prime
 @onready var help_popup: PopupPanel = $PopupPanel
 
 @onready var stats_counter: RichTextLabel = $Buttons/StatsCounter
-
-# FIXME temporary for testing
-@onready var reload_panel: Button = $Buttons/Reload_panel
 
 # tree control
 @onready var tree: Tree = $TestOutput/Tree
@@ -164,8 +163,6 @@ func _ready() -> void:
 	buttons[&"ClearResults"].pressed.connect( _on_clear_pressed )
 	buttons[&"Help"].pressed.connect( help_popup.popup )
 
-	reload_panel.pressed.connect( func():
-		bpanel_toggle(); bpanel_toggle() , CONNECT_DEFERRED )
 	# TODO add a popup with information about recursive expansion
 	# and contracting using the shift key.
 	#info.pressed.connect( info_popup )
@@ -182,23 +179,6 @@ func _ready() -> void:
 # ██ ████ ██ ████     ██   ███████ ██   ██ ██   ██ ██████
 # ██  ██  ██ ██       ██   ██   ██ ██   ██ ██   ██     ██
 # ██      ██ ██████   ██   ██   ██  █████  ██████  ██████
-
-static func bpanel_toggle() -> void:
-	var fbp := FlatBuffersPlugin._prime
-
-	if fbp.bpanel_enabled:
-		print_rich( "\n[b]== GDFlatbuffer Bottom Panel Disable ==[/b]\n" )
-		fbp.remove_control_from_bottom_panel(fbp.bpanel_control)
-		fbp.bpanel_control.queue_free()
-		fbp.bpanel_enabled = false
-	else:
-		var BPANEL : PackedScene = load('res://bpanel/bpanel.tscn')
-		print_rich( "\n[b]== GDFlatbuffer Bottom Panel Enable ==[/b]\n" )
-		fbp.bpanel_control = BPANEL.instantiate()
-		var button = fbp.add_control_to_bottom_panel(fbp.bpanel_control, fbp.bpanel_control.name)
-		button.name = fbp.bpanel_control.name
-		fbp.bpanel_enabled = true
-
 
 var already_updating : bool = false
 func update_stats():

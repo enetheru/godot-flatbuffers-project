@@ -1,7 +1,7 @@
 @tool
 extends PanelContainer
 
-@onready var stylebox : StyleBox = preload('res://bpanel/info_style_box.tres').duplicate()
+@onready var stylebox : StyleBox = preload('info_style_box.tres').duplicate()
 
 @onready var etheme : Theme = EditorInterface.get_editor_theme()
 @onready var error_icon: Texture2D = etheme.get_icon( "StatusError", "EditorIcons" )

@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://dt0eqt7nuorql"]
 
-[ext_resource type="Script" uid="uid://mgsgp4qs7iaa" path="res://bpanel/info_box.gd" id="1_hcdtn"]
-[ext_resource type="StyleBox" uid="uid://dys7tjax2dv0f" path="res://bpanel/info_style_box.tres" id="2_qxq4t"]
+[ext_resource type="Script" path="info_box.gd" id="1_hcdtn"]
+[ext_resource type="StyleBox" path="info_style_box.tres" id="2_qxq4t"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hcdtn"]
 content_margin_left = 2.0
