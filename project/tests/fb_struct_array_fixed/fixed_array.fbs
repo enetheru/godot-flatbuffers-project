@@ -1,0 +1,12 @@
+include "godot.fbs";
+
+table RootTable {
+	value:FAE;
+}
+
+struct FAE {
+	ascalar:[int:32];
+	astruct:[Vector3i:3];
+}
+
+root_type RootTable;

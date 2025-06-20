@@ -1,5 +1,4 @@
 table RootTable {
 	my_field : int;
 }
-
 root_type RootTable;

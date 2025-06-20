@@ -32,6 +32,7 @@ var editor_settings_list = [
 	"compiler/flatc_exe",
 	"compiler/include_paths",
 	"compiler/generate_debug",
+	"compiler/generate_pack_unpack",
 	# Colours
 	"syntax_colors/unknown_color",
 	"syntax_colors/comment_color",
@@ -58,6 +59,7 @@ var print_syntax_errors : bool = true
 
 @export_global_file var flatc_exe : String = "addons/gdflatbuffers/bin/flatc.exe"
 var generate_debug : bool = false
+var generate_pack_unpack : bool = false
 
 enum LogLevel {
 	SILENT = 0,
@@ -128,6 +130,7 @@ func _get_plugin_name() -> String:
 func _get_plugin_icon() -> Texture2D:
 	print_log( LogLevel.TRACE, "%s._get_plugin_icon()" % name )
 	return ICON_BW_TINY
+
 
 func get_property_info( property_name : StringName ) -> Dictionary:
 	var prop_list := get_property_list()
@@ -206,6 +209,7 @@ func settings_changed( source : String ):
 	# Update colours after updating settings.
 	colours_changed()
 
+
 func colours_changed():
 	colours = {
 		LogLevel.CRITICAL : critical_color,
@@ -230,23 +234,18 @@ func colours_changed():
 	}
 
 
-#   ███████ ███    ██  █████  ██████  ██      ███████
-#   ██      ████   ██ ██   ██ ██   ██ ██      ██
-#   █████   ██ ██  ██ ███████ ██████  ██      █████
-#   ██      ██  ██ ██ ██   ██ ██   ██ ██      ██
-#   ███████ ██   ████ ██   ██ ██████  ███████ ███████
+#  ██████  ██    ██ ███████ ██████  ██████  ██ ██████  ███████ ███████
+# ██    ██ ██    ██ ██      ██   ██ ██   ██ ██ ██   ██ ██      ██
+# ██    ██ ██    ██ █████   ██████  ██████  ██ ██   ██ █████   ███████
+# ██    ██  ██  ██  ██      ██   ██ ██   ██ ██ ██   ██ ██           ██
+#  ██████    ████   ███████ ██   ██ ██   ██ ██ ██████  ███████ ███████
+func ________OVERRIDES________()->void:pass
 
 func _enable_plugin() -> void:
 	print_log( LogLevel.TRACE, "%s._enable_plugin()" % name )
 
 func _disable_plugin() -> void:
 	print_log( LogLevel.TRACE, "%s._disable_plugin()" % name )
-
-#   ████████ ██████  ███████ ███████
-#      ██    ██   ██ ██      ██
-#      ██    ██████  █████   █████
-#      ██    ██   ██ ██      ██
-#      ██    ██   ██ ███████ ███████
 
 func _enter_tree() -> void:
 	print_log( LogLevel.TRACE, "%s._enter_tree()" % name )
@@ -267,11 +266,12 @@ func _exit_tree() -> void:
 		remove_context_menu_plugin( menu )
 
 
-#   ███████ ██       █████  ████████  ██████    ███████ ██   ██ ███████
-#   ██      ██      ██   ██    ██    ██         ██       ██ ██  ██
-#   █████   ██      ███████    ██    ██         █████     ███   █████
-#   ██      ██      ██   ██    ██    ██         ██       ██ ██  ██
-#   ██      ███████ ██   ██    ██     ██████ ██ ███████ ██   ██ ███████
+# ███████ ██       █████  ████████  ██████    ███████ ██   ██ ███████
+# ██      ██      ██   ██    ██    ██         ██       ██ ██  ██
+# █████   ██      ███████    ██    ██         █████     ███   █████
+# ██      ██      ██   ██    ██    ██         ██       ██ ██  ██
+# ██      ███████ ██   ██    ██     ██████ ██ ███████ ██   ██ ███████
+func ________FLATC_EXE________()->void:pass
 
 func flatc_multi( paths : Array, args : Array ) -> Array:
 	print_log( LogLevel.TRACE, "%s.flatc_multi(%s, %s)" % [name, paths, args] )
@@ -298,6 +298,8 @@ func flatc_generate( schema_path : String, args : Array ) -> Dictionary:
 	# generate_debug
 	if generate_debug:
 		args.append("--gdscript-debug")
+	if generate_pack_unpack:
+		args.append("--gen-object-api")
 	# -I <path>                Search for includes in the specified path.
 	#var dir_access := DirAccess.open("res://")
 	for ipath in include_paths + ["res://addons/gdflatbuffers/"]:
@@ -352,7 +354,7 @@ func flatc_generate( schema_path : String, args : Array ) -> Dictionary:
 #   ██████  ██              ██ ████ ██ █████   ██ ██  ██ ██    ██ ███████
 #   ██   ██ ██              ██  ██  ██ ██      ██  ██ ██ ██    ██      ██
 #   ██   ██  ██████ ███████ ██      ██ ███████ ██   ████  ██████  ███████
-
+func ____RIGHT_CLICK_MENUS____()->void:pass
 #  NOTE A plugin instance can belong only to a single context menu slot.
 
 # filesystem context menu
@@ -373,8 +375,12 @@ class MyFileMenu extends EditorContextMenuPlugin:
 class MyFileCreateMenu extends EditorContextMenuPlugin:
 	# _popup_menu() and option callback will be called with list of paths of the
 	# currently selected files.
+	# TODO, use this menu to enable generating a flatbuffer schema by loading
+	# and analysing a gdscript class for exported values.
 	func _popup_menu(paths):
-		add_context_menu_item("script_tab_context_menu_test", func(thing): print( thing ), ICON_BW_TINY )
+		var fbp := FlatBuffersPlugin._prime
+		if fbp.debug:
+			add_context_menu_item("create_flatbuffer_schema_from_object", func(thing): print( thing ), ICON_BW_TINY )
 
 # CONTEXT_SLOT_SCRIPT_EDITOR
 # Context menu of Script editor's script tabs.
@@ -384,11 +390,15 @@ class MyScriptTabMenu extends EditorContextMenuPlugin:
 	func _popup_menu(paths : PackedStringArray):
 		var fbp := FlatBuffersPlugin._prime
 		if paths[0].get_extension() == 'fbs':
-			add_context_menu_item("flatc --gdscript", call_flatc_on_path.bind( paths[0], ['--gdscript'] ), ICON_BW_TINY )
+			add_context_menu_item("flatc --gdscript", call_flatc_on_path.bind(
+					paths[0], ['--gdscript'] ), ICON_BW_TINY )
 			if fbp.debug:
-				add_context_menu_item("flatc --cpp", call_flatc_on_path.bind( paths[0], ['--cpp'] ), ICON_BW_TINY )
-				add_context_menu_item("flatc --help", call_flatc_on_path.bind( paths[0], ['--help'] ), ICON_BW_TINY )
-				add_context_menu_item("flatc --version", call_flatc_on_path.bind( paths[0], ['--version'] ), ICON_BW_TINY )
+				add_context_menu_item("flatc --cpp", call_flatc_on_path.bind(
+						paths[0], ['--cpp'] ), ICON_BW_TINY )
+				add_context_menu_item("flatc --help", call_flatc_on_path.bind(
+						paths[0], ['--help'] ), ICON_BW_TINY )
+				add_context_menu_item("flatc --version", call_flatc_on_path.bind(
+						paths[0], ['--version'] ), ICON_BW_TINY )
 
 	func call_flatc_on_path( _ignore, path : String, args : Array ) -> void:
 		var fbp := FlatBuffersPlugin._prime
@@ -408,12 +418,3 @@ class MyCodeEditMenu extends EditorContextMenuPlugin:
 		var code_edit : CodeEdit = Engine.get_main_loop().root.get_node(paths[0]);
 		print("selected_text: '%s'" % code_edit.get_selected_text() )
 		add_context_menu_item("flatbuffers testing", func(thing): print( thing ), ICON_BW_TINY )
-
-#   ██████  ██████   █████  ███    ██ ███████ ██
-#   ██   ██ ██   ██ ██   ██ ████   ██ ██      ██
-#   ██████  ██████  ███████ ██ ██  ██ █████   ██
-#   ██   ██ ██      ██   ██ ██  ██ ██ ██      ██
-#   ██████  ██      ██   ██ ██   ████ ███████ ███████
-
-var bpanel_enabled : bool = false
-var bpanel_control : Control
