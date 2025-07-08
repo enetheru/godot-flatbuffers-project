@@ -20,13 +20,11 @@ kanban-plugin: board
 
 ## addon
 
-- [ ] right click menu addition off screen
 - [ ] reload script in editor after re-generation
 - [ ] make failed compile popup
 - [ ] move editor settings to project settings
 - [ ] create custom allocator backed by PackedByteArray
 - [ ] add filename to debug print
-- [ ] add right click generate to code views
 - [ ] Notify user if creation date of fbs file is different to generated file and could use a re-gen
 - [ ] To get file extension recognition working I need to create a ResourceFormatLoader https://docs.godotengine.org/en/stable/classes/class_resourceformatloader.html
 

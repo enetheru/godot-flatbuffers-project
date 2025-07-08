@@ -377,9 +377,15 @@ func error_frame( token : Token, message: String ):
 	end_frame(&"error")
 
 func save_stack( line_num : int, cursor_pos : int = 0 ):
-	if prev_stack:
-		if stack.size() == prev_stack.size():
-			return
+	# Progressively check for sameness.
+	if prev_stack and stack.size() == prev_stack.size():
+		return
+		# FIXME This crashes godot.
+#		var prev_top : StackFrame = prev_stack.top()
+#		var top : StackFrame = stack.top()
+#		if top == prev_top:
+#			if top.data == prev_top.data:
+#				return
 	## FIXME: why would it matter if the stack sizes are the same? what if they are uniquely different?
 	##        I think perhaps I wasnt storing data in the stack before.
 	## I'd rather have a modified flag to see if the stack is changed.
@@ -696,9 +702,11 @@ func parse_enum_decl( p_token : Reader.Token ):
 		return
 
 	if frame.data.get(&"next") == &"comma":
-
 		var token : Reader.Token = reader.get_token()
 		if token.eof() :return
+		# FIXME, there is a bug that shows up here, where a newline restores
+		# a previous stack without the next item being comma, reverting to
+		# enumval_decl. The reason is commented at line ~382 in save_stack()
 		frame.data[&"next"] = &"enumval_decl"
 		match p_token.t:
 			&"}": return end_frame()

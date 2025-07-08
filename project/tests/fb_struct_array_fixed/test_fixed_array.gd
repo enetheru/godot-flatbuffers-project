@@ -27,6 +27,6 @@ func _run() -> void:
 		logd("vecs[%d]: %s" %[i,vecs[i]])
 
 	var fae := schema.FAE.new()
-	fae.ta_ascalar(0, scalar)
+	fae.at_ascalar(0)
 
 	retcode = runcode

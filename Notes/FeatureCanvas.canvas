@@ -5,19 +5,20 @@
 		{"id":"6c4ff8cb730d657b","type":"text","text":"Right Click on *.fbs* ->GEnerate gdscript","x":297,"y":183,"width":351,"height":60,"color":"4"},
 		{"id":"9cf26592c512aaa5","type":"text","text":"icon for *.fbs* files","x":297,"y":243,"width":250,"height":55,"color":"4"},
 		{"id":"bc126bba689b5bd6","type":"text","text":"Tooltip for *.fbs* files","x":296,"y":298,"width":250,"height":60},
-		{"id":"748705eab59ac6c2","type":"text","text":"[[EditorSettings]]","x":-120,"y":469,"width":250,"height":60},
 		{"id":"30c933f00c2decac","type":"text","text":"Auto Generation of fbs from exported values","x":-120,"y":-300,"width":250,"height":60},
 		{"id":"22398628d2fc8641","type":"text","text":"[[ScriptEditor]]","x":-120,"y":20,"width":250,"height":60},
 		{"id":"f294e8033bf5edda","type":"text","text":"Syntax Highlighting","x":297,"y":25,"width":250,"height":50,"color":"4"},
 		{"id":"b8c597d61f362249","type":"text","text":"Editor","x":-600,"y":15,"width":250,"height":60},
-		{"id":"3c40f24606e80cd7","type":"text","text":"Recognition of fbs files","x":-120,"y":-160,"width":250,"height":60},
-		{"id":"c61162a9247497bd","x":620,"y":460,"width":250,"height":60,"type":"text","text":"Filesystem"},
-		{"id":"d3807a1f93869c63","x":940,"y":460,"width":250,"height":60,"type":"text","text":"TextFile Extensions"},
-		{"id":"54aa86aa9ae20cdf","x":1260,"y":460,"width":250,"height":60,"type":"text","text":"Add fbs to list"},
-		{"id":"94c7c0ac323a622d","x":300,"y":460,"width":250,"height":60,"type":"text","text":"docks"},
-		{"id":"138a032f040899c1","x":638,"y":581,"width":250,"height":60,"type":"text","text":"flatbuffers"},
-		{"id":"eee251c8afaad0e7","type":"text","text":"path to external flatc","x":978,"y":581,"width":250,"height":60,"color":"4"},
-		{"id":"f3fbc4faa0fdd2c6","x":300,"y":580,"width":250,"height":60,"type":"text","text":"plugins"}
+		{"id":"c61162a9247497bd","type":"text","text":"Filesystem","x":620,"y":460,"width":250,"height":60},
+		{"id":"d3807a1f93869c63","type":"text","text":"TextFile Extensions","x":940,"y":460,"width":250,"height":60},
+		{"id":"54aa86aa9ae20cdf","type":"text","text":"Add fbs to list","x":1260,"y":460,"width":250,"height":60},
+		{"id":"94c7c0ac323a622d","type":"text","text":"docks","x":300,"y":460,"width":250,"height":60},
+		{"id":"f3fbc4faa0fdd2c6","type":"text","text":"plugins","x":300,"y":580,"width":250,"height":60},
+		{"id":"138a032f040899c1","type":"text","text":"flatbuffers","x":620,"y":580,"width":250,"height":60},
+		{"id":"eee251c8afaad0e7","type":"text","text":"path to external flatc","x":940,"y":580,"width":250,"height":60,"color":"4"},
+		{"id":"3c40f24606e80cd7","type":"text","text":"Recognition of fbs files","x":-120,"y":-140,"width":250,"height":60},
+		{"id":"1d7b3f8888f9313d","x":-120,"y":-460,"width":250,"height":60,"type":"text","text":"generator"},
+		{"id":"748705eab59ac6c2","type":"text","text":"[[EditorSettings]]","x":-120,"y":520,"width":250,"height":60}
 	],
 	"edges":[
 		{"id":"74d0004b1107afc6","fromNode":"138a032f040899c1","fromSide":"right","toNode":"eee251c8afaad0e7","toSide":"left"},
@@ -36,6 +37,7 @@
 		{"id":"66d661d5e9c7bafb","fromNode":"c61162a9247497bd","fromSide":"right","toNode":"d3807a1f93869c63","toSide":"left"},
 		{"id":"0a77a44a479c0d80","fromNode":"d3807a1f93869c63","fromSide":"right","toNode":"54aa86aa9ae20cdf","toSide":"left"},
 		{"id":"9415e2a6e16343e9","fromNode":"748705eab59ac6c2","fromSide":"right","toNode":"f3fbc4faa0fdd2c6","toSide":"left"},
-		{"id":"bdb517cde448eafe","fromNode":"f3fbc4faa0fdd2c6","fromSide":"right","toNode":"138a032f040899c1","toSide":"left"}
+		{"id":"bdb517cde448eafe","fromNode":"f3fbc4faa0fdd2c6","fromSide":"right","toNode":"138a032f040899c1","toSide":"left"},
+		{"id":"a5c3230508d00e6a","fromNode":"b8c597d61f362249","fromSide":"right","toNode":"1d7b3f8888f9313d","toSide":"left"}
 	]
 }

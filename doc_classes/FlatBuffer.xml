@@ -389,7 +389,7 @@
 		</method>
 	</methods>
 	<members>
-		<member name="bytes" type="Variant" setter="set_bytes" getter="get_bytes" default="null">
+		<member name="bytes" type="PackedByteArray" setter="set_bytes" getter="get_bytes" default="null">
 			The data to interpret. While this may say [Variant], it should only ever be set with [PackedByteArray].
 		</member>
 		<member name="start" type="int" setter="set_start" getter="get_start" default="0">
@@ -397,3 +397,4 @@
 		</member>
 	</members>
 </class>
+
