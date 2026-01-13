@@ -19,10 +19,19 @@ set( SOURCES
         PARENT_SCOPE
 )
 
-if( GODOTCPP_USE_HOT_RELOAD )
-    set( HOT_RELOAD_REPL "reloadable = true")
-endif ()
+# Multi-Step .gdextension file configuration.
 
-configure_file( gdextension.in ${CMAKE_SOURCE_DIR}/project/addons/${GDE_NAME}/${GDE_NAME}.gdextension )
+# First is to load the file into a variable
+file( READ gdextension.in GDEXT_FILE_STRING )
 
+# Replace variables with their content
+string( CONFIGURE "${GDEXT_FILE_STRING}" GDEXT_FILE_STRING_CONFIGURED)
+
+# use generate so generator expressions are evaluated.
+file( GENERATE
+        OUTPUT ${CMAKE_SOURCE_DIR}/project/addons/${GDE_NAME}/${GDE_NAME}.gdextension
+        CONTENT "${GDEXT_FILE_STRING_CONFIGURED}"
+)
+
+# TODO, modify godot.fbs to cater to double precision builds
 configure_file( builtin/godot.fbs ${CMAKE_SOURCE_DIR}/project/addons/${GDE_NAME}/godot.fbs )

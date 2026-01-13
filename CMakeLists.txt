@@ -98,10 +98,10 @@ endif ()
 # ╘════════════════════════════════════════════════════════════════════════════╛
 
 set( GODOTCPP_GIT_URL "https://github.com/godotengine/godot-cpp.git" CACHE STRING "Location of the godot-cpp git repository" )
-set( GODOTCPP_GIT_TAG "4.4" CACHE STRING "git hash, branch or tag to fetch" )
+set( GODOTCPP_GIT_TAG "godot-4.5-stable" CACHE STRING "git hash, branch or tag to fetch" )
 
 set( GODOTCPP_TARGET "template_debug" CACHE STRING "")
-set( GODOTCPP_BUILD_PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/lib/godot-cpp.build_profile.json" )
+set( GODOTCPP_BUILD_PROFILE "${CMAKE_CURRENT_SOURCE_DIR}/lib/godot-cpp.build_profile.json")
 
 #if( GODOT_GIT_TAG STREQUAL "" )
 #    include( godot-cpp-git-tag )
@@ -115,6 +115,12 @@ FetchContent_Declare( godot-cpp
         EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable( godot-cpp )
+
+### Get useful properties of the library
+get_target_property( GODOTCPP_SUFFIX godot-cpp GODOTCPP_SUFFIX_GENEX )
+get_target_property( GODOTCPP_PLATFORM godot-cpp GODOTCPP_PLATFORM )
+get_target_property( GODOTCPP_TARGET godot-cpp GODOTCPP_TARGET )
+get_target_property( GODOTCPP_ARCH godot-cpp GODOTCPP_ARCH )
 
 # MARK: project
 # ╒════════════════════════════════════════════════════════════════════════════╕
@@ -151,17 +157,13 @@ if(GODOTCPP_TARGET MATCHES "editor|template_debug")
     target_doc_sources( ${GDE_NAME} ${DOC_XML} )
 endif()
 
-
 target_link_libraries( ${GDE_NAME} PRIVATE godot-cpp FlatBuffers::FlatBuffers )
-
-### Get useful properties of the library
-get_target_property( GODOTCPP_SUFFIX godot::cpp GODOTCPP_SUFFIX )
 
 set_target_properties( ${GDE_NAME}
         PROPERTIES
         FOLDER "gdflatbuffers"
         #The generator expression here prevents a subdir from being created.
         RUNTIME_OUTPUT_DIRECTORY "$<1:${CMAKE_CURRENT_SOURCE_DIR}/project/addons/${GDE_NAME}/bin>"
-        OUTPUT_NAME "${GDE_NAME}${GODOTCPP_SUFFIX}$<$<CONFIG:Debug,RelWithDebInfo>:.$<LOWER_CASE:$<CONFIG>>>"
-        PREFIX "lib"
+        OUTPUT_NAME "${GDE_NAME}.${GODOTCPP_SUFFIX}$<$<CONFIG:Debug,RelWithDebInfo>:.$<LOWER_CASE:$<CONFIG>>>"
+        PREFIX ""
 )

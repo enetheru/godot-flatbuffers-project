@@ -1,7 +1,7 @@
 function( godot_version )
-    set( GODOT_VERSION 4.3.0 )
+    set( GODOT_VERSION 4.5.0 )
     set( GODOT_VERSION_MAJOR 4 )
-    set( GODOT_VERSION_MINOR 3 )
+    set( GODOT_VERSION_MINOR 5 )
     set( GODOT_VERSION_POINT 0 )
 
     if( GODOT_EXECUTABLE-FOUND )
