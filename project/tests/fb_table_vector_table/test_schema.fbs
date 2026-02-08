@@ -1,0 +1,17 @@
+include "godot.fbs";
+
+table Item {
+	id:uint64;
+	pos:Vector3;
+}
+
+table Bag {
+	id:int64;
+	item:[uint8]; // Items
+}
+
+table RootTable {
+	list:[Bag];
+}
+
+root_type RootTable;

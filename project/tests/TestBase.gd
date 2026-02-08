@@ -1,5 +1,5 @@
 @tool
-class_name TestBase extends EditorScript
+class_name TestBase extends RefCounted
 
 #region == Test Stuff ==
 var _verbose : bool = false
@@ -14,17 +14,20 @@ const u64 = 8947009970309311100		# |******|
 const u64_ = 8953226703912583292	# |@@@@@@|
 
 func _init() -> void:
-	_verbose = FlatBuffersPlugin._prime.verbosity >= FlatBuffersPlugin.LogLevel.NOTICE
+	if FlatBuffersPlugin._prime:
+		_verbose = FlatBuffersPlugin._prime.editorlog_verbosity >= FlatBuffersPlugin.LogLevel.NOTICE
+	else:
+		_verbose = true
 
 func logd( msg = "" ):
 	if msg is Array: msg = '\n'.join(msg)
-	if FlatBuffersPlugin._prime.debug:
+	if not FlatBuffersPlugin._prime or FlatBuffersPlugin._prime.debug:
 		print_rich( msg )
 
 func logp( msg ):
 	if msg is Array: msg = '\n'.join(msg)
 	output.append( msg )
-	if not FlatBuffersPlugin._prime.debug:
+	if not FlatBuffersPlugin._prime or not FlatBuffersPlugin._prime.debug:
 		if _verbose: print_rich( msg )
 
 func TEST_EQ( want_v, got_v, desc : String = "" ) -> bool:

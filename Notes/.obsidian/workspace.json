@@ -4,24 +4,28 @@
     "type": "split",
     "children": [
       {
-        "id": "cdc8fb41dddc5303",
+        "id": "d7b6dc6ae9bf9b99",
         "type": "tabs",
         "children": [
           {
-            "id": "76d258b378c6bae2",
+            "id": "b444aa1eb5aaca5c",
             "type": "leaf",
             "state": {
-              "type": "canvas",
+              "type": "kanban",
               "state": {
-                "file": "FeatureCanvas.canvas",
-                "viewState": {
-                  "x": 529.6000366210938,
-                  "y": 484.0999755859375,
-                  "zoom": 0
+                "file": "Tracker.md",
+                "kanbanViewState": {
+                  "kanban-plugin": "board",
+                  "list-collapse": [
+                    false,
+                    false,
+                    false,
+                    false
+                  ]
                 }
               },
-              "icon": "lucide-layout-dashboard",
-              "title": "FeatureCanvas"
+              "icon": "lucide-trello",
+              "title": "Tracker"
             }
           }
         ]
@@ -163,6 +167,7 @@
   },
   "left-ribbon": {
     "hiddenItems": {
+      "bases:Create new base": false,
       "switcher:Open quick switcher": false,
       "graph:Open graph view": false,
       "canvas:Create new canvas": false,
@@ -172,21 +177,27 @@
       "obsidian-kanban:Create new board": false
     }
   },
-  "active": "76d258b378c6bae2",
+  "active": "0e6f5a4ca17de4ab",
   "lastOpenFiles": [
-    "EditorSettings.md",
-    "Older Notes.md",
-    "Godot-FlatBuffers.md",
-    "FileSystemDock.md",
-    "FeatureCanvas.canvas",
-    "DataFlow.canvas",
-    "Tracker.md",
-    "Diary/2024-09.md",
+    "Diary/2025-06.md",
     "Diary/2025-04.md",
-    "Diary/2024-06.md",
-    "Compile Options.md",
+    "Diary/2025-06.md~",
+    "Tracker.md",
     "ScriptEditor.md",
     "reflection.fbs.canvas",
+    "Older Notes.md",
+    "GrammarCanvas.canvas",
+    "FeatureTable.md",
+    "FeatureCanvas.canvas",
+    "EditorSettings.md",
+    "DataFlow.canvas",
+    "Benchmarks.md",
+    "GrammarCanvas.md",
+    "Godot-FlatBuffers.md",
+    "FileSystemDock.md",
+    "Diary/2024-09.md",
+    "Diary/2024-06.md",
+    "Compile Options.md",
     "godot-cpp.md",
     "Compile Options.md~",
     "Diary/2024-05.md",

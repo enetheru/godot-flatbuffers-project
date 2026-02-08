@@ -51,7 +51,6 @@ cmake-build*/
 .godot/
 
 # Godot-specific ignores
-.import/
 export.cfg
 export_presets.cfg
 
@@ -71,8 +70,6 @@ lib/*/
 /project/scratch.gd
 /project/addons/Todo_Manager
 /project/addons/zylann.editor_debugger
-/project/**/*.uid
-/project/**/*.import
 
 # These files are copied across when building.
 /project/addons/gdflatbuffers/gdflatbuffers.gdextension
@@ -80,3 +77,4 @@ lib/*/
 /project/addons/gdflatbuffers/godot.fbs
 
 
+.ai/

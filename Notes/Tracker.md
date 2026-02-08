@@ -27,6 +27,7 @@ kanban-plugin: board
 - [ ] add filename to debug print
 - [ ] Notify user if creation date of fbs file is different to generated file and could use a re-gen
 - [ ] To get file extension recognition working I need to create a ResourceFormatLoader https://docs.godotengine.org/en/stable/classes/class_resourceformatloader.html
+- [ ] I saw someone using a struct visualiser, makes me want to build one for this.
 
 
 ## syntax highlighting
