@@ -1,7 +1,7 @@
-const keywords : Dictionary = {
+const keywords:Dictionary = {
 
 
-	&'include' : "You can include other schemas files in your current one, e.g.:
+	&'include':"You can include other schemas files in your current one, e.g.:
 
 include \"mydefinitions.fbs\";
 
@@ -13,12 +13,12 @@ definitions in the current file will be generated, not those from the included
 files (those you still generate separately).",
 
 
-	&'namespace' : "These will generate the corresponding namespace in C++ for
+	&'namespace':"These will generate the corresponding namespace in C++ for
 all helper code, and packages in Java. You can use . to specify nested
 namespaces / packages.",
 
 
-	&'table' : "Tables are the main way of defining objects in FlatBuffers.
+	&'table':"Tables are the main way of defining objects in FlatBuffers.
 Example Table
 
 table Monster {
@@ -36,7 +36,7 @@ They consist of a name (here Monster) and a list of fields. This field list can
 be appended to (and deprecated from) while still maintaining compatibility.",
 
 
-	&'struct' : "Similar to a table, structs consist of fields are required
+	&'struct':"Similar to a table, structs consist of fields are required
 (so no defaults either), and fields may not be added or be deprecated.
 Example Struct
 
@@ -53,10 +53,10 @@ access (they are always stored in-line in their parent object, and use no
 virtual table).",
 
 
-	&'enum' : "Define a sequence of named constants, each with a given value,
+	&'enum':"Define a sequence of named constants, each with a given value,
 or increasing by one from the previous one. The default first value is 0. As
 you can see in the enum declaration, you specify the underlying integral type
-of the enum with : (in this case byte), which then determines the type of any
+of the enum with:(in this case byte), which then determines the type of any
 fields declared with this enum type.
 
 Only integer types are allowed, i.e. byte, ubyte, short ushort, int, uint, long
@@ -67,7 +67,7 @@ deprecation for enums). This requires code to handle forwards compatibility
 itself, by handling unknown enum values.",
 
 
-	&'union' : "Unions share a lot of properties with enums, but instead of new
+	&'union':"Unions share a lot of properties with enums, but instead of new
 names for constants, you use names of tables. You can then declare a union
 field, which can hold a reference to any of those types, and additionally a
 field with the suffix _type is generated that holds the corresponding enum
@@ -102,16 +102,16 @@ tables in unions, in particular structs and strings. There's no direct support
 for scalars in unions, but they can be wrapped in a struct at no space cost.",
 
 
-	&'root_type' : "This declares what you consider to be the root table of the
+	&'root_type':"This declares what you consider to be the root table of the
 serialized data. This is particularly important for parsing JSON data, which
 doesn't include object type information.",
 
 
-	&'file_extension' : "by default flatc will output binary files as .bin. This
+	&'file_extension':"by default flatc will output binary files as .bin. This
 declaration in the schema will change that to whatever you want:",
 
 
-	&'file_identifier' : "Typically, a FlatBuffer binary buffer is not
+	&'file_identifier':"Typically, a FlatBuffer binary buffer is not
 self-describing, i.e. it needs you to know its schema to parse it correctly.
 But if you want to use a FlatBuffer as a file format, it would be convenient to
 be able to have a \"magic number\" in there, like most file formats have, to be
@@ -145,7 +145,7 @@ to send one of a set of possible messages over a network for example, you'd be
 better off with a union.",
 
 
-	&'attribute' : "Attributes may be attached to a declaration, behind a
+	&'attribute':"Attributes may be attached to a declaration, behind a
 field/enum value, or after the name of a table/struct/enum/union. These may
 either have a value or not. Some attributes like deprecated are understood by
 the compiler; user defined ones need to be declared with the attribute

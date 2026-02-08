@@ -1,66 +1,70 @@
 @tool
-class_name FlatBuffersPlugin extends EditorPlugin
+class_name FlatBuffersPlugin
+extends EditorPlugin
+
+#           ████ ███    ███ ██████   ██████  ██████  ████████ ███████          #
+#            ██  ████  ████ ██   ██ ██    ██ ██   ██    ██    ██               #
+#            ██  ██ ████ ██ ██████  ██    ██ ██████     ██    ███████          #
+#            ██  ██  ██  ██ ██      ██    ██ ██   ██    ██         ██          #
+#           ████ ██      ██ ██       ██████  ██   ██    ██    ███████          #
+func                        _________IMPORTS_________              ()->void:pass
+
+const SettingsHelper = preload('uid://bqe6tk0yrwq8u')
+var settings_mgr : SettingsHelper
+
+# Supporting Scripts
+const FlatbufferSchemaHighlighter = preload('FlatBuffersHighlighter.gd')
+const Token = preload('scripts/token.gd')
+
+# Supporting Assets
+const ICON_BW_TINY = preload('fpl_logo_tiny_bw.png')
+
+
+# ██████  ██████   ██████  ██████  ███████ ██████  ████████ ██ ███████ ███████ #
+# ██   ██ ██   ██ ██    ██ ██   ██ ██      ██   ██    ██    ██ ██      ██      #
+# ██████  ██████  ██    ██ ██████  █████   ██████     ██    ██ █████   ███████ #
+# ██      ██   ██ ██    ██ ██      ██      ██   ██    ██    ██ ██           ██ #
+# ██      ██   ██  ██████  ██      ███████ ██   ██    ██    ██ ███████ ███████ #
+func                        ________PROPERTIES_______              ()->void:pass
 
 # Reference to self so we can do things since we are already instantiated.
 static var _prime : FlatBuffersPlugin
 
-## A variable to help me turn on and off debug features and tests.
-var debug : bool = true
-
-# Supporting Assets
-const ICON_BW_TINY = preload('res://addons/gdflatbuffers/fpl_logo_tiny_bw.png')
-
-# Supporting Scripts
-const FlatbufferSchemaHighlighter = preload('res://addons/gdflatbuffers/FlatBuffersHighlighter.gd')
-const Token = preload('res://addons/gdflatbuffers/scripts/token.gd')
-
 var highlighter : EditorSyntaxHighlighter
 var context_menus : Dictionary[EditorContextMenuPlugin.ContextMenuSlot,EditorContextMenuPlugin]
 
-#   ███████ ███████ ████████ ████████ ██ ███    ██  ██████  ███████
-#   ██      ██         ██       ██    ██ ████   ██ ██       ██
-#   ███████ █████      ██       ██    ██ ██ ██  ██ ██   ███ ███████
-#        ██ ██         ██       ██    ██ ██  ██ ██ ██    ██      ██
-#   ███████ ███████    ██       ██    ██ ██   ████  ██████  ███████
+## A variable to help me turn on and off debug features and tests.
+@export_custom( PROPERTY_HINT_NONE, "",
+	PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_INTERNAL)
+var debug : bool = true
 
-# Editor Settings Things
-var editor_settings_path : String = "plugin/FlatBuffers/"
-var editor_settings_list = [
-	"verbosity",
-	"debug",
-	# Compiler
-	"compiler/flatc_exe",
-	"compiler/include_paths",
-	"compiler/generate_debug",
-	"compiler/generate_pack_unpack",
-	# Colours
-	"syntax_colors/unknown_color",
-	"syntax_colors/comment_color",
-	"syntax_colors/keyword_color",
-	"syntax_colors/type_color",
-	"syntax_colors/string_color",
-	"syntax_colors/punct_color",
-	"syntax_colors/ident_color",
-	"syntax_colors/scalar_color",
-	"syntax_colors/meta_color",
-	# Notice Colours
-	"notice_colors/critical_color",
-	"notice_colors/error_color",
-	"notice_colors/warning_color",
-	"notice_colors/debug_color",
-	"notice_colors/notice_color",
-	"notice_colors/trace_color",
-	# Highlights
-	"highlighting/highlight_error",
-	"highlighting/highlight_warning",
-]
-# Settings
-var print_syntax_errors : bool = true
 
-@export_global_file var flatc_exe : String = "addons/gdflatbuffers/bin/flatc.exe"
-var generate_debug : bool = false
-var generate_pack_unpack : bool = false
+# │  __ _      _
+# │ / _| |__ _| |_ __   _____ _____
+# │|  _| / _` |  _/ _|_/ -_) \ / -_)
+# │|_| |_\__,_|\__\__(_)___/_\_\___|
+# ╰───────────────────────────────────
+@export_custom( PROPERTY_HINT_GLOBAL_FILE, "*.exe",
+	PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_GROUP)
+var flatc_exe : String = "addons/gdflatbuffers/bin/flatc.exe"
 
+@export_custom( PROPERTY_HINT_NONE, "",
+	PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_GROUP)
+var flatc_generate_debug : bool = false
+
+@export_custom( PROPERTY_HINT_NONE, "",
+	PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_GROUP)
+var flatc_generate_pack_unpack : bool = false
+
+## Include paths to use for flatc generation
+@export_custom( PROPERTY_HINT_TYPE_STRING, "4/16:", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_GROUP)
+var flatc_include_paths: Array[String]
+
+# │ ___    _ _ _           _
+# │| __|__| (_) |_ ___ _ _| |   ___  __ _
+# │| _|/ _` | |  _/ _ \ '_| |__/ _ \/ _` |
+# │|___\__,_|_|\__\___/_| |____\___/\__, |
+# ╰─────────────────────────────────|___/──
 enum LogLevel {
 	SILENT = 0,
 	CRITICAL = 1,
@@ -71,86 +75,93 @@ enum LogLevel {
 	TRACE = 6,
 }
 
-#@export_enum("SILENT:0", "CRITICAL:1", "ERROR:2", "WARNING:3", "NOTICE:4", "DEBUG:5", "TRACE:6")
-@export
-var verbosity : LogLevel = 0
+@export_custom( PROPERTY_HINT_ENUM,
+	"SILENT:0,CRITICAL:1,ERROR:2,WARNING:3,NOTICE:4,DEBUG:5,TRACE:6",
+	PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_GROUP)
+var editorlog_verbosity : LogLevel = 0
 
-func print_log(level : LogLevel, message : String ) -> bool:
-	if verbosity < level: return false
-	var colour = colours[level].to_html()
-	var padding = "".lpad(get_stack().size()-1, '\t') if level == LogLevel.TRACE else ""
-	print_rich( padding + "[color=%s]%s[/color]" % [colour, message] )
-	return true
-
-func log_level( level : LogLevel ) -> bool:
-	return verbosity >= level
-
-## Does this have a description?
-@export_global_dir
-var include_paths: Array[String]
-
-# Colours
-# Tokens
-var unknown_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
-var comment_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_color")
-var keyword_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/keyword_color")
-var type_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/base_type_color")
-var string_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/string_color")
-var punct_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
-var ident_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/symbol_color")
-var scalar_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/number_color")
-var meta_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
-# Highlighting
+# │ _  _ _      _   _   _ _      _   _
+# │| || (_)__ _| |_| |_| (_)__ _| |_| |_
+# │| __ | / _` | ' \  _| | / _` | ' \  _|
+# │|_||_|_\__, |_||_\__|_|_\__, |_||_\__|
+# ╰───────|___/────────────|___/──────────
+@export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_GROUP)
 var highlight_error : bool = true
+@export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_GROUP)
 var highlight_warning : bool = true
+
+# │  ___     _
+# │ / __|___| |___ _  _ _ _ ___
+# │| (__/ _ \ / _ \ || | '_(_-<
+# │ \___\___/_\___/\_,_|_| /__/
+# ╰──────────────────────────────
+# Tokens
+@export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
+var color_syntax_unknown : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
+@export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
+var color_syntax_comment : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_color")
+@export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
+var color_syntax_keyword : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/keyword_color")
+@export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
+var color_syntax_type : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/base_type_color")
+@export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
+var color_syntax_string : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/string_color")
+@export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
+var color_syntax_punct : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
+@export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
+var color_syntax_ident : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/symbol_color")
+@export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
+var color_syntax_scalar : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/number_color")
+@export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
+var color_syntax_meta : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
+
 # log levels
-var critical_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_markers/critical_color")
-var error_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_markers/critical_color")
-var warning_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_markers/warning_color")
-var notice_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
-var debug_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_color")
-var trace_color : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_color")
+@export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
+var color_notice_critical : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_markers/critical_color")
+@export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
+var color_notice_error : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_markers/critical_color")
+@export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
+var color_notice_warning : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_markers/warning_color")
+@export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
+var color_notice_notice : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
+@export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
+var color_notice_debug : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_color")
+@export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
+var color_notice_trace : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_color")
 
 
 # Dictionary of colours
 var colours : Dictionary[int, Color]
 
 
-#   ███████ ██    ██ ███    ██  ██████ ███████
-#   ██      ██    ██ ████   ██ ██      ██
-#   █████   ██    ██ ██ ██  ██ ██      ███████
-#   ██      ██    ██ ██  ██ ██ ██           ██
-#   ██       ██████  ██   ████  ██████ ███████
+#             ███████ ██    ██ ███████ ███    ██ ████████ ███████              #
+#             ██      ██    ██ ██      ████   ██    ██    ██                   #
+#             █████   ██    ██ █████   ██ ██  ██    ██    ███████              #
+#             ██       ██  ██  ██      ██  ██ ██    ██         ██              #
+#             ███████   ████   ███████ ██   ████    ██    ███████              #
+func                        __________EVENTS_________              ()->void:pass
 
-func _get_plugin_name() -> String:
-	print_log( LogLevel.TRACE, "%s._get_plugin_name()" % name )
-	return "flatbuffers"
-
-
-func _get_plugin_icon() -> Texture2D:
-	print_log( LogLevel.TRACE, "%s._get_plugin_icon()" % name )
-	return ICON_BW_TINY
+func _on_settings_changed( setting_name : StringName, value : Variant ) -> void:
+	if setting_name.begins_with("color"):
+		colours_changed()
 
 
-func get_property_info( property_name : StringName ) -> Dictionary:
-	var prop_list := get_property_list()
-	var prop_idx = prop_list.find_custom(
-		func(info): return info.name == property_name )
-	if prop_idx == -1: return {}
-	return prop_list[prop_idx]
-
-#           ██ ███    ██ ██ ████████
-#           ██ ████   ██ ██    ██
-#           ██ ██ ██  ██ ██    ██
-#           ██ ██  ██ ██ ██    ██
-#   ███████ ██ ██   ████ ██    ██
+#      ██████  ██    ██ ███████ ██████  ██████  ██ ██████  ███████ ███████     #
+#     ██    ██ ██    ██ ██      ██   ██ ██   ██ ██ ██   ██ ██      ██          #
+#     ██    ██ ██    ██ █████   ██████  ██████  ██ ██   ██ █████   ███████     #
+#     ██    ██  ██  ██  ██      ██   ██ ██   ██ ██ ██   ██ ██           ██     #
+#      ██████    ████   ███████ ██   ██ ██   ██ ██ ██████  ███████ ███████     #
+func                        ________OVERRIDES________              ()->void:pass
 
 func _init() -> void:
 	name = "FlatBuffersPlugin"
 	if not _prime: _prime = self
 	#FIXME update editor property docks/filesystem/textfile_extensions to include fbs
 
-	init_settings()
+	settings_mgr = SettingsHelper.new(self, "plugin/gdflatbuffers")
+	settings_mgr.settings_changed.connect( _on_settings_changed )
+	colours_changed()
+
 	context_menus = {
 		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM: MyFileMenu.new(),
 		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM_CREATE:MyFileCreateMenu.new(),
@@ -159,93 +170,14 @@ func _init() -> void:
 	}
 	print_log( LogLevel.TRACE, "%s._init() - Completed" % name )
 
-func init_settings():
-	var editor_settings : EditorSettings = EditorInterface.get_editor_settings()
-	var project_settings := ProjectSettings
-
-	var prop_list := get_property_list()
-
-	# Update editor Properties
-	for item : String in editor_settings_list:
-		var prop_info = get_property_info( item.get_file() )
-		if not prop_info: continue
-
-		# copy the prop_info and get the initial value
-		var setting_info : Dictionary = prop_info.duplicate()
-		var initial_value = get(prop_info.name)
-
-		# update the name to include the path
-		setting_info.name = editor_settings_path + item
-
-		# update the settings.
-		if not editor_settings.has_setting(setting_info.name):
-			editor_settings.set_setting( setting_info.name, initial_value )
-			#editor_settings.mark_setting_changed(setting_info.name)
-		editor_settings.set_initial_value(setting_info.name, initial_value, false)
-		editor_settings.add_property_info(setting_info)
-
-	ProjectSettings.settings_changed.connect( settings_changed.bind("project") )
-	editor_settings.settings_changed.connect( settings_changed.bind("editor") )
-	settings_changed("editor")
-
-
-func settings_changed( source : String ):
-	var settings
-	match source:
-		"editor": settings = EditorInterface.get_editor_settings()
-		"project": settings = ProjectSettings; return # FIXME Unimplemented
-		_: push_error("invalid settings source"); return
-
-	for prop_name : String in get("%s_settings_list" % source ):
-		var setting_path = get("%s_settings_path" % source)
-		if not setting_path:
-			push_error("missing %s_settings_path" % source)
-			return
-
-		var setting_name : StringName = setting_path + prop_name
-		if not settings.has_setting(setting_name): continue
-		set( prop_name.get_file(), settings.get_setting(setting_name) )
-
-	# Update colours after updating settings.
-	colours_changed()
-
-
-func colours_changed():
-	colours = {
-		LogLevel.CRITICAL : critical_color,
-		LogLevel.ERROR : error_color,
-		LogLevel.WARNING : warning_color,
-		LogLevel.NOTICE : notice_color,
-		LogLevel.DEBUG : debug_color,
-		LogLevel.TRACE : trace_color,
-		# Token.Type starts at 100
-		Token.Type.NULL : unknown_color,
-		Token.Type.COMMENT : comment_color,
-		Token.Type.KEYWORD : keyword_color,
-		Token.Type.TYPE : type_color,
-		Token.Type.STRING : string_color,
-		Token.Type.PUNCT : punct_color,
-		Token.Type.IDENT : ident_color,
-		Token.Type.SCALAR : scalar_color,
-		Token.Type.META : meta_color,
-		Token.Type.UNKNOWN : unknown_color,
-		Token.Type.EOL : unknown_color,
-		Token.Type.EOF : unknown_color,
-	}
-
-
-#  ██████  ██    ██ ███████ ██████  ██████  ██ ██████  ███████ ███████
-# ██    ██ ██    ██ ██      ██   ██ ██   ██ ██ ██   ██ ██      ██
-# ██    ██ ██    ██ █████   ██████  ██████  ██ ██   ██ █████   ███████
-# ██    ██  ██  ██  ██      ██   ██ ██   ██ ██ ██   ██ ██           ██
-#  ██████    ████   ███████ ██   ██ ██   ██ ██ ██████  ███████ ███████
-func ________OVERRIDES________()->void:pass
 
 func _enable_plugin() -> void:
 	print_log( LogLevel.TRACE, "%s._enable_plugin()" % name )
 
+
 func _disable_plugin() -> void:
 	print_log( LogLevel.TRACE, "%s._disable_plugin()" % name )
+
 
 func _enter_tree() -> void:
 	print_log( LogLevel.TRACE, "%s._enter_tree()" % name )
@@ -266,12 +198,65 @@ func _exit_tree() -> void:
 		remove_context_menu_plugin( menu )
 
 
-# ███████ ██       █████  ████████  ██████    ███████ ██   ██ ███████
-# ██      ██      ██   ██    ██    ██         ██       ██ ██  ██
-# █████   ██      ███████    ██    ██         █████     ███   █████
-# ██      ██      ██   ██    ██    ██         ██       ██ ██  ██
-# ██      ███████ ██   ██    ██     ██████ ██ ███████ ██   ██ ███████
-func ________FLATC_EXE________()->void:pass
+func _get_plugin_name() -> String:
+	print_log( LogLevel.TRACE, "%s._get_plugin_name()" % name )
+	return "flatbuffers"
+
+
+func _get_plugin_icon() -> Texture2D:
+	print_log( LogLevel.TRACE, "%s._get_plugin_icon()" % name )
+	return ICON_BW_TINY
+
+
+#         ███    ███ ███████ ████████ ██   ██  ██████  ██████  ███████         #
+#         ████  ████ ██         ██    ██   ██ ██    ██ ██   ██ ██              #
+#         ██ ████ ██ █████      ██    ███████ ██    ██ ██   ██ ███████         #
+#         ██  ██  ██ ██         ██    ██   ██ ██    ██ ██   ██      ██         #
+#         ██      ██ ███████    ██    ██   ██  ██████  ██████  ███████         #
+func                        _________METHODS_________              ()->void:pass
+
+func print_log(level : LogLevel, message : String ) -> bool:
+	if editorlog_verbosity < level: return false
+	var colour = colours[level].to_html()
+	var padding = "".lpad(get_stack().size()-1, '\t') if level == LogLevel.TRACE else ""
+	print_rich( padding + "[color=%s]%s[/color]" % [colour, message] )
+	return true
+
+
+func log_level( level : LogLevel ) -> bool:
+	return editorlog_verbosity >= level
+
+
+func colours_changed():
+	colours = {
+		LogLevel.CRITICAL : color_notice_critical,
+		LogLevel.ERROR : color_notice_error,
+		LogLevel.WARNING : color_notice_warning,
+		LogLevel.NOTICE : color_notice_notice,
+		LogLevel.DEBUG : color_notice_debug,
+		LogLevel.TRACE : color_notice_trace,
+		# Token.Type starts at color_10
+		Token.Type.NULL : color_syntax_unknown,
+		Token.Type.COMMENT : color_syntax_comment,
+		Token.Type.KEYWORD : color_syntax_keyword,
+		Token.Type.TYPE : color_syntax_type,
+		Token.Type.STRING : color_syntax_string,
+		Token.Type.PUNCT : color_syntax_punct,
+		Token.Type.IDENT : color_syntax_ident,
+		Token.Type.SCALAR : color_syntax_scalar,
+		Token.Type.META : color_syntax_meta,
+		Token.Type.UNKNOWN : color_syntax_unknown,
+		Token.Type.EOL : color_syntax_unknown,
+		Token.Type.EOF : color_syntax_unknown,
+	}
+
+
+#     ███████ ██       █████  ████████  ██████    ███████ ██   ██ ███████      #
+#     ██      ██      ██   ██    ██    ██         ██       ██ ██  ██           #
+#     █████   ██      ███████    ██    ██         █████     ███   █████        #
+#     ██      ██      ██   ██    ██    ██         ██       ██ ██  ██           #
+#     ██      ███████ ██   ██    ██     ██████ ██ ███████ ██   ██ ███████      #
+func                        ________FLATC_EXE________              ()->void:pass
 
 func flatc_multi( paths : Array, args : Array ) -> Array:
 	print_log( LogLevel.TRACE, "%s.flatc_multi(%s, %s)" % [name, paths, args] )
@@ -295,14 +280,14 @@ func flatc_generate( schema_path : String, args : Array ) -> Dictionary:
 		push_error(msg)
 		return {'retcode':ERR_FILE_BAD_PATH, 'output': [msg] }
 
-	# generate_debug
-	if generate_debug:
+	# flatc_generate_debug
+	if flatc_generate_debug:
 		args.append("--gdscript-debug")
-	if generate_pack_unpack:
+	if flatc_generate_pack_unpack:
 		args.append("--gen-object-api")
 	# -I <path>                Search for includes in the specified path.
 	#var dir_access := DirAccess.open("res://")
-	for ipath in include_paths + ["res://addons/gdflatbuffers/"]:
+	for ipath in flatc_include_paths + ["res://addons/gdflatbuffers/"]:
 		if not DirAccess.dir_exists_absolute(ipath):
 			push_warning("invalid include path: '%s'" % ipath)
 			continue
@@ -320,7 +305,7 @@ func flatc_generate( schema_path : String, args : Array ) -> Dictionary:
 		'args':args,
 	}
 
-	if debug or verbosity >= LogLevel.NOTICE:
+	if debug or editorlog_verbosity >= LogLevel.NOTICE:
 		print( JSON.stringify(report, "  ", false) )
 
 	var output : Array = []
@@ -329,7 +314,7 @@ func flatc_generate( schema_path : String, args : Array ) -> Dictionary:
 	report['retcode'] = retcode
 	report['output'] = '\n'.join(output).split('\n', false)
 
-	if debug or verbosity >= LogLevel.NOTICE:
+	if debug or editorlog_verbosity >= LogLevel.NOTICE:
 		print( JSON.stringify({
 			'retcode': retcode,
 			'output': '\n'.join(output).split('\n', false),
@@ -349,12 +334,14 @@ func flatc_generate( schema_path : String, args : Array ) -> Dictionary:
 	if not retcode: EditorInterface.get_resource_filesystem().scan()
 	return report
 
-#   ██████   ██████         ███    ███ ███████ ███    ██ ██    ██ ███████
-#   ██   ██ ██              ████  ████ ██      ████   ██ ██    ██ ██
-#   ██████  ██              ██ ████ ██ █████   ██ ██  ██ ██    ██ ███████
-#   ██   ██ ██              ██  ██  ██ ██      ██  ██ ██ ██    ██      ██
-#   ██   ██  ██████ ███████ ██      ██ ███████ ██   ████  ██████  ███████
-func ____RIGHT_CLICK_MENUS____()->void:pass
+
+# ██████  ██  ██████  ██   ██ ████████      ██████ ██      ██  ██████ ██   ██  #
+# ██   ██ ██ ██       ██   ██    ██        ██      ██      ██ ██      ██  ██   #
+# ██████  ██ ██   ███ ███████    ██        ██      ██      ██ ██      █████    #
+# ██   ██ ██ ██    ██ ██   ██    ██        ██      ██      ██ ██      ██  ██   #
+# ██   ██ ██  ██████  ██   ██    ██         ██████ ███████ ██  ██████ ██   ██  #
+func                        _______RIGHT_CLICK_______              ()->void:pass
+
 #  NOTE A plugin instance can belong only to a single context menu slot.
 
 # filesystem context menu

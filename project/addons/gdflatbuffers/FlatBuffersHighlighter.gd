@@ -31,18 +31,18 @@ func lpad( extra : int = 0 ) -> String:
 	return "".lpad( stack.size() -1 + extra, '\t' )
 
 func print_trace( message : String ):
-	if _plugin.verbosity < LogLevel.TRACE: return
+	if _plugin.editorlog_verbosity < LogLevel.TRACE: return
 	var colour = _plugin.colours[LogLevel.TRACE].to_html()
 	print_rich( lpad() + "[color=%s]%s[/color]" % [colour, message] )
 
 func print_log(level : LogLevel, message : String ) -> bool:
-	if _plugin.verbosity < level: return false
+	if _plugin.editorlog_verbosity < level: return false
 	var colour = _plugin.colours[level].to_html()
 	print_rich( "[color=%s]%s[/color]" % [colour, message] )
 	return true
 
 func log_level( level : LogLevel ) -> bool:
-	return _plugin.verbosity >= level
+	return _plugin.editorlog_verbosity >= level
 
 # ██   ██ ██  ██████  ██   ██ ██      ██  ██████  ██   ██ ████████ ███████ ██████
 # ██   ██ ██ ██       ██   ██ ██      ██ ██       ██   ██    ██    ██      ██   ██
@@ -1177,13 +1177,13 @@ func using_file( file_path: String ) -> String:
 	# we can only transform relative paths.
 	if file_path.is_absolute_path(): return ""
 
-	for ipath : String in _plugin.include_paths:
+	for ipath : String in _plugin.flatc_include_paths:
 		var try_path = ipath.path_join(file_path)
 		if FileAccess.file_exists( try_path ):
 			print_log(LogLevel.DEBUG, "Found: '%s'" % try_path)
 			return try_path
 
-	print_log( LogLevel.DEBUG, "Search Locations: %s" % [_plugin.include_paths])
+	print_log( LogLevel.DEBUG, "Search Locations: %s" % [_plugin.flatc_include_paths])
 	return ""
 
 func quick_scan_file( filepath : String ) -> bool:
