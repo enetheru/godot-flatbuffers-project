@@ -1,67 +1,81 @@
 @tool
 
-# │ ___      _   _   _                _  _     _
-# │/ __| ___| |_| |_(_)_ _  __ _ ___ | || |___| |_ __  ___ _ _
-# │\__ \/ -_)  _|  _| | ' \/ _` (_-< | __ / -_) | '_ \/ -_) '_|
-# │|___/\___|\__|\__|_|_||_\__, /__/ |_||_\___|_| .__/\___|_|
-# ╰────────────────────────|___/────────────────|_|──────────────
-# - last edited: 11/11/2025 10:41am ACT+930 -
-
-# This class saves me from writing so much boilerplate for creating editor
-# settings for the editor plugins I wish to write.
-
-# The class looks for custom exported properties with
-# PROPERTY_USAGE_EDITOR_BASIC_SETTING and exposes them as editor_settings.
-
-# It is intended to be used in EditorPlugin singletons to transform exported
-# properties into editor settings.
-
-# == Usage ==
-# drop it into your plugin's folder and initialise it like so:
-
-# func _enter_tree() -> void:
-#	settings_mgr = SettingsHelper.new(self, "plugin/my_plugin_name")
-
-# == Examples ==
-#@export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING)
-#var example : bool
-
-# To facilitate grouping of settings, add the PROPERTY_USAGE_GROUP
-# and PROPERTY_USAGE_SUBGROUP bitflags to the export. Underscores will be
-# replaced with forward slashes. Only two layers deep are supported.
-# @export_custom( PROPERTY_HINT_NONE, "",
-#	PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
-# var group_subgroup_example : bool
-
-# not all property hints work, as there is not a 1:1 relationship between the
-# editor settings and the inspector.
-
-# == More ==
-# The goal of this script is to provided a friendly way to define editor or project properties based on an object.
-# Is used primarily for singletons like editor plugins, but if i finish it, it can be extended to project singletons too.
-# Rather than manually setting them up one by one, it also provides a mechanism such that selecting the node shows the properties
-
-# The idea is that we walk the property list of an object, and translate its properties into editor settings.
-
-# Object Property Dictionary.
-#Returns the object's property list as an Array of dictionaries. Each Dictionary contains the following entries:
-# - name is the property's name, as a String;
-# - class_name is an empty StringName, unless the property is @GlobalScope.TYPE_OBJECT and it inherits from a class;
-# - type is the property's type, as an int (see Variant.Type);
-# - hint is how the property is meant to be edited (see PropertyHint);
-# - hint_string depends on the hint (see PropertyHint);
-# - usage is a combination of PropertyUsageFlags.
-#Note: In GDScript, all class members are treated as properties. In C# and GDExtension, it may be necessary to explicitly mark class members as Godot properties using decorators or attributes.
-
-# EditorSettings property.
-#settings.set("category/property_name", 0)
-#var property_info = {
-	# - "name": "category/property_name",
-	# - "type": TYPE_INT,
-	# - "hint": PROPERTY_HINT_ENUM,
-	# - "hint_string": "one,two,three"
-#}
-#settings.add_property_info(property_info)
+## │ ___      _   _   _                _  _     _                 [br]
+## │/ __| ___| |_| |_(_)_ _  __ _ ___ | || |___| |_ __  ___ _ _   [br]
+## │\__ \/ -_)  _|  _| | ' \/ _` (_-< | __ / -_) | '_ \/ -_) '_|  [br]
+## │|___/\___|\__|\__|_|_||_\__, /__/ |_||_\___|_| .__/\___|_|    [br]
+## ╰────────────────────────|___/────────────────|_|──────────────[br]
+## This class saves me from writing so much boilerplate for creating editor
+## settings for the editor plugins I wish to write.[br]
+## [br]
+## The class looks for custom exported properties with
+## [code]PROPERTY_USAGE_EDITOR_BASIC_SETTING[/code] and exposes them as
+## editor_settings.[br]
+## [br]
+## It is intended to be used in [EditorPlugin] singletons to transform exported
+## properties into editor settings.[br]
+## [br]
+## [b]== Usage ==[/b][br]
+## drop it into your plugin's folder and initialise it like so:
+## [codeblock]
+## func _enter_tree() -> void:
+##     settings_mgr = SettingsHelper.new(self, "plugin/my_plugin_name")
+## [/codeblock]
+## [br]
+## [b]== Examples ==[/b][br]
+## [codeblock]
+## @export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING)
+## var example : bool
+## [/codeblock]
+## [br]
+## To facilitate grouping of settings, add the [code]PROPERTY_USAGE_GROUP[/code]
+## and [code]PROPERTY_USAGE_SUBGROUP[/code] bitflags to the export.[br]
+## Underscores will be replaced with forward slashes.[br]
+## Only two layers deep are supported.
+## [codeblock]
+## @export_custom( PROPERTY_HINT_NONE, "",
+##	PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
+## var group_subgroup_example : bool
+## [/codeblock]
+## [br]
+## Not all property hints work, as there is not a 1:1 relationship between the
+## editor settings and the inspector.[br]
+## [br]
+## [b]== More ==[/b][br]
+## The goal of this script is to provided a friendly way to define editor or project properties based on an object.
+## Is used primarily for singletons like editor plugins, but if i finish it, it can be extended to project singletons too.
+## Rather than manually setting them up one by one, it also provides a mechanism such that selecting the node shows the properties.
+## [br]
+## The idea is that we walk the property list of an object, and translate its properties into editor settings.
+## [br]
+## Object Property Dictionary.[br]
+## Returns the object's property list as an Array of dictionaries. Each [Dictionary] contains the following entries:[br]
+## - name is the property's name, as a [String];[br]
+## - class_name is an empty [StringName], unless the property is [enum Variant.Type].[code]TYPE_OBJECT[/code] and it inherits from a class;[br]
+## - type is the property's type, as an int (see [enum Variant.Type]);[br]
+## - hint is how the property is meant to be edited (see [enum PropertyHint]);[br]
+## - hint_string depends on the hint (see [enum PropertyHint]);[br]
+## - usage is a combination of [enum PropertyUsageFlags].[br]
+## [b]Note:[/b] In GDScript, all class members are treated as properties.
+## In C# and GDExtension, it may be necessary to explicitly mark class members
+## as Godot properties using decorators or attributes.
+## [br]
+## EditorSettings property.[br]
+## [codeblock]
+## settings.set("category/property_name", 0)
+## var property_info = {
+##	# - "name": "category/property_name",
+##	# - "type": TYPE_INT,
+##	# - "hint": PROPERTY_HINT_ENUM,
+##	# - "hint_string": "one,two,three"
+## }
+## settings.add_property_info(property_info)
+## [/codeblock]
+## [br]
+## 11/11/2025 10:41am ACT+930 - I guess Created[br]
+## [br]
+## 09/02/2026 12:58am ACT+930 - re-added the signal for when a
+## setting changes and updated documentation[br]
 
 # ██████  ██████   ██████  ██████  ███████ ██████  ████████ ██ ███████ ███████ #
 # ██   ██ ██   ██ ██    ██ ██   ██ ██      ██   ██    ██    ██ ██      ██      #
@@ -74,6 +88,8 @@ var editor_settings : EditorSettings
 
 var _prefix : String
 var _target : EditorPlugin
+
+signal settings_changed( setting_name:StringName, value:Variant )
 
 #             ███████ ██    ██ ███████ ███    ██ ████████ ███████              #
 #             ██      ██    ██ ██      ████   ██    ██    ██                   #
@@ -97,6 +113,7 @@ func _on_editor_settings_changed() -> void:
 		else:
 			printerr("property(%s) invalid for target(%s)" % [
 				prop_name, _target.name])
+		settings_changed.emit( prop_name, prop_val )
 
 
 func _on_target_tree_exiting() -> void:

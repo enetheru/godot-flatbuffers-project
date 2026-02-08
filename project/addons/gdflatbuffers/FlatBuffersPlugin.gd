@@ -10,7 +10,7 @@ extends EditorPlugin
 func                        _________IMPORTS_________              ()->void:pass
 
 const SettingsHelper = preload('uid://bqe6tk0yrwq8u')
-var settings_mgr : SettingsHelper
+var settings_mgr:SettingsHelper
 
 # Supporting Scripts
 const FlatbufferSchemaHighlighter = preload('FlatBuffersHighlighter.gd')
@@ -28,15 +28,15 @@ const ICON_BW_TINY = preload('fpl_logo_tiny_bw.png')
 func                        ________PROPERTIES_______              ()->void:pass
 
 # Reference to self so we can do things since we are already instantiated.
-static var _prime : FlatBuffersPlugin
+static var _prime:FlatBuffersPlugin
 
-var highlighter : EditorSyntaxHighlighter
-var context_menus : Dictionary[EditorContextMenuPlugin.ContextMenuSlot,EditorContextMenuPlugin]
+var highlighter:EditorSyntaxHighlighter
+var context_menus:Dictionary[EditorContextMenuPlugin.ContextMenuSlot,EditorContextMenuPlugin]
 
 ## A variable to help me turn on and off debug features and tests.
 @export_custom( PROPERTY_HINT_NONE, "",
 	PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_INTERNAL)
-var debug : bool = true
+var debug:bool = true
 
 
 # │  __ _      _
@@ -46,15 +46,15 @@ var debug : bool = true
 # ╰───────────────────────────────────
 @export_custom( PROPERTY_HINT_GLOBAL_FILE, "*.exe",
 	PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_GROUP)
-var flatc_exe : String = "addons/gdflatbuffers/bin/flatc.exe"
+var flatc_exe:String = "addons/gdflatbuffers/bin/flatc.exe"
 
 @export_custom( PROPERTY_HINT_NONE, "",
 	PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_GROUP)
-var flatc_generate_debug : bool = false
+var flatc_generate_debug:bool = false
 
 @export_custom( PROPERTY_HINT_NONE, "",
 	PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_GROUP)
-var flatc_generate_pack_unpack : bool = false
+var flatc_generate_pack_unpack:bool = false
 
 ## Include paths to use for flatc generation
 @export_custom( PROPERTY_HINT_TYPE_STRING, "4/16:", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_GROUP)
@@ -78,7 +78,7 @@ enum LogLevel {
 @export_custom( PROPERTY_HINT_ENUM,
 	"SILENT:0,CRITICAL:1,ERROR:2,WARNING:3,NOTICE:4,DEBUG:5,TRACE:6",
 	PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_GROUP)
-var editorlog_verbosity : LogLevel = 0
+var editorlog_verbosity:LogLevel = 0
 
 # │ _  _ _      _   _   _ _      _   _
 # │| || (_)__ _| |_| |_| (_)__ _| |_| |_
@@ -86,9 +86,9 @@ var editorlog_verbosity : LogLevel = 0
 # │|_||_|_\__, |_||_\__|_|_\__, |_||_\__|
 # ╰───────|___/────────────|___/──────────
 @export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_GROUP)
-var highlight_error : bool = true
+var highlight_error:bool = true
 @export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_GROUP)
-var highlight_warning : bool = true
+var highlight_warning:bool = true
 
 # │  ___     _
 # │ / __|___| |___ _  _ _ _ ___
@@ -97,41 +97,41 @@ var highlight_warning : bool = true
 # ╰──────────────────────────────
 # Tokens
 @export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
-var color_syntax_unknown : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
+var color_syntax_unknown:Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
 @export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
-var color_syntax_comment : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_color")
+var color_syntax_comment:Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_color")
 @export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
-var color_syntax_keyword : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/keyword_color")
+var color_syntax_keyword:Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/keyword_color")
 @export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
-var color_syntax_type : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/base_type_color")
+var color_syntax_type:Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/base_type_color")
 @export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
-var color_syntax_string : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/string_color")
+var color_syntax_string:Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/string_color")
 @export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
-var color_syntax_punct : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
+var color_syntax_punct:Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
 @export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
-var color_syntax_ident : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/symbol_color")
+var color_syntax_ident:Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/symbol_color")
 @export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
-var color_syntax_scalar : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/number_color")
+var color_syntax_scalar:Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/number_color")
 @export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
-var color_syntax_meta : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
+var color_syntax_meta:Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
 
 # log levels
 @export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
-var color_notice_critical : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_markers/critical_color")
+var color_notice_critical:Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_markers/critical_color")
 @export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
-var color_notice_error : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_markers/critical_color")
+var color_notice_error:Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_markers/critical_color")
 @export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
-var color_notice_warning : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_markers/warning_color")
+var color_notice_warning:Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_markers/warning_color")
 @export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
-var color_notice_notice : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
+var color_notice_notice:Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/text_color")
 @export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
-var color_notice_debug : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_color")
+var color_notice_debug:Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_color")
 @export_custom( PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR_BASIC_SETTING | PROPERTY_USAGE_SUBGROUP)
-var color_notice_trace : Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_color")
+var color_notice_trace:Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_color")
 
 
 # Dictionary of colours
-var colours : Dictionary[int, Color]
+var colours:Dictionary[int, Color]
 
 
 #             ███████ ██    ██ ███████ ███    ██ ████████ ███████              #
@@ -141,7 +141,7 @@ var colours : Dictionary[int, Color]
 #             ███████   ████   ███████ ██   ████    ██    ███████              #
 func                        __________EVENTS_________              ()->void:pass
 
-func _on_settings_changed( setting_name : StringName, value : Variant ) -> void:
+func _on_setting_changed( setting_name:StringName, value:Variant ) -> void:
 	if setting_name.begins_with("color"):
 		colours_changed()
 
@@ -155,12 +155,14 @@ func                        ________OVERRIDES________              ()->void:pass
 
 func _init() -> void:
 	name = "FlatBuffersPlugin"
-	if not _prime: _prime = self
+	# prefill all colours with gray
+	for val:int in LogLevel.values() + Token.Type.values():
+		colours[val] = Color.GRAY
+
 	#FIXME update editor property docks/filesystem/textfile_extensions to include fbs
 
 	settings_mgr = SettingsHelper.new(self, "plugin/gdflatbuffers")
-	settings_mgr.settings_changed.connect( _on_settings_changed )
-	colours_changed()
+	settings_mgr.settings_changed.connect( _on_setting_changed )
 
 	context_menus = {
 		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM: MyFileMenu.new(),
@@ -173,14 +175,17 @@ func _init() -> void:
 
 func _enable_plugin() -> void:
 	print_log( LogLevel.TRACE, "%s._enable_plugin()" % name )
+	_prime = self
 
 
 func _disable_plugin() -> void:
 	print_log( LogLevel.TRACE, "%s._disable_plugin()" % name )
+	_prime = null
 
 
 func _enter_tree() -> void:
 	print_log( LogLevel.TRACE, "%s._enter_tree()" % name )
+	colours_changed()
 
 	# Syntax Highlighting for flatbuffer schema files
 	highlighter = FlatbufferSchemaHighlighter.new(self)
@@ -215,39 +220,27 @@ func _get_plugin_icon() -> Texture2D:
 #         ██      ██ ███████    ██    ██   ██  ██████  ██████  ███████         #
 func                        _________METHODS_________              ()->void:pass
 
-func print_log(level : LogLevel, message : String ) -> bool:
-	if editorlog_verbosity < level: return false
-	var colour = colours[level].to_html()
-	var padding = "".lpad(get_stack().size()-1, '\t') if level == LogLevel.TRACE else ""
-	print_rich( padding + "[color=%s]%s[/color]" % [colour, message] )
-	return true
-
-
-func log_level( level : LogLevel ) -> bool:
-	return editorlog_verbosity >= level
-
-
 func colours_changed():
 	colours = {
-		LogLevel.CRITICAL : color_notice_critical,
-		LogLevel.ERROR : color_notice_error,
-		LogLevel.WARNING : color_notice_warning,
-		LogLevel.NOTICE : color_notice_notice,
-		LogLevel.DEBUG : color_notice_debug,
-		LogLevel.TRACE : color_notice_trace,
+		LogLevel.CRITICAL:color_notice_critical,
+		LogLevel.ERROR:color_notice_error,
+		LogLevel.WARNING:color_notice_warning,
+		LogLevel.NOTICE:color_notice_notice,
+		LogLevel.DEBUG:color_notice_debug,
+		LogLevel.TRACE:color_notice_trace,
 		# Token.Type starts at color_10
-		Token.Type.NULL : color_syntax_unknown,
-		Token.Type.COMMENT : color_syntax_comment,
-		Token.Type.KEYWORD : color_syntax_keyword,
-		Token.Type.TYPE : color_syntax_type,
-		Token.Type.STRING : color_syntax_string,
-		Token.Type.PUNCT : color_syntax_punct,
-		Token.Type.IDENT : color_syntax_ident,
-		Token.Type.SCALAR : color_syntax_scalar,
-		Token.Type.META : color_syntax_meta,
-		Token.Type.UNKNOWN : color_syntax_unknown,
-		Token.Type.EOL : color_syntax_unknown,
-		Token.Type.EOF : color_syntax_unknown,
+		Token.Type.NULL:color_syntax_unknown,
+		Token.Type.COMMENT:color_syntax_comment,
+		Token.Type.KEYWORD:color_syntax_keyword,
+		Token.Type.TYPE:color_syntax_type,
+		Token.Type.STRING:color_syntax_string,
+		Token.Type.PUNCT:color_syntax_punct,
+		Token.Type.IDENT:color_syntax_ident,
+		Token.Type.SCALAR:color_syntax_scalar,
+		Token.Type.META:color_syntax_meta,
+		Token.Type.UNKNOWN:color_syntax_unknown,
+		Token.Type.EOL:color_syntax_unknown,
+		Token.Type.EOF:color_syntax_unknown,
 	}
 
 
@@ -258,16 +251,16 @@ func colours_changed():
 #     ██      ███████ ██   ██    ██     ██████ ██ ███████ ██   ██ ███████      #
 func                        ________FLATC_EXE________              ()->void:pass
 
-func flatc_multi( paths : Array, args : Array ) -> Array:
+func flatc_multi( paths:Array, args:Array ) -> Array:
 	print_log( LogLevel.TRACE, "%s.flatc_multi(%s, %s)" % [name, paths, args] )
-	var results : Array
-	for path : String in paths:
+	var results:Array
+	for path:String in paths:
 		if path.get_extension() == 'fbs':
 			results.append( flatc_generate( path, args ) )
 	return results
 
 
-func flatc_generate( schema_path : String, args : Array ) -> Dictionary:
+func flatc_generate( schema_path:String, args:Array ) -> Dictionary:
 	print_log( LogLevel.TRACE, "%s.flatc_generate(%s, %s)" % [name, schema_path, args] )
 	# Make sure we have the flac compiler
 	if not FileAccess.file_exists(flatc_exe):
@@ -299,7 +292,7 @@ func flatc_generate( schema_path : String, args : Array ) -> Dictionary:
 	# the schema path
 	args.append( schema_path.replace('res://', './') )
 
-	var report : Dictionary = {
+	var report:Dictionary = {
 		'schema': schema_path,
 		'flatc_path':flatc_exe,
 		'args':args,
@@ -308,7 +301,7 @@ func flatc_generate( schema_path : String, args : Array ) -> Dictionary:
 	if debug or editorlog_verbosity >= LogLevel.NOTICE:
 		print( JSON.stringify(report, "  ", false) )
 
-	var output : Array = []
+	var output:Array = []
 	var retcode = OS.execute( flatc_exe, args, output, true )
 
 	report['retcode'] = retcode
@@ -374,7 +367,7 @@ class MyFileCreateMenu extends EditorContextMenuPlugin:
 class MyScriptTabMenu extends EditorContextMenuPlugin:
 	# _popup_menu() will be called with the path to the currently edited script,
 	# while option callback will receive reference to that script.
-	func _popup_menu(paths : PackedStringArray):
+	func _popup_menu(paths:PackedStringArray):
 		var fbp := FlatBuffersPlugin._prime
 		if paths[0].get_extension() == 'fbs':
 			add_context_menu_item("flatc --gdscript", call_flatc_on_path.bind(
@@ -387,7 +380,7 @@ class MyScriptTabMenu extends EditorContextMenuPlugin:
 				add_context_menu_item("flatc --version", call_flatc_on_path.bind(
 						paths[0], ['--version'] ), ICON_BW_TINY )
 
-	func call_flatc_on_path( _ignore, path : String, args : Array ) -> void:
+	func call_flatc_on_path( _ignore, path:String, args:Array ) -> void:
 		var fbp := FlatBuffersPlugin._prime
 		fbp.flatc_generate( path, args )
 
@@ -397,11 +390,34 @@ class MyScriptTabMenu extends EditorContextMenuPlugin:
 class MyCodeEditMenu extends EditorContextMenuPlugin:
 	# _popup_menu() will be called with the path to the CodeEdit node.
 	# The option callback will receive reference to that node.
-	func _popup_menu( paths : PackedStringArray ):
+	func _popup_menu( paths:PackedStringArray ):
 		var fbp := FlatBuffersPlugin._prime
 		if not fbp.debug: return
 		print("paths.size: ", paths.size() )
 		print("paths:\n\t", '\n\t'.join(paths) )
-		var code_edit : CodeEdit = Engine.get_main_loop().root.get_node(paths[0]);
+		var code_edit:CodeEdit = Engine.get_main_loop().root.get_node(paths[0]);
 		print("selected_text: '%s'" % code_edit.get_selected_text() )
 		add_context_menu_item("flatbuffers testing", func(thing): print( thing ), ICON_BW_TINY )
+
+#     ██████  ██████  ██ ███    ██ ████████     ██       ██████   ██████       #
+#     ██   ██ ██   ██ ██ ████   ██    ██        ██      ██    ██ ██            #
+#     ██████  ██████  ██ ██ ██  ██    ██        ██      ██    ██ ██   ███      #
+#     ██      ██   ██ ██ ██  ██ ██    ██        ██      ██    ██ ██    ██      #
+#     ██      ██   ██ ██ ██   ████    ██        ███████  ██████   ██████       #
+func                        ________PRINT_LOG________              ()->void:pass
+
+func print_trace( message:String ):
+	if editorlog_verbosity < LogLevel.TRACE: return
+	var colour = colours[LogLevel.TRACE].to_html()
+	print_rich( "[color=%s]%s[/color]" % [colour, message] )
+
+
+func print_log(level:LogLevel, message:String ) -> bool:
+	if editorlog_verbosity < level: return false
+	var colour = colours[level].to_html()
+	var padding = "".lpad(get_stack().size()-1, '\t') if level == LogLevel.TRACE else ""
+	print_rich( padding + "[color=%s]%s[/color]" % [colour, message] )
+	return true
+
+func log_level( level:LogLevel ) -> bool:
+	return editorlog_verbosity >= level
