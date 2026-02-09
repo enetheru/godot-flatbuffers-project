@@ -37,7 +37,7 @@ signal endfile( ln, p )
 
 ## The parent object is where the reader draws some information from
 ## If I can I should move as much out of the reader into the "parent" as possible
-var parent
+var parser:FlatBuffersParser
 
 ## A list of word separation characters
 var word_separation : Array = [' ', '\t', '\n', '{','}', ':', ';', ',','=',
@@ -67,8 +67,9 @@ var line_n : int = 0
 ## When updating chunks of a larger source file, what line does this chunk start on.
 var line_start : int
 
-func _init( _parent ) -> void:
-	parent = _parent
+func _init( parser_ref:FlatBuffersParser ) -> void:
+	if parser_ref:
+		parser = parser_ref
 	if not Regex: Regex = REGEX.new()
 
 
@@ -293,11 +294,11 @@ func at_end() -> bool:
 
 
 func is_type( word : String )-> bool:
-	return word in parent.scalar_types
+	return word in parser.scalar_types
 
 
 func is_keyword( word : String ) -> bool:
-	return word in parent.keywords
+	return word in parser.keywords
 
 
 func is_ident( word : String ) -> bool:
