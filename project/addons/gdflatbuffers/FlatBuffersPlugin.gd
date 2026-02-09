@@ -154,6 +154,7 @@ func _on_setting_changed( setting_name:StringName, value:Variant ) -> void:
 func                        ________OVERRIDES________              ()->void:pass
 
 func _init() -> void:
+	_prime = self
 	name = "FlatBuffersPlugin"
 	# prefill all colours with gray
 	for val:int in LogLevel.values() + Token.Type.values():
@@ -175,12 +176,10 @@ func _init() -> void:
 
 func _enable_plugin() -> void:
 	print_log( LogLevel.TRACE, "%s._enable_plugin()" % name )
-	_prime = self
 
 
 func _disable_plugin() -> void:
 	print_log( LogLevel.TRACE, "%s._disable_plugin()" % name )
-	_prime = null
 
 
 func _enter_tree() -> void:

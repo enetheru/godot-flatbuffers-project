@@ -47,6 +47,12 @@ func _run() -> void:
 	print_rich( "\n[b]... Compiling Flatbuffer Schemas[/b]\n" )
 	var compile_results : Dictionary = {}
 	for test_def : Dictionary in def_list:
+		var flatc_exe:String = plugin.flatc_exe
+		if not FileAccess.file_exists(flatc_exe):
+			var msg = "flatc compiler is not found at '%s'" % flatc_exe
+			push_error(msg)
+			break
+
 		for schema_file : String in test_def.get('schema_files', []):
 			var category = test_def.get('name')
 			var schema_path = '/'.join([test_def.get('folder_path'), schema_file])
