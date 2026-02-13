@@ -133,7 +133,7 @@ func _init(plugin_ref: FlatBuffersPlugin = null):
 	reader.new_token.connect(func( token:Token ):
 		highlight( token )
 		if plugin.log_level(LogLevel.TRACE):
-			var colour = plugin.colours[token.type].to_html()
+			var colour = plugin.get_colour(token.type).to_html()
 			print_rich( lpad() + "\t[color=%s]%s[/color]" % [colour, token] )
 	)
 	reader.newline.connect( func(l,p):
@@ -210,8 +210,12 @@ func using_file(file_path: String) -> String:
 func                        _______HIGHLIGHTER_______              ()->void:pass
 # ── Colour / error helpers ─────────────────────────
 
-func highlight(token: Token, override: Color = Color.ORANGE):
-	active_highlighter.highlight(token, override)   # temporary bridge
+func highlight(token: Token):
+	active_highlighter.highlight(token)
+
+
+func highlight_colour(token: Token, colour:Color):
+	active_highlighter.highlight_colour(token, colour)
 
 
 func syntax_warning(token: Token, reason: String = ""):
@@ -883,7 +887,7 @@ func parse_field_decl( p_token:Token ):
 				if not token.t in enum_vals:
 					syntax_error(token, "value not found in enum")
 				else:
-					highlight(token, plugin.colours[Token.Type.SCALAR])
+					highlight_colour(token, plugin.get_colour(Token.Type.SCALAR))
 			elif not reader.is_scalar(token.t):
 				syntax_error(token, "Only Scalar values can have defaults")
 
@@ -976,7 +980,7 @@ func parse_type( p_token:Token ):
 		var token:Token = reader.get_token()
 		if not token.t in integer_types:
 			syntax_error( token, "Enum types must be an integral")
-		else: highlight(token, plugin.colours[Token.Type.TYPE])
+		else: highlight_colour(token, plugin.get_colour(Token.Type.TYPE))
 		return end_frame()
 
 
@@ -1003,13 +1007,13 @@ func parse_type( p_token:Token ):
 	if decl_type == &"struct":
 		if not token.t in scalar_types + struct_types + enum_types.keys():
 			syntax_error(token, "struct array/vector fields may only contain scalars or other structs")
-		else: highlight(token, plugin.colours[Token.Type.TYPE])
+		else: highlight_colour(token, plugin.get_colour(Token.Type.TYPE))
 	elif decl_type == &"table":
 		# Where table can contain vectors of any type
 		if not token.t in (scalar_types + struct_types + table_types
 								+ array_types + enum_types.keys() + union_types):
 			syntax_error(token, "invalid type name")
-		else: highlight(token, plugin.colours[Token.Type.TYPE])
+		else: highlight_colour(token, plugin.get_colour(Token.Type.TYPE))
 
 	# If we arent using brackets we can just end here
 	if not has_bracket: return end_frame( return_val )
@@ -1052,7 +1056,7 @@ func parse_enumval_decl( p_token:Token ):
 	match decl_type:
 		&"union":
 			if check_token_type(token, Token.Type.IDENT ):
-				highlight(token, plugin.colours[Token.Type.SCALAR])
+				highlight_colour(token, plugin.get_colour(Token.Type.SCALAR))
 
 		&"enum":
 			if check_token_type(token, Token.Type.IDENT ):

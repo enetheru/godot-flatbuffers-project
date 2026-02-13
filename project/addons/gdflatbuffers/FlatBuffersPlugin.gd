@@ -130,22 +130,6 @@ var color_notice_debug:Color = EditorInterface.get_editor_settings().get_setting
 var color_notice_trace:Color = EditorInterface.get_editor_settings().get_setting("text_editor/theme/highlighting/comment_color")
 
 
-# Dictionary of colours
-var colours:Dictionary[int, Color]
-
-
-#             ███████ ██    ██ ███████ ███    ██ ████████ ███████              #
-#             ██      ██    ██ ██      ████   ██    ██    ██                   #
-#             █████   ██    ██ █████   ██ ██  ██    ██    ███████              #
-#             ██       ██  ██  ██      ██  ██ ██    ██         ██              #
-#             ███████   ████   ███████ ██   ████    ██    ███████              #
-func                        __________EVENTS_________              ()->void:pass
-
-func _on_setting_changed( setting_name:StringName, value:Variant ) -> void:
-	if setting_name.begins_with("color"):
-		colours_changed()
-
-
 #      ██████  ██    ██ ███████ ██████  ██████  ██ ██████  ███████ ███████     #
 #     ██    ██ ██    ██ ██      ██   ██ ██   ██ ██ ██   ██ ██      ██          #
 #     ██    ██ ██    ██ █████   ██████  ██████  ██ ██   ██ █████   ███████     #
@@ -156,14 +140,11 @@ func                        ________OVERRIDES________              ()->void:pass
 func _init() -> void:
 	_prime = self
 	name = "FlatBuffersPlugin"
-	# prefill all colours with gray
-	for val:int in LogLevel.values() + Token.Type.values():
-		colours[val] = Color.GRAY
+
 
 	#FIXME update editor property docks/filesystem/textfile_extensions to include fbs
 
 	settings_mgr = SettingsHelper.new(self, "plugin/gdflatbuffers")
-	settings_mgr.settings_changed.connect( _on_setting_changed )
 
 	context_menus = {
 		EditorContextMenuPlugin.ContextMenuSlot.CONTEXT_SLOT_FILESYSTEM: MyFileMenu.new(),
@@ -184,7 +165,6 @@ func _disable_plugin() -> void:
 
 func _enter_tree() -> void:
 	print_log( LogLevel.TRACE, "%s._enter_tree()" % name )
-	colours_changed()
 
 	# Syntax Highlighting for flatbuffer schema files
 	highlighter = FlatbufferSchemaHighlighter.new(self)
@@ -219,28 +199,28 @@ func _get_plugin_icon() -> Texture2D:
 #         ██      ██ ███████    ██    ██   ██  ██████  ██████  ███████         #
 func                        _________METHODS_________              ()->void:pass
 
-func colours_changed():
-	colours = {
-		LogLevel.CRITICAL:color_notice_critical,
-		LogLevel.ERROR:color_notice_error,
-		LogLevel.WARNING:color_notice_warning,
-		LogLevel.NOTICE:color_notice_notice,
-		LogLevel.DEBUG:color_notice_debug,
-		LogLevel.TRACE:color_notice_trace,
+func get_colour(type:int) -> Color:
+	match type:
+		LogLevel.CRITICAL:return color_notice_critical
+		LogLevel.ERROR:return color_notice_error
+		LogLevel.WARNING:return color_notice_warning
+		LogLevel.NOTICE:return color_notice_notice
+		LogLevel.DEBUG:return color_notice_debug
+		LogLevel.TRACE:return color_notice_trace
 		# Token.Type starts at color_10
-		Token.Type.NULL:color_syntax_unknown,
-		Token.Type.COMMENT:color_syntax_comment,
-		Token.Type.KEYWORD:color_syntax_keyword,
-		Token.Type.TYPE:color_syntax_type,
-		Token.Type.STRING:color_syntax_string,
-		Token.Type.PUNCT:color_syntax_punct,
-		Token.Type.IDENT:color_syntax_ident,
-		Token.Type.SCALAR:color_syntax_scalar,
-		Token.Type.META:color_syntax_meta,
-		Token.Type.UNKNOWN:color_syntax_unknown,
-		Token.Type.EOL:color_syntax_unknown,
-		Token.Type.EOF:color_syntax_unknown,
-	}
+		Token.Type.NULL:return color_syntax_unknown
+		Token.Type.COMMENT:return color_syntax_comment
+		Token.Type.KEYWORD:return color_syntax_keyword
+		Token.Type.TYPE:return color_syntax_type
+		Token.Type.STRING:return color_syntax_string
+		Token.Type.PUNCT:return color_syntax_punct
+		Token.Type.IDENT:return color_syntax_ident
+		Token.Type.SCALAR:return color_syntax_scalar
+		Token.Type.META:return color_syntax_meta
+		Token.Type.UNKNOWN:return color_syntax_unknown
+		Token.Type.EOL:return color_syntax_unknown
+		Token.Type.EOF:return color_syntax_unknown
+	return Color.DEEP_PINK
 
 
 #     ███████ ██       █████  ████████  ██████    ███████ ██   ██ ███████      #
@@ -407,13 +387,13 @@ func                        ________PRINT_LOG________              ()->void:pass
 
 func print_trace( message:String ):
 	if editorlog_verbosity < LogLevel.TRACE: return
-	var colour = colours[LogLevel.TRACE].to_html()
+	var colour = get_colour(LogLevel.TRACE).to_html()
 	print_rich( "[color=%s]%s[/color]" % [colour, message] )
 
 
 func print_log(level:LogLevel, message:String ) -> bool:
 	if editorlog_verbosity < level: return false
-	var colour = colours[level].to_html()
+	var colour = get_colour(level).to_html()
 	var padding = "".lpad(get_stack().size()-1, '\t') if level == LogLevel.TRACE else ""
 	print_rich( padding + "[color=%s]%s[/color]" % [colour, message] )
 	return true
