@@ -36,6 +36,10 @@ include(cmake/godot-dump.cmake)
 
 find_package(Python3 3.4 REQUIRED) # pathlib should be present
 
+# header only copied across
+add_subdirectory( lib/stduuid )
+add_subdirectory( lib/uuid_v4 )
+
 #[==============[ Git ]==============]
 find_program(GIT_EXECUTABLE NAMES "git" DOC "" NO_CACHE REQUIRED)
 if( NOT EXISTS "${GIT_EXECUTABLE}" )
@@ -157,7 +161,7 @@ if(GODOTCPP_TARGET MATCHES "editor|template_debug")
     target_doc_sources( ${GDE_NAME} ${DOC_XML} )
 endif()
 
-target_link_libraries( ${GDE_NAME} PRIVATE godot-cpp FlatBuffers::FlatBuffers )
+target_link_libraries( ${GDE_NAME} PRIVATE godot-cpp FlatBuffers::FlatBuffers stduuid uuid_v4::uuid_v4)
 
 set_target_properties( ${GDE_NAME}
         PROPERTIES

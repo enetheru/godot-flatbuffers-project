@@ -8,6 +8,7 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/godot.hpp>
 
+#include "uuid.hpp"
 #include "flatbuffer.hpp"
 #include "flatbufferbuilder.hpp"
 
@@ -17,6 +18,7 @@ void initialize_module( const godot::ModuleInitializationLevel p_level ) {
   }
 
   using namespace godot_flatbuffers;
+  godot::ClassDB::register_class< UUID >();
   godot::ClassDB::register_class< FlatBuffer >();
   godot::ClassDB::register_class< FlatBufferBuilder >();
   godot::UtilityFunctions::print( "gdflatbuffers initialised" );
