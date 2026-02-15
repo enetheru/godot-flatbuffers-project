@@ -1,5 +1,5 @@
-#ifndef GODOT_FLATBUFFERS_EXTENSION_FLATBUFFER_TEST_HPP
-#define GODOT_FLATBUFFERS_EXTENSION_FLATBUFFER_TEST_HPP
+#ifndef GODOT_FLATBUFFERS_EXTENSION_UUID_HPP
+#define GODOT_FLATBUFFERS_EXTENSION_UUID_HPP
 
 #include "godot_cpp/core/class_db.hpp"
 #include <godot_cpp/classes/random_number_generator.hpp>
@@ -19,10 +19,10 @@ using godot::RefCounted;
 using godot::String;
 using godot::StringName;
 using godot::Variant;
-using godot::Vector4i;
+using godot::RandomNumberGenerator;
 
 inline constexpr auto NIL_UUID = "00000000-0000-0000-0000-000000000000";
-inline constexpr auto MAX_UUID = "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF";
+inline constexpr auto MAX_UUID = "ffffffff-ffff-ffff-ffff-ffffffffffff";
 
 /**
  * UUID
@@ -34,126 +34,101 @@ inline constexpr auto MAX_UUID = "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF";
  *
  * @experimental This API surface may change in future versions.
  */
-
 class UUID final : public RefCounted {
-    GDCLASS( UUID, RefCounted ); // NOLINT(*-use-auto)
+    GDCLASS(UUID, RefCounted);
 
-    std::unordered_map< uuids::uuid, Variant > _variant_map;
-    std::unordered_map< StringName, uuids::uuid > _namespace_map;
+    static bool initialised;
+    //RNG Sources
+    static std::mt19937 mt_rng;
+    static godot::Ref<RandomNumberGenerator> godot_rng;
+    //UUID generators
+    static uuids::uuid_name_generator stduuid_dung; // Default Unique Name Generator (DUNG)
+    static std::unique_ptr<uuids::basic_uuid_random_generator<RandomNumberGenerator>> stduuid_burg; // Basic UUID Random Generator (BURG)
+    static UUIDv4::UUIDGenerator<std::mt19937_64> uuidv4_generator;
+    static uuids::uuid_random_generator stduuid_urg; // UUID Random Generator (URG)
 
-    // I think I need to provide some default namespaces for the most standard things as described in the RFC9562
-    // I want to define constants for use, the NIL and the MAX UUID values for each
-    // godot type, String, Vector4i, and PackedByteArray so that the are easily used.
-    const uuids::uuid uuid_nul = uuids::uuid::from_string(NIL_UUID).value();
+    std::unordered_map<uuids::uuid, Variant> _variant_map;
 
-  protected:
-    // MARK: BindMethods
+protected:
     static void _bind_methods();
 
-  public:
-    static int64_t hash_uuid( const String &uuid_str );
+public:
 
-    static String get_nil_uuid();
-    static String get_max_uuid();
-    static String get_namespace_dns();
-    static String get_namespace_url();
-    static String get_namespace_oid();
-    static String get_namespace_x500();
+    UUID();
 
-    // I have multiple implementations of some functions because I do not
-    // yet know the performance characteristics. each implementation will have
-    // a '_suffix' denoting its source. The default implementation will be
-    // set in _bind_methods
+    // ReSharper disable once CppHidingFunction
+    void _notification(int p_what);
 
-    //TODO Verify the implementation given by grok
+    // ───────────────────────────────────────────────
+    //  Namespace constants (RFC 9562 recommended)
+    // ───────────────────────────────────────────────
+    static String get_nil_uuid()      { return "00000000-0000-0000-0000-000000000000"; }
+    static String get_max_uuid()      { return "ffffffff-ffff-ffff-ffff-ffffffffffff"; }
+    static String get_namespace_dns() { return "6ba7b810-9dad-11d1-80b4-00c04fd430c8"; }
+    static String get_namespace_url() { return "6ba7b811-9dad-11d1-80b4-00c04fd430c8"; }
+    static String get_namespace_oid() { return "6ba7b812-9dad-11d1-80b4-00c04fd430c8"; }
+    static String get_namespace_x500(){ return "6ba7b814-9dad-11d1-80b4-00c04fd430c8"; }
 
-    // v3
-    /**
-    * Note: v3 is included for interoperability but uses MD5, which has known cryptographic weaknesses. Use v5 for new applications.
-    * Uses godot's builting Hashing MD5 routines
-    */
-    static String create_v3(const String& seed, const String& namespace_uuid = String(NIL_UUID));
+    // ───────────────────────────────────────────────
+    //  Hashing
+    // ───────────────────────────────────────────────
+    static int64_t hash_uuid(const String &uuid_str);
 
-    // v4
-    static String create_v4_rng(); // Uses Godot's builtin RandomNumberGenerator
-    static String create_v4_stduuid();
-    static String create_v4_uuidv4();
+    // ───────────────────────────────────────────────
+    //  Creators
+    // ───────────────────────────────────────────────
 
-    //FIXME I believe that due to the way gdextension works, I need to return
-    // variant here, so that the data is actually available to godot
-    static PackedByteArray create_v4_bytes();
-    static PackedByteArray create_v4_uuidv4_bytes();
+    // v3 (Godot MD5 only)
+    static String create_v3_godot_string(
+        const String& seed,
+        const String& namespace_uuid = String(NIL_UUID)
+    );
+    static PackedByteArray create_v3_godot_bytes(
+        const String& seed,
+        const String& namespace_uuid = String(NIL_UUID)
+    );
+
+    // String / Bytes wrappers (unchanged naming)
+    static String create_v4_stduuid_string();
     static PackedByteArray create_v4_stduuid_bytes();
 
-    //v5
-    static String create_v5_stduuid(const String &seed, const String &namespace_uuid = String(NIL_UUID));
-    static PackedByteArray create_v5_stduuid_bytes(const String& seed, const String &namespace_uuid = String(NIL_UUID));
+    static String create_v4_uuidv4_string();
+    static PackedByteArray create_v4_uuidv4_bytes();
 
-    // MARK: Conversion
-    // │  ___                        _
-    // │ / __|___ _ ___ _____ _ _ __(_)___ _ _
-    // │| (__/ _ \ ' \ V / -_) '_(_-< / _ \ ' \
-    // │ \___\___/_||_\_/\___|_| /__/_\___/_||_|
-    // ╰─────────────────────────────────────────
-    static String from_bytes( const PackedByteArray &bytes );
-    static PackedByteArray to_bytes( const String &uuid_str );
+    static String create_v5_stduuid_string(
+        const String &seed,
+        const String &namespace_uuid_str = String(NIL_UUID)
+    );
+    static PackedByteArray create_v5_stduuid_bytes(
+        const String &seed,
+        const String &namespace_uuid_str = String(NIL_UUID)
+    );
 
-    // MARK: Checks
-    // │  ___ _           _
-    // │ / __| |_  ___ __| |__ ___
-    // │| (__| ' \/ -_) _| / /(_-<
-    // │ \___|_||_\___\__|_\_\/__/
-    // ╰────────────────────────────
+    // String ↔ bytes (no added validation)
+    static String from_bytes(const PackedByteArray &bytes);
+    static PackedByteArray to_bytes(const String &uuid_str);
 
-    // is_nil
-    static bool is_nil( const String &uuid_str );
-
-    // version
-    static int get_version( const String &uuid_str );
-
-    // variant
-    static int get_uuid_variant( const String &uuid_str );
-
-    // MARK: Comparison
-    // │  ___                          _
-    // │ / __|___ _ __  _ __  __ _ _ _(_)___ ___ _ _
-    // │| (__/ _ \ '  \| '_ \/ _` | '_| (_-</ _ \ ' \
-    // │ \___\___/_|_|_| .__/\__,_|_| |_/__/\___/_||_|
-    // ╰───────────────|_|─────────────────────────────
-
-    // equals
-    static bool equals( const String &uuid_str1, const String &uuid_str2 );
-
-    // Returns true if the string is a valid UUID (v1–v5 or nil)
+    // ───────────────────────────────────────────────
+    //  Validation / Inspection
+    // ───────────────────────────────────────────────
+    static bool is_nil(const String &uuid_str);
+    static int get_version(const String &uuid_str);
+    static int get_uuid_variant(const String &uuid_str);
+    static bool equals(const String &uuid_str1, const String &uuid_str2);
     static bool is_valid(const String &uuid_str);
 
-    // MARK: Container
-    // │  ___         _        _
-    // │ / __|___ _ _| |_ __ _(_)_ _  ___ _ _
-    // │| (__/ _ \ ' \  _/ _` | | ' \/ -_) '_|
-    // │ \___\___/_||_\__\__,_|_|_||_\___|_|
-    // ╰────────────────────────────────────────
-
-    // Custom map
-    bool set_variant( const String &uuid_str, const Variant &value );
-
-    Variant get_variant(const String &uuid, const Variant &default_value = Variant()) const;
-
-    bool has_variant( const String &uuid_str ) const;
-
-    bool erase_variant( const String &uuid_str );
-
+    // ───────────────────────────────────────────────
+    //  Variant map
+    // ───────────────────────────────────────────────
+    bool set_variant(const String &uuid_str, const Variant &value);
+    Variant get_variant(const String &uuid_str, const Variant &default_value = Variant()) const;
+    bool has_variant(const String &uuid_str) const;
+    bool erase_variant(const String &uuid_str);
     void clear_variants();
-
     int get_variant_map_size() const;
-
     Array get_variant_keys();
-
-  private:
-    static String bytes_to_hex( const PackedByteArray &bytes );
 };
-
-
+    ;
 } // namespace godot_flatbuffers
 
-#endif // GODOT_FLATBUFFERS_EXTENSION_FLATBUFFER_TEST_HPP
+#endif
