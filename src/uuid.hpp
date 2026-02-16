@@ -80,7 +80,7 @@ public:
     );
     static PackedByteArray create_v3_godot_bytes(
         const String& seed,
-        const String& namespace_uuid = String(NIL_UUID)
+        String namespace_uuid = String(NIL_UUID)
     );
 
     // String / Bytes wrappers (unchanged naming)

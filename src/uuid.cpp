@@ -163,14 +163,13 @@ void UUID::_bind_methods() {
 
 //MARK: Generation v3
 
-String UUID::create_v3_godot_string(const String& seed, const String& namespace_uuid_str) {
-    const auto bytes = create_v3_godot_bytes(seed, namespace_uuid_str);
-    return bytes_to_uuid_string(create_v3_godot_bytes(seed, namespace_uuid_str));
+String UUID::create_v3_godot_string(const String& seed, const String& namespace_uuid) {
+    const auto bytes = create_v3_godot_bytes(seed, namespace_uuid);
+    return bytes_to_uuid_string(create_v3_godot_bytes(seed, namespace_uuid));
 }
 
-PackedByteArray UUID::create_v3_godot_bytes(const String& seed, const String& namespace_uuid_str) {
-    String namespace_uuid = namespace_uuid_str;
-    if (!is_valid(namespace_uuid)) {
+PackedByteArray UUID::create_v3_godot_bytes(const String& seed, String namespace_uuid) {
+    if( namespace_uuid.is_empty() || !is_valid(namespace_uuid) ) {
         namespace_uuid = get_nil_uuid();
     }
     Ref<HashingContext> ctx;
