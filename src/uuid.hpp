@@ -54,11 +54,6 @@ protected:
 
 public:
 
-    UUID();
-
-    // ReSharper disable once CppHidingFunction
-    void _notification(int p_what);
-
     // ───────────────────────────────────────────────
     //  Namespace constants (RFC 9562 recommended)
     // ───────────────────────────────────────────────
@@ -126,7 +121,7 @@ public:
     bool erase_variant(const String &uuid_str);
     void clear_variants();
     int get_variant_map_size() const;
-    Array get_variant_keys();
+    Array get_variant_keys() const;
 };
     ;
 } // namespace godot_flatbuffers
