@@ -78,3 +78,6 @@ lib/*/
 
 
 .ai/
+
+# Obsidian annoyances
+.obsidian/workspace.json
