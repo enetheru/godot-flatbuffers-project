@@ -12,15 +12,14 @@ const Vec3 = schema.Vec3
 var test_object
 #endregion
 
-func _run() -> void:
-	# Step 1 - Creating and Writing Orc FlatBuffers
+func _run_test() -> int:	# Step 1 - Creating and Writing Orc FlatBuffers
 	var bytes : PackedByteArray = create_orc_flatbuffer()
 	logd("monster_data: %s" % bytes_view(bytes))
 
 	# Step 2 - Reading Orc FlatBuffers
 	reading_orc_flatbuffer( bytes )
 
-	retcode = runcode
+	return runcode
 
 
 #  ██████ ██████  ███████  █████  ████████ ██ ███    ██  ██████

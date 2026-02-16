@@ -3,10 +3,10 @@ extends TestBase
 
 const fb = preload('./FBTestString_generated.gd')
 
-func _run() -> void:
+func _run_test() -> int:
 	short_way()
 	long_way()
-	retcode = runcode
+	return runcode
 
 var test_string : String = "This is a string that I am adding to te flatbuffer"
 

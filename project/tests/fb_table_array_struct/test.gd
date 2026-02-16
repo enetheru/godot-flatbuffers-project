@@ -28,10 +28,9 @@ var builtin_ := Vector3i(1,2,3)
 
 
 
-func _run() -> void:
+func _run_test() -> RetCode:
 	# presence
 	# accessor to full array
 	# accessor for individual element '_at( index )'
 	# use PackedArray types when appropriate:
-	retcode = runcode
-	pass
+	return runcode

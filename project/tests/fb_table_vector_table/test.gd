@@ -9,13 +9,13 @@ const RootTable = schema.RootTable
 var id : int
 var pos : Vector3
 
-func _run() -> void:
+func _run_test() -> int:
 	_verbose = true
 	initial_sanity_check()
 	var item_bytes : PackedByteArray = item_check()
 	bag_check( item_bytes )
 	root_table_check( item_bytes )
-	retcode = runcode
+	return runcode
 
 
 func initial_sanity_check():

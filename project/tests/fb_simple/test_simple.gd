@@ -9,7 +9,7 @@ const schema = preload('simple_generated.gd')
 #}
 #root_type RootTable;
 
-func _run() -> void:
+func _run_test() -> int:
 	var value : int = u32
 	logd("starting value: %X" %value )
 
@@ -24,4 +24,4 @@ func _run() -> void:
 	print("decoded: %X" %rt.my_field() )
 	TEST_EQ(value, rt.my_field())
 
-	retcode = runcode
+	return runcode

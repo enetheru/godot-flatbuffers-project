@@ -11,8 +11,9 @@ config_version=5
 [application]
 
 config/name="FlatBuffers Extension Project"
+config/tags=PackedStringArray("enetheru")
 run/main_scene="uid://dmx2xuigcpvt4"
-config/features=PackedStringArray("4.4")
+config/features=PackedStringArray("4.5")
 config/icon="uid://djn0qm2ewvf7d"
 
 [debug]
@@ -21,7 +22,7 @@ settings/stdout/verbose_stdout=true
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/Todo_Manager/plugin.cfg", "res://addons/gdflatbuffers/plugin.cfg", "res://addons/test_runner/plugin.cfg", "res://addons/zylann.editor_debugger/plugin.cfg")
+enabled=PackedStringArray("res://addons/Todo_Manager/plugin.cfg", "res://addons/enetheru.test-runner/plugin.cfg", "res://addons/gdflatbuffers/plugin.cfg", "res://addons/zylann.editor_debugger/plugin.cfg")
 
 [native_extensions]
 

@@ -1,6 +1,6 @@
 
 | Feature                        | C++    | Java  | C#       | Go    | Python | JS    | TS  | C      | PHP | Dart    | Lobster | Rust   | Swift | gdscript |
-| ------------------------------ | ------ | ----- | -------- | ----- | ------ | ----- | --- | ------ | --- | ------- | ------- | ------ | ----- | -------- |
+|--------------------------------|--------|-------|----------|-------|--------|-------|-----|--------|-----|---------|---------|--------|-------|----------|
 | Codegen for all basic features | Yes    | Yes   | Yes      | Yes   | Yes    | Yes   | Yes | Yes    | WiP | Yes     | Yes     | Yes    | Yes   | no       |
 | JSON parsing                   | Yes    | No    | No       | No    | No     | No    | No  | Yes    | No  | No      | Yes     | No     | No    | ?        |
 | Simple mutation                | Yes    | Yes   | Yes      | Yes   | No     | No    | No  | No     | No  | No      | No      | No     | Yes   | ?        |
@@ -21,7 +21,7 @@
 | Primary authors (github)       | aard   | aard  | ev/js/df | rw    | rw     | ew/ev | kr  | mik    | ch  | df      | aard    | rw/cn  | mi/mz | en       |
 
 | Above | Github username              |
-| ----- | ---------------------------- |
+|-------|------------------------------|
 | aard  | aardappel (previously: gwvo) |
 | ch    | chobie                       |
 | cn    | caspern                      |

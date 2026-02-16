@@ -15,7 +15,7 @@ class SubTable:
 var root_table : RootTable
 #endregion
 
-func _run() -> void:
+func _run_test() -> int:
 	root_table = RootTable.new()
 	root_table.subtable = SubTable.new()
 	root_table.subtable.item = 5
@@ -27,7 +27,7 @@ func _run() -> void:
 
 	short_way()
 	long_way()
-	retcode = runcode
+	return runcode
 
 
 func short_way():

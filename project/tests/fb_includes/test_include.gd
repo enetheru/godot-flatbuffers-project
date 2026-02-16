@@ -19,7 +19,7 @@ const schema = preload('include_generated.gd')
 #}
 #root_type RootTable;
 
-func _run() -> void:
+func _run_test() -> int:
 	logd("== Testing Includes ==")
 	var vec : Vector3i = Vector3i(u32,u32,u32)
 	logd("Starting Vector3i: %s" % vec)
@@ -91,4 +91,4 @@ func _run() -> void:
 		logd("\t%d: %s" % [i, tvec])
 		TEST_EQ(vectors[i], tvec )
 
-	retcode = runcode
+	return runcode

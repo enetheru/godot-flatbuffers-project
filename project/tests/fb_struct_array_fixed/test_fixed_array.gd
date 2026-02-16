@@ -14,7 +14,7 @@ const schema = preload('./fixed_array_generated.gd')
 #}
 #root_type RootTable;
 
-func _run() -> void:
+func _run_test() -> int:
 	logd(" == Starting Vars ==")
 	var scalar : int = u32
 	var vecs = [
@@ -29,4 +29,4 @@ func _run() -> void:
 	var fae := schema.FAE.new()
 	fae.at_ascalar(0)
 
-	retcode = runcode
+	return runcode

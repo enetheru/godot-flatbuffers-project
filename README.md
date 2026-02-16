@@ -39,6 +39,7 @@ First you might want to read up on the [Flatbuffers Documentation](https://flatb
 ie.
 
 `my_object.fbs`
+
 ```flatbuffers
 table MyObject {
     var_name:int32;
@@ -115,6 +116,7 @@ func deserialise( buffer : PackedByteArray ) -> void:
 ## their filename and selecting 'Run'
 func _run() -> void:
 	print("serialise using create_ function")
+	var my_value:int = 42
 
 	print( "Start Value: %d" % my_value )
 	var buffer1 : PackedByteArray = serialise()

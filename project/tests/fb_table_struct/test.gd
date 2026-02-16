@@ -8,7 +8,7 @@ const RootTable = schema.RootTable
 var my_array : Array
 var builtin_array : Array
 
-func _run() -> void:
+func _run_test() -> int:
 	_verbose = true
 	var x : int = 35;
 	var y : float = 73;
@@ -42,4 +42,4 @@ func _run() -> void:
 
 	TEST_EQ( struct.x, output_struct.x )
 	TEST_EQ( struct.y, output_struct.y )
-	retcode = runcode
+	return runcode

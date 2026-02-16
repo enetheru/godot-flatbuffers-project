@@ -3,8 +3,9 @@ extends TestBase
 
 const schema = preload('scalar_fields_generated.gd')
 
-func _run() -> void:
+func _run_test() -> int:
 	test_neg_one()
+	return runcode
 
 func test_neg_one():
 	var fbb = FlatBufferBuilder.new()
@@ -41,7 +42,6 @@ func test_neg_one():
 	TEST_EQ(fbo.f_double(), -1, "f_double()" )
 
 	# provide debug info if an error occurs.
-	retcode = runcode
-	if retcode:
+	if runcode:
 		output.append_array( ["[color=goldenrod]Debug:[/color]",
 			JSON.stringify(fbo.debug(), "  ", false) ])

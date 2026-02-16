@@ -5,11 +5,11 @@ const schema = preload( 'test_schema_generated.gd' )
 
 var test_object = Node3D.new()
 
-func _run() -> void:
+func _run_test() -> int:
 	# Setup Persistent data
 	test_object.rotate(Vector3(randf(), randf(), randf()).normalized(), randf())
 	reconstruct( manual() )
-	retcode = runcode
+	return runcode
 
 func manual() -> PackedByteArray:
 	# create new builder

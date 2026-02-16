@@ -28,7 +28,7 @@ const DBL_MIN = 2.2250738585072014e-308
 const schema = preload('./FBTestScalarArrays_generated.gd')
 const RootTable = schema.RootTable
 
-func _run() -> void:
+func _run_test() -> int:
 	var bytes : PackedByteArray = short_way()
 	print( bytes )
 	var root_table : RootTable = schema.get_root(bytes)
@@ -39,12 +39,12 @@ func _run() -> void:
 	root_table = schema.get_root(bytes)
 	check( root_table )
 
-	retcode = runcode
-	if retcode:
+	if runcode:
 		output.append_array([
 			"root_table: ",
 			JSON.stringify( root_table.debug(), '  ', false )
 		])
+	return runcode
 
 
 func short_way() -> PackedByteArray:

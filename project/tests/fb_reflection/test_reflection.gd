@@ -4,7 +4,7 @@ extends TestBase
 const schema = preload('Reflection_generated.gd')
 const Schema = schema.Schema
 
-func _run() -> void:
+func _run_test() -> int:
 
 	var filename : String = "res://tests/fb_reflection/Reflection.bfbs"
 
@@ -12,11 +12,11 @@ func _run() -> void:
 	if bfbs.is_empty():
 		output.append("Unable to open file: " + filename)
 		output.append( error_string( FileAccess.get_open_error() ) )
-		return
+		return RetCode.TEST_FAILED
 
 	var root_table : Schema = schema.get_root( bfbs )
 	if not root_table:
 		output.append( "Failure to decode bfbs using Reflection.fbs")
-		return
+		return RetCode.TEST_FAILED
 
-	retcode = runcode
+	return runcode

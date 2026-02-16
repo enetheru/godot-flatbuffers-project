@@ -5,7 +5,7 @@ const fb = preload('./FBTestStringArray_generated.gd')
 
 var string_array : PackedStringArray = []
 
-func _run() -> void:
+func _run_test() -> RetCode:
 	# Setup
 	var incrementing : String = ""
 	for i in range(8):
@@ -15,7 +15,7 @@ func _run() -> void:
 
 	short_way()
 	long_way()
-	retcode = runcode
+	return runcode
 
 func short_way():
 

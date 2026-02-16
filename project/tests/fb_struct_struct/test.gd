@@ -6,7 +6,7 @@ const Item = schema.Item
 const Bag = schema.Bag
 const RootTable = schema.RootTable
 
-func _run() -> void:
+func _run_test() -> int:
 	var test_int : int = u64
 	var test_vec : Vector3i = Vector3i(u32,u32,u32)
 	var test_bytes : PackedByteArray
@@ -62,4 +62,4 @@ func _run() -> void:
 	#TEST_EQ(item.id, item_recon.id, "Item Recon.id")
 	#TEST_EQ(item.pos, item_recon.pos, "Item Recon.pos")
 #
-	retcode = runcode
+	return runcode
