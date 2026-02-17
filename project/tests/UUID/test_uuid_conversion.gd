@@ -48,4 +48,24 @@ func _run_test() -> int:
 	var v4_str: String = UUID.from_bytes(v4_bytes)
 	report("from_bytes(v4) length == 36", v4_str.length() == 36, "(Got: '" + v4_str + "')")
 
+	# uuid to vec4i conversion and back.
+	var uuid_str: String = "12345678-1234-5678-9abc-def012345678"
+	var vec4i: Vector4i = UUID.to_vector4i(uuid_str)
+	logp("UUID.to_vector4i('12345678-1234-5678-9abc-def012345678')")
+	logp("vec4i: %s" % vec4i)
+	logp("vec4i.x: 0x%x" % vec4i.x)
+	logp("vec4i.y: 0x%x" % vec4i.y)
+	logp("vec4i.z: 0x%x" % vec4i.z)
+	logp("vec4i.w: 0x%x" % vec4i.w)
+
+	report("to_vector4i(uuid_str).x == 0x12345678",
+			TEST_EQ("0x12345678", "0x%x"%vec4i.x, "vec4i.x should match input value"))
+
+	report("to_vector4i(uuid_str).y == 0x12345678",
+			TEST_EQ("0x12345678", "0x%x"%vec4i.y, "vec4i.y should match input value"))
+
+	# ... similarly for z/w.
+	var return_str: String = UUID.from_vector4i(vec4i)
+	report("from_vector4i roundtrip", TEST_EQ(uuid_str, return_str))
+
 	return runcode

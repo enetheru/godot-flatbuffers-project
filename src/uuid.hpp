@@ -20,9 +20,14 @@ using godot::String;
 using godot::StringName;
 using godot::Variant;
 using godot::RandomNumberGenerator;
+using godot::Vector4i;
 
 inline constexpr auto NIL_UUID = "00000000-0000-0000-0000-000000000000";
 inline constexpr auto MAX_UUID = "ffffffff-ffff-ffff-ffff-ffffffffffff";
+inline constexpr auto DNS_UUID = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
+inline constexpr auto URL_UUID = "6ba7b811-9dad-11d1-80b4-00c04fd430c8";
+inline constexpr auto OID_UUID = "6ba7b812-9dad-11d1-80b4-00c04fd430c8";
+inline constexpr auto x500_UUID = "6ba7b814-9dad-11d1-80b4-00c04fd430c8";
 
 /**
  * UUID
@@ -57,12 +62,12 @@ public:
     // ───────────────────────────────────────────────
     //  Namespace constants (RFC 9562 recommended)
     // ───────────────────────────────────────────────
-    static String get_nil_uuid()      { return "00000000-0000-0000-0000-000000000000"; }
-    static String get_max_uuid()      { return "ffffffff-ffff-ffff-ffff-ffffffffffff"; }
-    static String get_namespace_dns() { return "6ba7b810-9dad-11d1-80b4-00c04fd430c8"; }
-    static String get_namespace_url() { return "6ba7b811-9dad-11d1-80b4-00c04fd430c8"; }
-    static String get_namespace_oid() { return "6ba7b812-9dad-11d1-80b4-00c04fd430c8"; }
-    static String get_namespace_x500(){ return "6ba7b814-9dad-11d1-80b4-00c04fd430c8"; }
+    static String get_nil_uuid()      { return NIL_UUID; }
+    static String get_max_uuid()      { return MAX_UUID; }
+    static String get_namespace_dns() { return DNS_UUID; }
+    static String get_namespace_url() { return URL_UUID; }
+    static String get_namespace_oid() { return OID_UUID; }
+    static String get_namespace_x500(){ return x500_UUID; }
 
     // ───────────────────────────────────────────────
     //  Hashing
@@ -99,8 +104,14 @@ public:
         const String &namespace_uuid_str = String(NIL_UUID)
     );
 
-    // String ↔ bytes (no added validation)
+    // ───────────────────────────────────────────────
+    //  Conversion
+    // ───────────────────────────────────────────────
+    // from
     static String from_bytes(const PackedByteArray &bytes);
+    static String from_vector4i(const Vector4i& uuid_vec);
+    // to
+    static Vector4i to_vector4i(const String &uuid_str);
     static PackedByteArray to_bytes(const String &uuid_str);
 
     // ───────────────────────────────────────────────

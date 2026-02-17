@@ -1,5 +1,8 @@
 #include "uuid.hpp"
 
+#include <concepts>
+#include <type_traits>
+
 using namespace godot_flatbuffers;
 
 using godot::ClassDB;
@@ -27,15 +30,94 @@ std::unique_ptr<uuids::basic_uuid_random_generator<RandomNumberGenerator>> UUID:
 
 UUIDv4::UUIDGenerator<std::mt19937_64> UUID::uuidv4_generator{};
 
-//MARK: ToUUIDFrom
+//MARK: Endianness
 
-static uuids::uuid to_stduuid(const String& from) {
-    if (auto opt = uuids::uuid::from_string(from.utf8().ptr()); opt.has_value()) {
-        return opt.value();
-    }
-    return nil_stduuid;
+// ───────────────────────────────────────────────
+//  Pick implementation depending on C++ standard
+// ───────────────────────────────────────────────
+
+#if __cplusplus >= 202002L
+// C++20 or later → use concepts
+
+template<typename T>
+concept ByteLike =
+    std::same_as<std::remove_cv_t<T>, uint8_t> ||
+    std::same_as<std::remove_cv_t<T>, std::byte> ||
+    std::same_as<std::remove_cv_t<T>, char>;      // ← added for const char*
+
+template<ByteLike T>
+static uint32_t bytes_to_uint32_be(const T* bytes) noexcept {
+    // Always treat the byte as unsigned to avoid sign-extension
+    // on platforms where plain char is signed.
+    const uint8_t b0 = static_cast<uint8_t>(bytes[0]);
+    const uint8_t b1 = static_cast<uint8_t>(bytes[1]);
+    const uint8_t b2 = static_cast<uint8_t>(bytes[2]);
+    const uint8_t b3 = static_cast<uint8_t>(bytes[3]);
+
+    return (static_cast<uint32_t>(b0) << 24) |
+           (static_cast<uint32_t>(b1) << 16) |
+           (static_cast<uint32_t>(b2) <<  8) |
+           static_cast<uint32_t>(b3);
 }
 
+#else
+// C++17 / C++14 / C++11 fallback — SFINAE
+
+template<typename T,
+         typename = std::enable_if_t<
+             std::is_same_v<std::remove_cv_t<T>, uint8_t> ||
+             std::is_same_v<std::remove_cv_t<T>, std::byte> ||
+             std::is_same_v<std::remove_cv_t<T>, char>      // ← added for const char*
+         >>
+static uint32_t bytes_to_uint32_be(const T* bytes) noexcept {
+    const uint8_t b0 = static_cast<uint8_t>(bytes[0]);
+    const uint8_t b1 = static_cast<uint8_t>(bytes[1]);
+    const uint8_t b2 = static_cast<uint8_t>(bytes[2]);
+    const uint8_t b3 = static_cast<uint8_t>(bytes[3]);
+
+    return (static_cast<uint32_t>(b0) << 24) |
+           (static_cast<uint32_t>(b1) << 16) |
+           (static_cast<uint32_t>(b2) <<  8) |
+           static_cast<uint32_t>(b3);
+}
+#endif
+
+
+static void uint32_to_bytes_be(const uint32_t value, uint8_t* bytes) {
+    bytes[0] = static_cast<uint8_t>(value >> 24);
+    bytes[1] = static_cast<uint8_t>(value >> 16);
+    bytes[2] = static_cast<uint8_t>(value >> 8);
+    bytes[3] = static_cast<uint8_t>(value);
+}
+
+//MARK: to_stduuid
+
+
+static uuids::uuid to_stduuid(const String& from) {
+    const auto opt = uuids::uuid::from_string(from.utf8().ptr());
+    return !opt.has_value() ? nil_stduuid : opt.value();
+}
+
+
+static uuids::uuid to_stduuid(const PackedByteArray& from) {
+    const auto opt = uuids::uuid::from_string(from.ptr());
+    return !opt.has_value() ? nil_stduuid : opt.value();
+}
+
+
+static uuids::uuid to_stduuid(const Vector4i& from) {
+    std::array<uint8_t, 16> bytes;
+    uint32_to_bytes_be(static_cast<uint32_t>(from.x), bytes.data() + 0);
+    uint32_to_bytes_be(static_cast<uint32_t>(from.y), bytes.data() + 4);
+    uint32_to_bytes_be(static_cast<uint32_t>(from.z), bytes.data() + 8);
+    uint32_to_bytes_be(static_cast<uint32_t>(from.w), bytes.data() + 12);
+    return uuids::uuid{bytes.begin(), bytes.end()};
+}
+
+
+//MARK: to_uuidv4
+// The difficulty and advantage with the UUIDv4 lib is that there is no error checking here.
+// So we'd better be sure we are handing it valid data.
 static UUIDv4::UUID to_uuidv4(const String& from) {
     return UUIDv4::UUID(from.utf8().ptr());
 }
@@ -44,12 +126,27 @@ static UUIDv4::UUID to_uuidv4(const PackedByteArray& from) {
     return UUIDv4::UUID(from.ptr());
 }
 
-//MARK: FromUUIDto
+static UUIDv4::UUID to_uuidv4(const Vector4i& from) {
+    uint8_t bytes[16];
+    std::memcpy(bytes, &from, 16);
+    return UUIDv4::UUID(bytes);
+}
+
+//MARK: to_String
 
 static String to_string(const uuids::uuid uuid) { return String(uuids::to_string(uuid).c_str()); }
 
 static String to_string(const UUIDv4::UUID &from) { return String(from.str().c_str()); }
 
+static String to_string(const PackedByteArray& bytes) {
+    if (bytes.size() != 16) {
+        return "";
+    }
+    const auto uuid = UUIDv4::UUID(bytes.ptr());
+    return ::to_string(uuid);
+}
+
+//MARK: to_PackedByteArray
 // static PackedByteArray to_bytes(const uuids::uuid& uuid) {
 //     PackedByteArray bytes;
 //     bytes.resize(16);
@@ -78,30 +175,22 @@ static PackedByteArray to_bytes(const UUIDv4::UUID& uuid){
     return bytes;
 }
 
+//MARK: to_Vector4i
+static Vector4i to_vector4i(const uuids::uuid& uuid) {
+    const auto span = uuid.as_bytes();
+    return Vector4i(
+        static_cast<int32_t>(bytes_to_uint32_be(span.data() + 0)),
+        static_cast<int32_t>(bytes_to_uint32_be(span.data() + 4)),
+        static_cast<int32_t>(bytes_to_uint32_be(span.data() + 8)),
+        static_cast<int32_t>(bytes_to_uint32_be(span.data() + 12))
+    );
+}
 
-static String bytes_to_uuid_string(const PackedByteArray& bytes) {
-    if (bytes.size() != 16) {
-        return "";
-    }
-
-    static constexpr char hex_chars[] = "0123456789abcdef";
-
-    godot::CharString cs;
-    cs.resize(37);  // 36 chars + null terminator
-    char* ptr = cs.ptrw();
-
-    int idx = 0;
-    for (int i = 0; i < 16; ++i) {
-        uint8_t b = bytes[i];
-        ptr[idx++] = hex_chars[(b >> 4) & 0x0F];
-        ptr[idx++] = hex_chars[b & 0x0F];
-        if (i == 3 || i == 5 || i == 7 || i == 9) {
-            ptr[idx++] = '-';
-        }
-    }
-    ptr[idx] = '\0';
-
-    return String(cs);
+static Vector4i to_vector4i(const UUIDv4::UUID& uuid) {
+    Vector4i v;
+    const std::string& bytes = uuid.bytes();
+    std::memcpy(&v, bytes.data(), sizeof(Vector4i));
+    return v;
 }
 
 //MARK: Bind
@@ -143,6 +232,8 @@ void UUID::_bind_methods() {
     // Conversions
     ClassDB::bind_static_method("UUID", D_METHOD("from_bytes", "bytes"), &UUID::from_bytes);
     ClassDB::bind_static_method("UUID", D_METHOD("to_bytes", "uuid_str"), &UUID::to_bytes);
+    ClassDB::bind_static_method("UUID", D_METHOD("to_vector4i", "uuid_str"), &UUID::to_vector4i);
+    ClassDB::bind_static_method("UUID", D_METHOD("from_vector4i", "vec"), &UUID::from_vector4i);
 
     // Validation
     ClassDB::bind_static_method("UUID", D_METHOD("is_nil", "uuid_str"), &UUID::is_nil);
@@ -165,7 +256,7 @@ void UUID::_bind_methods() {
 
 String UUID::create_v3_godot_string(const String& seed, const String& namespace_uuid) {
     const auto bytes = create_v3_godot_bytes(seed, namespace_uuid);
-    return bytes_to_uuid_string(create_v3_godot_bytes(seed, namespace_uuid));
+    return ::to_string(create_v3_godot_bytes(seed, namespace_uuid));
 }
 
 PackedByteArray UUID::create_v3_godot_bytes(const String& seed, String namespace_uuid) {
@@ -248,6 +339,20 @@ PackedByteArray UUID::to_bytes(const String& uuid_str) {
     return ::to_bytes(uuid);
 }
 
+Vector4i UUID::to_vector4i(const String &uuid_str) {
+    if (!is_valid(uuid_str)) {
+        return Vector4i(0, 0, 0, 0);
+    }
+    const auto uuid = to_stduuid(uuid_str);
+    return ::to_vector4i(uuid);
+}
+
+String UUID::from_vector4i(const Vector4i& uuid_vec) {
+    const uuids::uuid uuid = ::to_stduuid(uuid_vec);
+    return ::to_string(uuid);
+}
+
+
 //MARK: Checks
 
 bool UUID::is_valid(const String &uuid_str) {
@@ -286,14 +391,14 @@ int64_t UUID::hash_uuid(const String &uuid_str) {
 //MARK: Association
 
 bool UUID::set_variant(const String &uuid_str, const Variant &value) {
-    auto opt = uuids::uuid::from_string(uuid_str.utf8().ptr());
+    const auto opt = uuids::uuid::from_string(uuid_str.utf8().ptr());
     if (!opt.has_value()) return false;
     _variant_map[opt.value()] = value;
     return true;
 }
 
 Variant UUID::get_variant(const String &uuid_str, const Variant &default_value) const {
-    auto opt = uuids::uuid::from_string(uuid_str.utf8().ptr());
+    const auto opt = uuids::uuid::from_string(uuid_str.utf8().ptr());
     if (!opt.has_value()) return default_value;
     const auto it = _variant_map.find(opt.value());
     return (it != _variant_map.end()) ? it->second : default_value;
