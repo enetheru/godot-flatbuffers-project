@@ -5,7 +5,9 @@ kanban-plugin: board
 ---
 
 ## Project
+
 - [ ] Split project into more logical chunks so that cloning the addon can be done directly into the addons folder
+
 
 ## gdextension
 
@@ -15,6 +17,7 @@ kanban-plugin: board
 - [ ] Verify the memory allocation strategy
 - [ ] Implement var_to_flexbuffer flexbuffer_to_var
 
+
 ## flatc Generator
 
 - [ ] Check in Get* functions to check buffer size for at least minimum
@@ -22,12 +25,22 @@ kanban-plugin: board
 - [ ] Implement namespaces as either const import from an additional file, or class name prefix? Figure it out to make better sense.
 - [ ] Required attribute does not work properly
 
+
 ## Generated Code
 
 - [ ] When accessing nested objects from a deserialised buffer, a new object is created each time.
 - [ ] Create* functions need to be able to take the object, not the offset, ie string instead of int
 - [ ] Builder add_* function arguments need to be named with \_offset if they expect an offset instead of a value.
 - [ ] Work on feature parity
+- [ ] Fixed Sized arrays are still broken.
+- [ ] Would be nice to have a reset( data, start ) function
+- [ ] Because the object acts like a view, it can be broken easily if the bytes are modified.
+  - [ ] Add an is_valid() function.
+- [ ] it used to be the case that the decode of the starting point would happen automatically
+        but something was broken about it and i removed it, now its a real inconvenient to always have to
+        pass a decoded start value all the time. I think if the start value is something like 0, then we can decode
+        that location automatically for the real start.
+
 
 ## Addon/Plugin
 
@@ -39,6 +52,7 @@ kanban-plugin: board
 - [ ] I saw someone using a struct visualiser, makes me want to build one for this.
 - [ ] Add an option to the settings to auto generate after a fbs file is changed.
 
+
 ## Syntax Highlighting
 
 - [ ] Check names for collision
@@ -47,22 +61,28 @@ kanban-plugin: board
 - [ ] ANNOYING: Parsing runs on every keypress, printing errors each time until correctness is achieved
 - [ ] To get file extension recognition working I need to create a ResourceFormatLoader https://docs.godotengine.org/en/stable/classes/class_resourceformatloader.html
 
+
 ## Testing
 
 - [ ] Perform testing in CI/CD
 - [ ] Test FlexBuffer Code
+
 
 ## Benchmarking
 
 - [ ] Copy strategy from flatbuffers project
 - [ ] Compare against built-in solution.
 
+
 ## Documentation
+
 - [ ] Explain Object API
+
 
 ## Brainstorming
 
 - [ ] Due to the nature of how properties work, I wonder if I can create a class like object from a flatbuffer
+
 
 ***
 

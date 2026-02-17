@@ -87,13 +87,16 @@ public:
         const String& seed,
         String namespace_uuid = String(NIL_UUID)
     );
+    //FIXME missing create vector4i
 
     // String / Bytes wrappers (unchanged naming)
     static String create_v4_stduuid_string();
     static PackedByteArray create_v4_stduuid_bytes();
+    //FIXME missing create vector4i
 
     static String create_v4_uuidv4_string();
     static PackedByteArray create_v4_uuidv4_bytes();
+    //FIXME missing create vector4i
 
     static String create_v5_stduuid_string(
         const String &seed,
@@ -103,6 +106,7 @@ public:
         const String &seed,
         const String &namespace_uuid_str = String(NIL_UUID)
     );
+    //FIXME missing create vector4i
 
     // ───────────────────────────────────────────────
     //  Conversion
@@ -113,6 +117,8 @@ public:
     // to
     static Vector4i to_vector4i(const String &uuid_str);
     static PackedByteArray to_bytes(const String &uuid_str);
+    //FIXME, above four functions assume the unspoken part is String,
+    //  very annoying to use.
 
     // ───────────────────────────────────────────────
     //  Validation / Inspection
@@ -120,16 +126,26 @@ public:
     static bool is_nil(const String &uuid_str);
     static int get_version(const String &uuid_str);
     static int get_uuid_variant(const String &uuid_str);
-    static bool equals(const String &uuid_str1, const String &uuid_str2);
+    //FIXME naming inconsistency from the above two functions. pick one.
+
     static bool is_valid(const String &uuid_str);
+
+    // FIXME, this function is dumb, we can compare strings trivially everywhere
+    // What would be handy is cross type comparison.
+    static bool equals(const String &uuid_str1, const String &uuid_str2);
 
     // ───────────────────────────────────────────────
     //  Variant map
     // ───────────────────────────────────────────────
-    bool set_variant(const String &uuid_str, const Variant &value);
+    // TODO create add_* -> String, PBA, Vecti UUID. for a faster way to add
+    // TODO set currenty only takes strings, overload for pba and vec4i
+    //   Maybe make these take a Variant, and we can add a match statement.
+    // FIXME the names of these functions is shit.
+    bool set_variant(const String &uuid_str, const Variant &value); // true if uuid_str is valid, else false.
     Variant get_variant(const String &uuid_str, const Variant &default_value = Variant()) const;
     bool has_variant(const String &uuid_str) const;
-    bool erase_variant(const String &uuid_str);
+    // FIXME rename to erase_key
+    bool erase_variant(const String &uuid_str); // false if invalid uuid_str, true if key found, else false
     void clear_variants();
     int get_variant_map_size() const;
     Array get_variant_keys() const;
