@@ -1,3 +1,4 @@
 # Godot 4+ specific ignores
 .godot/
 .idea/
+addons/zylann.editor_debugger/

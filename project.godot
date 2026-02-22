@@ -22,7 +22,7 @@ settings/stdout/verbose_stdout=true
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/Todo_Manager/plugin.cfg", "res://addons/enetheru.test-runner/plugin.cfg", "res://addons/gdflatbuffers/plugin.cfg", "res://addons/zylann.editor_debugger/plugin.cfg")
+enabled=PackedStringArray("res://addons/enetheru.flatbuffers-addon/plugin.cfg", "res://addons/enetheru.test-runner/plugin.cfg", "res://addons/zylann.editor_debugger/plugin.cfg")
 
 [native_extensions]
 
