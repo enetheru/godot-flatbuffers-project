@@ -1,0 +1,6 @@
+
+table MyTable {
+	first_field:int;
+}
+
+root_type MyTable;
