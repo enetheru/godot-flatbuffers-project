@@ -1,12 +1,8 @@
 root = true
-
+# Don't set line endings to avoid conflict with core.autocrlf flag.
+# Line endings on checkout/checkin are controlled by .gitattributes file.
 [*]
-charset                  = utf-8
-end_of_line              = lf
-indent_style             = space
-indent_size              = 4
-insert_final_newline     = true
+indent_style = space
+indent_size = 2
+insert_final_newline = true
 trim_trailing_whitespace = true
-
-[*.gd]
-indent_style = tab
