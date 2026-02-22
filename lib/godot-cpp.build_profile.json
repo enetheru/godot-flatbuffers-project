@@ -1,7 +1,0 @@
-{
-	"enabled_classes": [
-		"OS",
-        "RandomNumberGenerator",
-        "HashingContext"
-	]
-}
