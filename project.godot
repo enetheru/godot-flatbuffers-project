@@ -14,19 +14,46 @@ config/name="FlatBuffers Extension Project"
 config/tags=PackedStringArray("enetheru")
 run/main_scene="uid://dmx2xuigcpvt4"
 config/features=PackedStringArray("4.5")
-config/icon="uid://djn0qm2ewvf7d"
+config/icon="uid://cfc5vxnc2fm05"
 
 [debug]
 
 settings/stdout/verbose_stdout=true
+settings/gdscript/always_track_call_stacks=true
+settings/gdscript/always_track_local_variables=true
+gdscript/warnings/exclude_addons=false
+gdscript/warnings/untyped_declaration=1
+gdscript/warnings/unsafe_property_access=1
+gdscript/warnings/unsafe_method_access=1
+gdscript/warnings/unsafe_cast=1
+gdscript/warnings/unsafe_call_argument=1
+gdscript/warnings/return_value_discarded=1
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/enetheru.flatbuffers-addon/plugin.cfg", "res://addons/enetheru.test-runner/plugin.cfg", "res://addons/zylann.editor_debugger/plugin.cfg")
+enabled=PackedStringArray("res://addons/enetheru.flatbuffers-addon/plugin.cfg", "res://addons/enetheru.test-runner/plugin.cfg")
 
-[native_extensions]
+[flatbuffers]
 
-paths=["res://example.gdextension"]
+debug=true
+highlight_error=true
+EditorLog/=true
+Colours/Syntax/unknown=Color(0.8025, 0.81, 0.8225, 1)
+Colours/Syntax/comment=Color(0.8025, 0.81, 0.8225, 0.5)
+Colours/Syntax/keyword=Color(1, 0.44, 0.52, 1)
+Colours/Syntax/type=Color(0.26, 1, 0.76, 1)
+Colours/Syntax/string=Color(1, 0.93, 0.63, 1)
+Colours/Syntax/punct=Color(0.8025, 0.81, 0.8225, 1)
+Colours/Syntax/ident=Color(0.67, 0.79, 1, 1)
+Colours/Syntax/scalar=Color(0.63, 1, 0.88, 1)
+Colours/Syntax/meta=Color(0.8025, 0.81, 0.8225, 1)
+Colours/Notice/critical=Color(0.77, 0.35, 0.35, 1)
+Colours/Notice/error=Color(0.77, 0.35, 0.35, 1)
+Colours/Notice/warning=Color(0.72, 0.61, 0.48, 1)
+Colours/Notice/notice=Color(0.8025, 0.81, 0.8225, 1)
+Colours/Notice/debug=Color(0.8025, 0.81, 0.8225, 0.5)
+Colours/Notice/trace=Color(0.8025, 0.81, 0.8225, 0.5)
+EditorLog/verbosity=0
 
 [rendering]
 
