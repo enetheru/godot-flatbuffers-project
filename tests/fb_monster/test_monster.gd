@@ -9,7 +9,6 @@ const Vec3 = schema.Vec3
 #region == Testing Setup ==
 # testing variables
 
-var test_object
 #endregion
 
 func _run_test() -> int:	# Step 1 - Creating and Writing Orc FlatBuffers
@@ -50,21 +49,21 @@ func create_orc_flatbuffer() -> PackedByteArray:
 # After creating the builder, we can start serializing our data. Before we make
 # our orc Monster, let's create some Weapons: a Sword and an Axe.
 # auto weapon_one_name = builder.CreateString("Sword");
-	var weapon_one_name = builder.create_String( "Sword" )
+	var weapon_one_name:int = builder.create_String( "Sword" )
 # short weapon_one_damage = 3;
-	var weapon_one_damage = 3
+	var weapon_one_damage:int = 3
 
 # auto weapon_two_name = builder.CreateString("Axe");
-	var weapon_two_name = builder.create_String( "Axe" )
+	var weapon_two_name:int = builder.create_String( "Axe" )
 # short weapon_two_damage = 5;
-	var weapon_two_damage = 5
+	var weapon_two_damage:int = 5
 
 # // Use the `CreateWeapon` shortcut to create Weapons with all the fields set.
 # auto sword = CreateWeapon(builder, weapon_one_name, weapon_one_damage);
-	var sword = schema.create_Weapon( builder, weapon_one_name, weapon_one_damage )
+	var sword:int = schema.create_Weapon( builder, weapon_one_name, weapon_one_damage )
 
 # auto axe = CreateWeapon(builder, weapon_two_name, weapon_two_damage);
-	var axe = schema.create_Weapon( builder, weapon_two_name, weapon_two_damage )
+	var axe:int = schema.create_Weapon( builder, weapon_two_name, weapon_two_damage )
 #
 # Now let's create our monster, the orc. For this orc, lets make him red with
 # rage, positioned at (1.0, 2.0, 3.0), and give him a large pool of hit points
@@ -78,14 +77,14 @@ func create_orc_flatbuffer() -> PackedByteArray:
 # pre-order traversal. This is generally easy to do on any tree structures.
 # // Serialize a name for our monster, called "Orc".
 # auto name = builder.CreateString("Orc");
-	var name = builder.create_String("Orc")
+	var name:int = builder.create_String("Orc")
 
 # // Create a `vector` representing the inventory of the Orc. Each number
 # // could correspond to an item that can be claimed after he is slain.
 # unsigned char treasure[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 	var treasure : PackedByteArray = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 # auto inventory = builder.CreateVector(treasure, 10);
-	var inventory = builder.create_vector_uint8( treasure )
+	var inventory:int = builder.create_vector_uint8( treasure )
 
 # We serialized two built-in data types (string and vector) and captured their
 # return values. These values are offsets into the serialized data, indicating
@@ -107,12 +106,14 @@ func create_orc_flatbuffer() -> PackedByteArray:
 # std::vector<flatbuffers::Offset<Weapon>> weapons_vector;
 	var weapons_vector : PackedInt32Array
 # weapons_vector.push_back(sword);
+	@warning_ignore("return_value_discarded")
 	weapons_vector.push_back(sword)
 # weapons_vector.push_back(axe);
+	@warning_ignore("return_value_discarded")
 	weapons_vector.push_back(axe)
 
 # auto weapons = builder.CreateVector(weapons_vector);
-	var weapons = builder.create_vector_offset( weapons_vector )
+	var weapons:int = builder.create_vector_offset( weapons_vector )
 #
 # Note there are additional convenience overloads of CreateVector, allowing you
 # to work with data that's not in a std::vector or allowing you to generate
@@ -148,16 +149,16 @@ func create_orc_flatbuffer() -> PackedByteArray:
 
 # // Set his hit points to 300 and his mana to 150.
 # int hp = 300;
-	var hp = 300
+	var hp:int = 300
 # int mana = 150;
-	var mana = 150
+	var mana:int = 150
 
 # // Finally, create the monster using the `CreateMonster` helper function
 # // to set all fields.
 # auto orc = CreateMonster(builder, &position, mana, hp, name, inventory,
 #                         Color_Red, weapons, Equipment_Weapon, axe.Union(),
 #                         path);
-	var orc = schema.create_Monster(
+	var orc:int = schema.create_Monster(
 		builder, position, mana, hp, name, inventory, schema.Color_.RED,
 		weapons, schema.Equipment.WEAPON, axe, 0 ) # FIXME path )
 	# FIXME - still have to figure out how to create struct arrays.
@@ -179,7 +180,7 @@ func create_orc_flatbuffer() -> PackedByteArray:
 # used in a small number of instances, as it will not bloat the buffer if
 # unused.
 
-	var _manual_method = func():
+	var _manual_method:Callable = func() -> void:
 	# If you do not wish to set every field in a table, it may be more convenient
 	# to manually set each field of your monster, instead of calling
 	# CreateMonster(). The following snippet is functionally equivalent to the
@@ -187,7 +188,7 @@ func create_orc_flatbuffer() -> PackedByteArray:
 	# // You can use this code instead of `CreateMonster()`, to create our orc
 	# // manually.
 	# MonsterBuilder monster_builder(builder);
-		var monster_builder = schema.MonsterBuilder.new( builder )
+		var monster_builder := schema.MonsterBuilder.new( builder )
 	# monster_builder.add_pos(&position);
 		monster_builder.add_pos( position )
 	# monster_builder.add_hp(hp);
@@ -205,7 +206,7 @@ func create_orc_flatbuffer() -> PackedByteArray:
 	# monster_builder.add_equipped(axe.Union());
 		monster_builder.add_equipped(axe)
 	# auto orc = monster_builder.Finish();
-		var _orc_manual = monster_builder.finish()
+		var _orc_manual:int = monster_builder.finish()
 
 
 # Before finishing the serialization, let's take a quick look at FlatBuffer
@@ -242,7 +243,7 @@ func create_orc_flatbuffer() -> PackedByteArray:
 	var buf : PackedByteArray = builder.to_packed_byte_array()
 # int size = builder.GetSize(); // Returns the size of the buffer that
 #                               // `GetBufferPointer()` points to.
-	var _size = builder.get_size()
+	var _size:int = builder.get_size()
 
 # Now you can write the bytes to a file or send them over the network. Make
 # sure your file mode (or transfer protocol) is set to BINARY, not text. If you
@@ -255,7 +256,7 @@ func create_orc_flatbuffer() -> PackedByteArray:
 # ██████  █████   ███████ ██   ██ ██ ██ ██  ██ ██   ███
 # ██   ██ ██      ██   ██ ██   ██ ██ ██  ██ ██ ██    ██
 # ██   ██ ███████ ██   ██ ██████  ██ ██   ████  ██████
-func reading_orc_flatbuffer( bytes : PackedByteArray ):
+func reading_orc_flatbuffer( bytes : PackedByteArray ) -> void:
 # Reading Orc FlatBuffers
 
 # Now that we have successfully created an Orc FlatBuffer, the monster data can
@@ -293,15 +294,18 @@ func reading_orc_flatbuffer( bytes : PackedByteArray ):
 # If you look in the generated files from the schema compiler, you will see it
 # generated accessors for all non-deprecated fields. For example:
 # auto hp = monster->hp();
-	var hp = monster.hp()
+	var hp:int = monster.hp()
 # auto mana = monster->mana();
-	var mana = monster.mana()
+	var mana:int = monster.mana()
 # auto name = monster->name()->c_str();
-	var name = monster.name()
+	var name:String = monster.name()
 #
 # These should hold 300, 150, and "Orc" respectively.
+	@warning_ignore("return_value_discarded")
 	TEST_EQ( 300, hp,  "monster.hp()" )
+	@warning_ignore("return_value_discarded")
 	TEST_EQ( 150, mana,  "monster.mana()" )
+	@warning_ignore("return_value_discarded")
 	TEST_EQ( "Orc", name , "monster.name()" )
 #
 # Note: The default value 150 wasn't stored in mana, but we are still able to
@@ -311,15 +315,18 @@ func reading_orc_flatbuffer( bytes : PackedByteArray ):
 # auto pos = monster->pos();
 	var pos : schema.Vec3 = monster.pos()
 # auto x = pos->x();
-	var x = pos.x
+	var x:float = pos.x
 # auto y = pos->y();
-	var y = pos.y
+	var y:float = pos.y
 # auto z = pos->z();
-	var z = pos.z
+	var z:float = pos.z
 
 # x, y, and z will contain 1.0, 2.0, and 3.0, respectively.
+	@warning_ignore("return_value_discarded")
 	TEST_EQ( x, 1.0, "monster.pos.x()" )
+	@warning_ignore("return_value_discarded")
 	TEST_EQ( y, 2.0, "monster.pos.y()" )
+	@warning_ignore("return_value_discarded")
 	TEST_EQ( z, 3.0, "monster.pos.z()" )
 
 # Note: Had we not set pos during serialization, it would be a null-value.
@@ -328,40 +335,57 @@ func reading_orc_flatbuffer( bytes : PackedByteArray ):
 # can also iterate over the length of the array/vector representing the
 # FlatBuffers vector.
 # auto inv = monster->inventory(); // A pointer to a `flatbuffers::Vector<>`.
-	var inv = monster.inventory()
+	var inv:PackedByteArray = monster.inventory()
 # auto inv_len = inv->size();
-	var inv_len = inv.size() # 10
+	var inv_len:int = inv.size() # 10
 # auto third_item = inv->Get(2);
+	@warning_ignore("untyped_declaration")
 	var third_item = inv[2]
 
 	# NOTE: monster.inventory() can, depending on type, decode and returns the
 	# the whole array. I have provided *_size(), and *_at(idx) to help.
+	@warning_ignore("return_value_discarded")
 	TEST_EQ(10, inv_len, "monster.inventory().size()")
+	@warning_ignore("return_value_discarded")
 	TEST_EQ(2, third_item, "monster.inventory().size()")
+	@warning_ignore("return_value_discarded")
 	TEST_EQ(10, monster.inventory_size(), "monster.inventory_size()")
+	@warning_ignore("return_value_discarded")
 	TEST_EQ(2, monster.inventory_at(2), "monster.inventory_at(2)")
 
 # For vectors of tables, you can access the elements like any other vector,
 # except you need to handle the result as a FlatBuffer table:
 # auto weapons = monster->weapons(); // A pointer to a `flatbuffers::Vector<>`.
-	var weapons = monster.weapons()
+	var weapons:Array = monster.weapons()
 # auto weapon_len = weapons->size();
-	var weapon_len = weapons.size()
-	var weapon_len_ = monster.weapons_size()
+	var weapon_len:int = weapons.size()
+	var weapon_len_:int = monster.weapons_size()
+	
+	# NOTE: [] operator does not return a typed object.
+	var second_weapon:schema.Weapon = weapons[1]
+	
 # auto second_weapon_name = weapons->Get(1)->name()->str();
-	var second_weapon_name = weapons[1].name()
-	var second_weapon_name_ = monster.weapons_at(1).name()
+	var second_weapon_name:String = second_weapon.name()
+	# the _at function can return a typed object
+	var second_weapon_name_:String = monster.weapons_at(1).name()
+	
 # auto second_weapon_damage = weapons->Get(1)->damage()
-	var second_weapon_damage = weapons[1].damage()
-	var second_weapon_damage_ = monster.weapons_at(1).damage()
+	var second_weapon_damage:int = second_weapon.damage()
+	var second_weapon_damage_:int = monster.weapons_at(1).damage()
 
+	@warning_ignore("return_value_discarded")
 	TEST_EQ(2, weapon_len, "weapons.size()")
+	@warning_ignore("return_value_discarded")
 	TEST_EQ(2, weapon_len_, "monster.weapons_size()")
 
+	@warning_ignore("return_value_discarded")
 	TEST_EQ("Axe", second_weapon_name, "weapons.size()")
+	@warning_ignore("return_value_discarded")
 	TEST_EQ("Axe", second_weapon_name_, "monster.weapons_size()")
 
+	@warning_ignore("return_value_discarded")
 	TEST_EQ(5, second_weapon_damage, "weapons.size()")
+	@warning_ignore("return_value_discarded")
 	TEST_EQ(5, second_weapon_damage_, "monster.weapons_size()")
 
 # Last, we can access our Equipped FlatBuffer union. Just like when we created
@@ -371,6 +395,7 @@ func reading_orc_flatbuffer( bytes : PackedByteArray ):
 # union only stores a FlatBuffer table).
 # auto union_type = monster.equipped_type();
 	var union_type : schema.Equipment = monster.equipped_type()
+	@warning_ignore("return_value_discarded")
 	TEST_EQ( schema.Equipment.WEAPON, union_type, "monster.equipped_type()" )
 
 # if (union_type == Equipment_Weapon) {
@@ -382,7 +407,9 @@ func reading_orc_flatbuffer( bytes : PackedByteArray ):
 	match union_type:
 		schema.Equipment.WEAPON:
 			var weapon : schema.Weapon = monster.equipped()
-			var weapon_name = weapon.name()
-			var weapon_damage = weapon.damage()
+			var weapon_name:String = weapon.name()
+			var weapon_damage:int = weapon.damage()
+			@warning_ignore("return_value_discarded")
 			TEST_EQ( weapon_name, "Axe", "weapon_name" )
+			@warning_ignore("return_value_discarded")
 			TEST_EQ( weapon_damage, 5, "weapon_damage" )

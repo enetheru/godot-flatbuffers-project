@@ -1,7 +1,0 @@
-include "godot.fbs";
-
-table Other {
-	value:Vector3i;
-}
-
-root_type Other;

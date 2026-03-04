@@ -41,8 +41,10 @@ func collect_tests( test_path : String ) -> Array[Dictionary]:
 
 func _run() -> void:
 	plugin = FlatBuffersPlugin._prime
+	
 	print_rich( "\n[b]== GDFlatbuffer Plugin Testing ==[/b]\n" )
 	var def_list : Array = collect_tests('res://tests')
+	const FLATC_OPTS = preload("uid://cdj2u1h1iiwba")
 
 	print_rich( "\n[b]... Compiling Flatbuffer Schemas[/b]\n" )
 	var compile_results : Dictionary = {}
@@ -57,7 +59,7 @@ func _run() -> void:
 			var category = test_def.get('name')
 			var schema_path = '/'.join([test_def.get('folder_path'), schema_file])
 			var key : String = '/'.join([category,schema_file])
-			var result : Dictionary = plugin.flatc_generate( schema_path, ['--gdscript'] )
+			var result : Dictionary = plugin.flatc_generate( schema_path, FLATC_OPTS )
 			if result.get('retcode'):
 				print_rich("[b]# Error processing %s[/b]" % key )
 				print_result_error( result )

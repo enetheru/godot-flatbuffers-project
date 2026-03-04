@@ -31,7 +31,7 @@ gdscript/warnings/return_value_discarded=1
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/enetheru.flatbuffers-addon/plugin.cfg", "res://addons/enetheru.test-runner/plugin.cfg")
+enabled=PackedStringArray("res://addons/enetheru.editor-tweaks/plugin.cfg", "res://addons/enetheru.flatbuffers-addon/plugin.cfg", "res://addons/enetheru.test-runner/plugin.cfg", "res://addons/enetheru.utils/plugin.cfg")
 
 [flatbuffers]
 
@@ -53,7 +53,7 @@ Colours/Notice/warning=Color(0.72, 0.61, 0.48, 1)
 Colours/Notice/notice=Color(0.8025, 0.81, 0.8225, 1)
 Colours/Notice/debug=Color(0.8025, 0.81, 0.8225, 0.5)
 Colours/Notice/trace=Color(0.8025, 0.81, 0.8225, 0.5)
-EditorLog/verbosity=0
+EditorLog/verbosity=3
 
 [rendering]
 

@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="FlatBuffersGeneratorOpts" load_steps=2 format=3 uid="uid://cdj2u1h1iiwba"]
+
+[ext_resource type="Script" uid="uid://bf5ukybn2h3kd" path="res://addons/enetheru.flatbuffers-addon/scripts/FlatBuffersGeneratorOpts.gd" id="1_bjwob"]
+
+[resource]
+script = ExtResource("1_bjwob")
+name = "test_opts"
+flatc_exe = "C:/Godot/Projects/Enetheru.flatbuffers-project/addons/enetheru.flatbuffers-extension/bin/flatc.debug.exe"
+metadata/_custom_type_script = "uid://bf5ukybn2h3kd"

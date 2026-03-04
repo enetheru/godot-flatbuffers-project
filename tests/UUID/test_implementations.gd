@@ -28,31 +28,31 @@ const SAMPLE_COUNT = 1000
 
 func _run_test() -> int:
 	# Basic format & properties
-	var std_str = UUID.create_v4_stduuid_string()
-	var v4_str  = UUID.create_v4_uuidv4_string()
+	var std_str:String = UUID.create_v4_stduuid_string()
+	var v4_str:String  = UUID.create_v4_uuidv4_string()
 
-	runcode &= TEST_EQ(std_str.length(), 36, "stduuid string length == 36")
-	runcode &= TEST_EQ(v4_str.length(),  36, "uuidv4  string length == 36")
+	TEST_EQ(std_str.length(), 36, "stduuid string length == 36")
+	TEST_EQ(v4_str.length(),  36, "uuidv4  string length == 36")
 
-	runcode &= TEST_TRUE(std_str.begins_with("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".substr(0,8).replace("x","")),
+	TEST_TRUE(std_str.begins_with("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".substr(0,8).replace("x","")),
 						 "stduuid looks like v4 (version byte)")
-	runcode &= TEST_TRUE(v4_str.begins_with("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".substr(0,8).replace("x","")),
+	TEST_TRUE(v4_str.begins_with("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".substr(0,8).replace("x","")),
 						 "uuidv4 looks like v4 (version byte)")
 
-	runcode &= TEST_EQ(UUID.get_version(std_str), 4, "stduuid version == 4")
-	runcode &= TEST_EQ(UUID.get_version(v4_str),  4, "uuidv4 version == 4")
+	TEST_EQ(UUID.get_version(std_str), 4, "stduuid version == 4")
+	TEST_EQ(UUID.get_version(v4_str),  4, "uuidv4 version == 4")
 
-	runcode &= TEST_EQ(UUID.get_uuid_variant(std_str), 1, "stduuid variant == 1 (RFC 9562)")
-	runcode &= TEST_EQ(UUID.get_uuid_variant(v4_str),  1, "uuidv4 variant == 1 (RFC 9562)")
+	TEST_EQ(UUID.get_uuid_variant(std_str), 1, "stduuid variant == 1 (RFC 9562)")
+	TEST_EQ(UUID.get_uuid_variant(v4_str),  1, "uuidv4 variant == 1 (RFC 9562)")
 
 	# Check that they are actually different implementations
-	var seen = {}
-	var collision_count = 0
-	var different_count = 0
+	var seen:Dictionary = {}
+	var collision_count:int = 0
+	var different_count:int = 0
 
 	for i in range(SAMPLE_COUNT):
-		var a = UUID.create_v4_stduuid_string()
-		var b = UUID.create_v4_uuidv4_string()
+		var a:String = UUID.create_v4_stduuid_string()
+		var b:String = UUID.create_v4_uuidv4_string()
 
 		if a == b:
 			collision_count += 1
@@ -62,31 +62,31 @@ func _run_test() -> int:
 		seen[a] = true
 		seen[b] = true
 
-	runcode &= TEST_EQ(collision_count, 0,
+	TEST_EQ(collision_count, 0,
 					   "No collisions between stduuid and uuidv4 in %d samples" % SAMPLE_COUNT)
-	runcode &= TEST_TRUE(different_count >= SAMPLE_COUNT * 0.95,
+	TEST_TRUE(different_count >= SAMPLE_COUNT * 0.95,
 						 "Most generated uuids are different (expected ~100%)")
 
 	# Check uniqueness within each generator
-	var std_set = {}
-	var v4_set  = {}
+	var std_set:Dictionary = {}
+	var v4_set:Dictionary  = {}
 
 	for i in range(SAMPLE_COUNT):
 		std_set[UUID.create_v4_stduuid_string()] = true
 		v4_set[UUID.create_v4_uuidv4_string()]   = true
 
-	runcode &= TEST_EQ(std_set.size(), SAMPLE_COUNT,
+	TEST_EQ(std_set.size(), SAMPLE_COUNT,
 					   "stduuid generator produced %d unique values" % SAMPLE_COUNT)
-	runcode &= TEST_EQ(v4_set.size(), SAMPLE_COUNT,
+	TEST_EQ(v4_set.size(), SAMPLE_COUNT,
 					   "uuidv4 generator produced %d unique values" % SAMPLE_COUNT)
 
 	# byte-level comparison of a few samples
 	for i in range(5):
-		var std_bytes = UUID.create_v4_stduuid_bytes()
-		var v4_bytes  = UUID.create_v4_uuidv4_bytes()
+		var std_bytes:PackedByteArray = UUID.create_v4_stduuid_bytes()
+		var v4_bytes:PackedByteArray  = UUID.create_v4_uuidv4_bytes()
 
-		runcode &= TEST_EQ(std_bytes.size(), 16, "stduuid bytes size")
-		runcode &= TEST_EQ(v4_bytes.size(),  16, "uuidv4 bytes size")
+		TEST_EQ(std_bytes.size(), 16, "stduuid bytes size")
+		TEST_EQ(v4_bytes.size(),  16, "uuidv4 bytes size")
 
 		# Very unlikely they match, but possible — we just log
 		if std_bytes == v4_bytes:

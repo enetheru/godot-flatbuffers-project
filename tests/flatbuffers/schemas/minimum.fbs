@@ -1,0 +1,6 @@
+// The smallest example I can think of.
+
+table Minimum {
+	my_field : int;
+}
+root_type Minimum;

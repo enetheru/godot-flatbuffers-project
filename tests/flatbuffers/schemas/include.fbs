@@ -1,0 +1,11 @@
+//include "res://tests/includes/absolute.fbs";
+// Absolute paths are not supported at this time.
+// It would require flatc.exe to understand godot path specifiers res:// and usr://
+include "./tests/flatbuffers/schemas/minimum.fbs";
+
+table RootTable {
+	external:Minimum;
+	external_array:[Minimum];
+}
+
+root_type RootTable;
