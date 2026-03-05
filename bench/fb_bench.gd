@@ -33,18 +33,18 @@ func Encode( _thing:Variant ) -> PackedByteArray:
 		# NOTE: Foo is a struct, godot doesnt have structs, so I am making a class here.
 		# FIXME: the value cannot be represented as a signed 64 bit integer, and godot does
 		# not provide an alternative.
-		var foo:FB.Foo = FB.create_Foo(0xBADCAFEABADCAFE + i, 10000 + i, ord('@') + i, 1000000 + i)
+		var foo:FB.FBFoo = FB.create_FBFoo(0xBADCAFEABADCAFE + i, 10000 + i, ord('@') + i, 1000000 + i)
 		
 		#Bar bar(foo, 123456 + i, 3.14159f + i, 10000 + i);
 		# NOTE: Bar is a struct, godot doesnt have structs, so I am making a class here.
-		var bar:FB.Bar = FB.create_Bar(foo, 123456 + i, 3.14159 + i, 10000 + i)
+		var bar:FB.FBBar = FB.create_FBBar(foo, 123456 + i, 3.14159 + i, 10000 + i)
 		
 		#auto name = fbb.CreateString("Hello, World!");
 		var name_ofs:int = fbb.create_String("Hello, World!")
 		
 		#auto foobar = CreateFooBar(fbb, &bar, name, 3.1415432432445543543 + i, '!' + i);
 		#vec[i] = foobar;
-		vec[i] = FB.create_FooBar(fbb, bar, name_ofs, 3.1415432432445543543 + i, ord('!') + i)
+		vec[i] = FB.create_FBFooBar(fbb, bar, name_ofs, 3.1415432432445543543 + i, ord('!') + i)
 	
 	#auto location = fbb.CreateString("http://google.com/flatbuffers/");
 	var loc_ofs:int = fbb.create_String("http://google.com/flatbuffers/")
@@ -53,7 +53,7 @@ func Encode( _thing:Variant ) -> PackedByteArray:
 	var foobarvec_ofs:int = fbb.create_vector_offset(vec)
 	#auto foobarcontainer =
 		#CreateFooBarContainer(fbb, foobarvec, true, Enum_Bananas, location);
-	var foobarcontainer_ofs:int = FB.create_FooBarContainer(fbb, foobarvec_ofs, true, FB.Enum.BANANAS, loc_ofs )
+	var foobarcontainer_ofs:int = FB.create_FBFooBarContainer(fbb, foobarvec_ofs, true, FB.Enum.BANANAS, loc_ofs )
 	fbb.finish(foobarcontainer_ofs);
 
 	#len = fbb.GetSize();
@@ -67,7 +67,7 @@ func Use( decoded:Variant ) -> int:
 	var pba:PackedByteArray = decoded
 	sum = 0;
 	#auto foobarcontainer = GetFooBarContainer(decoded);
-	var foobarcontainer:FB.FooBarContainer = FB.get_FooBarContainer(pba, pba.decode_u32(0))
+	var foobarcontainer:FB.FBFooBarContainer = FB.get_FBFooBarContainer(pba, pba.decode_u32(0))
 	sum = 0;
 	Add(foobarcontainer.initialized())
 	Add(foobarcontainer.location().length());
@@ -75,7 +75,7 @@ func Use( decoded:Variant ) -> int:
 	#for (unsigned int i = 0; i < foobarcontainer->list()->Length(); i++) {
 	for i:int in foobarcontainer.list_size():
 		#auto foobar = foobarcontainer->list()->Get(i);
-		var foobar:FB.FooBar = foobarcontainer.list_at(i)
+		var foobar:FB.FBFooBar = foobarcontainer.list_at(i)
 		#Add(foobar->name()->Length());
 		Add( foobar.name().length() )
 		#Add(foobar->postfix());
@@ -83,7 +83,7 @@ func Use( decoded:Variant ) -> int:
 		#Add(static_cast<int64_t>(foobar->rating()));
 		Add( int(foobar.rating()) )
 		#auto bar = foobar->sibling();
-		var bar:FB.Bar = foobar.sibling()
+		var bar:FB.FBBar = foobar.sibling()
 		#Add(static_cast<int64_t>(bar->ratio()));
 		Add( int(bar.ratio) )
 		#Add(bar->size());
@@ -91,7 +91,7 @@ func Use( decoded:Variant ) -> int:
 		#Add(bar->time());
 		Add( bar.time )
 		#auto& foo = bar->parent();
-		var foo:FB.Foo = bar.parent
+		var foo:FB.FBFoo = bar.parent
 		Add(foo.count)
 		Add(foo.id)
 		Add(foo.length)

@@ -21,32 +21,32 @@ namespace benchmarks_flatbuffers;
 
 enum Enum : short { Apples, Pears, Bananas}
 
-struct Foo {
+struct FBFoo {
   id:ulong;
   count:short;
   prefix:byte;
   length:uint;
 }
 
-struct Bar {
-  parent:Foo;
+struct FBBar {
+  parent:FBFoo;
   time:int;
   ratio:float;
   ssize:ushort;
 }
 
-table FooBar {
-  sibling:Bar;
+table FBFooBar {
+  sibling:FBBar;
   name:string;
   rating:double;
   postfix:ubyte;
 }
 
-table FooBarContainer {
-  list:[FooBar];  // 3 copies of the above
+table FBFooBarContainer {
+  list:[FBFooBar];  // 3 copies of the above
   initialized:bool;
   fruit:Enum;
   location:string;
 }
 
-root_type FooBarContainer;
+root_type FBFooBarContainer;
