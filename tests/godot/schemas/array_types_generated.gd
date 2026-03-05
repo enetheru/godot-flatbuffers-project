@@ -2150,5 +2150,3 @@ static func get_TestTable( _bytes : PackedByteArray, _start : int ) -> TestTable
 	new_TestTable.start = _start
 	new_TestTable.bytes = _bytes
 	return new_TestTable
-
-

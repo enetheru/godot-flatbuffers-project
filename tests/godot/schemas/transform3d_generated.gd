@@ -51,4 +51,3 @@ static func create_RootTable( _fbb : FlatBufferBuilder,
 	var builder : RootTableBuilder = RootTableBuilder.new( _fbb );
 	builder.add_my_field( my_field );
 	return builder.finish();
-
