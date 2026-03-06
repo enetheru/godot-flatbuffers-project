@@ -28,7 +28,8 @@ func _run_test() -> int:
 	# Reporting
 	TEST_EQ( 1, uuid_obj.get_variant_map_size(), "uuid_obj.get_variant_map_size()")
 
-	TEST_EQ( 1, uuid_obj.get_variant_keys(), "uuid_obj.get_variant_keys()")
+	var keys:Array = uuid_obj.get_variant_keys()
+	TEST_EQ( 1, keys.size(), "uuid_obj.get_variant_keys().size()")
 
 	# Erase
 	TEST_TRUE(uuid_obj.erase_variant(key1), "erase_variant(key1) == true")

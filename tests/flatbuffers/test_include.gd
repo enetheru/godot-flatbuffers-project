@@ -1,6 +1,6 @@
 @tool
 extends TestBase
-
+const GEN_OPTS = preload("uid://ck8of5cb3qlar")
 
 const schema_include = "res://tests/flatbuffers/schemas/include.fbs"
 const schema_minimum = "res://tests/flatbuffers/schemas/minimum.fbs"
@@ -11,11 +11,14 @@ const schema = preload('schemas/include_generated.gd')
 
 func _run_test() -> int:
 	# Process the schema, should produce no errors.
-	var run_dict:Dictionary = FlatBuffersPlugin.generate(schema_include)
-	TEST_EQ(0, run_dict.retcode, str(run_dict.output))
+	
+	var run_dict:Dictionary = FlatBuffersPlugin.generate(schema_include, GEN_OPTS)
+	var run_output:PackedStringArray = run_dict.output
+	TEST_EQ(0, run_dict.retcode, '\n'.join(run_output))
 	
 	run_dict = FlatBuffersPlugin.generate(schema_minimum)
-	TEST_EQ(0, run_dict.retcode, str(run_dict.output))
+	run_output = run_dict.output
+	TEST_EQ(0, run_dict.retcode, '\n'.join(run_output))
 	
 	
 	logp( "" )

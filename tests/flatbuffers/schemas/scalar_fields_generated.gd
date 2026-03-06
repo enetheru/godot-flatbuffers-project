@@ -203,4 +203,3 @@ static func create_RootTable( _fbb : FlatBufferBuilder,
 	builder.add_f_byte( f_byte );
 	builder.add_f_bool( f_bool );
 	return builder.finish();
-

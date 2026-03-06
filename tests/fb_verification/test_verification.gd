@@ -4,7 +4,7 @@ extends TestBase
 const Schema = preload('uid://bkiq2py2ei7y6')
 
 func _run_test() -> int:
-	logd("== Testing Verification ==")
+	logd("[b]== Testing Verification ==[/b]")
 
 	var fbb := FlatBufferBuilder.new()
 	var final_ofs:int = Schema.create_MyTable(fbb, 42)
@@ -34,10 +34,9 @@ func _run_test() -> int:
 	fb_table.bytes = packed
 	fb_table.start = packed.decode_u32(0)
 
-	if not TEST_FALSE(fb_table.verify(verifier), "broken table start.") \
-		or _verbose:
-			logp("\tfb_table.start: %d" % fb_table.start)
-			logp("\tfb_table.bytes: %s" % sbytes(fb_table.bytes))
-
+	if TEST_FALSE_RET(fb_table.verify(verifier), "broken table start."):
+		logp("\tfb_table.start: %d" % fb_table.start)
+		var bytes:PackedByteArray = fb_table.bytes
+		logp("\tfb_table.bytes: %s" % bytes_view(bytes))
 
 	return runcode

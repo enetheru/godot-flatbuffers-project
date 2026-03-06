@@ -8,12 +8,16 @@
 
 config_version=5
 
+[animation]
+
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+
 [application]
 
 config/name="FlatBuffers Extension Project"
 config/tags=PackedStringArray("enetheru")
 run/main_scene="uid://dmx2xuigcpvt4"
-config/features=PackedStringArray("4.5")
+config/features=PackedStringArray("4.6")
 config/icon="uid://cfc5vxnc2fm05"
 
 [debug]
@@ -21,7 +25,9 @@ config/icon="uid://cfc5vxnc2fm05"
 settings/stdout/verbose_stdout=true
 settings/gdscript/always_track_call_stacks=true
 settings/gdscript/always_track_local_variables=true
-gdscript/warnings/exclude_addons=false
+gdscript/warnings/directory_rules={
+"res://addons": 1
+}
 gdscript/warnings/untyped_declaration=1
 gdscript/warnings/unsafe_property_access=1
 gdscript/warnings/unsafe_method_access=1

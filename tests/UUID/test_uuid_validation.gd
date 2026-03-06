@@ -24,7 +24,7 @@ func _run_test() -> int:
 
 	var v5_str: String = UUID.create_v5_stduuid_string("test")
 	var v5_version: int = UUID.get_version(v5_str)
-	TEST_EQ(v5_version, UUID.Version.NAME_BASED_SHA1 "get_version(v5) == NAME_BASED_SHA1 (5)")
+	TEST_EQ(v5_version, UUID.Version.NAME_BASED_SHA1, "get_version(v5) == NAME_BASED_SHA1 (5)")
 
 	var v3_variant: int = UUID.get_uuid_variant(v3_str)
 	TEST_EQ(v3_variant, 1,"get_uuid_variant(v3) == 1")
@@ -51,7 +51,7 @@ func _run_test() -> int:
 	TEST_TRUE(not UUID.is_valid("12345678-1234-1234-1234-123456789abg"), "is_valid(false) non-hex chars")
 
 	var zero_bytes := PackedByteArray()
-	zero_bytes.resize(16)
+	TEST_EQ(OK, zero_bytes.resize(16), "Resize" )
 	var from_zero: String = UUID.from_bytes(zero_bytes)
 	TEST_TRUE(not UUID.is_valid(from_zero), "is_valid(from_bytes(zeros)) == false")
 	TEST_TRUE(UUID.is_nil(from_zero), "is_nil(from_bytes(zeros)) == true")

@@ -18,13 +18,18 @@ namespace  Schema.Test;
 // TYPE_DECL, # = ( table | struct ) ident metadata { field_decl+ }
 table TableDecl {
 	// FIELD_DECL, # = ident : type [ = scalar ] metadata ;
+	//SCALAR
 	ident1 : bool;
 	ident2 : byte = 32;
-	ident3 : ubyte = 64 (meta);
+	ident3 : ubyte = 64;
 	ident4 : short = 12345;
+	//VECTOR
 	ident5 : [ushort];
-	ident6 : [ushort:-123];
-	ident : int;
+	//ARRAY
+	//ident6 : [ushort:-123];
+	//STRUCT
+	//TABLE
+	//UNION
 }
 
 // ENUM_DECL, # = ( enum ident : type | union ident ) metadata { commasep( enumval_decl ) }

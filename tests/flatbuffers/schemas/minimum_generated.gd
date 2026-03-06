@@ -53,4 +53,3 @@ static func create_Minimum( _fbb : FlatBufferBuilder,
 	var builder : MinimumBuilder = MinimumBuilder.new( _fbb );
 	builder.add_my_field( my_field );
 	return builder.finish();
-

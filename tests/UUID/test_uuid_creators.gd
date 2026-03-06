@@ -1,6 +1,9 @@
 @tool
 extends TestBase
 
+# FIXME, something in here is giving me a stack underflow.
+# ERROR: modules\gdscript\gdscript.h:530 - Stack underflow! (Engine Bug)
+
 
 func _run_test() -> int:
 	var v3_str: String = UUID.create_v3_godot_string("test_seed")
@@ -12,7 +15,7 @@ func _run_test() -> int:
 	TEST_EQ(16, v3_bytes.size(), "create_v3_godot_bytes size == 16")
 
 	var v3_ns_str: String = UUID.create_v3_godot_string("test_seed", UUID.get_namespace_dns())
-	TEST_OP(v3_ns_str, OP_NOT_EQUALS , v3_str, "create_v3_godot_string with namespace differs from default")
+	TEST_OP(v3_ns_str, OP_NOT_EQUAL , v3_str, "create_v3_godot_string with namespace differs from default")
 
 	var v3_empty_str: String = UUID.create_v3_godot_string("")
 	TEST_EQ(36, v3_empty_str.length(), "create_v3_godot_string(empty seed) length == 36")
