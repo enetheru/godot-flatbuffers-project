@@ -5,7 +5,7 @@
 @warning_ignore_start('unsafe_method_access')
 @warning_ignore_start('unsafe_call_argument')
 
-static func get_root( _bytes : PackedByteArray ) -> Minimum:
+static func get_root( _bytes: PackedByteArray ) -> Minimum:
 	return get_Minimum( _bytes, _bytes.decode_u32(0) )
 
 class Minimum extends FlatBuffer:
@@ -13,8 +13,8 @@ class Minimum extends FlatBuffer:
 		VT_MY_FIELD = 4
 	}
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
-		bytes = bytes_; start = start_
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
 	func my_field_is_present() -> bool:
@@ -22,34 +22,35 @@ class Minimum extends FlatBuffer:
 
 	# [================[ my_field ]================]
 	func my_field() -> int:
-		var foffset : int = get_field_offset( vtable.VT_MY_FIELD )
+		var foffset: int = get_field_offset( vtable.VT_MY_FIELD )
 		if not foffset: return 0
-		return bytes.decode_s32( start + foffset )
+		return _fb_bytes.decode_s32( _fb_start + foffset )
 
 
 class MinimumBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
-	var start_ : int
+	var start_: int
 
-	func _init( _fbb : FlatBufferBuilder ) -> void:
+	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_my_field( my_field : int ) -> void:
+	func add_my_field( my_field: int ) -> void:
 		fbb_.add_element_int_default( Minimum.vtable.VT_MY_FIELD, my_field, 0 )
 
 	func finish() -> int:
-		var end : int = fbb_.end_table( start_ )
-		var o : int = end
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
 		return o;
 
 
-static func get_Minimum( _bytes : PackedByteArray, _start : int = 0 ) -> Minimum:
+static func get_Minimum( _bytes: PackedByteArray, _start: int = 0 ) -> Minimum:
 	assert(not _bytes.is_empty())
 	return Minimum.new(_bytes, _start)
 
-static func create_Minimum( _fbb : FlatBufferBuilder,
-		my_field : int ) -> int :
-	var builder : MinimumBuilder = MinimumBuilder.new( _fbb );
+static func create_Minimum( _fbb: FlatBufferBuilder,
+		my_field: int ) -> int :
+	var builder: MinimumBuilder = MinimumBuilder.new( _fbb );
 	builder.add_my_field( my_field );
 	return builder.finish();
+

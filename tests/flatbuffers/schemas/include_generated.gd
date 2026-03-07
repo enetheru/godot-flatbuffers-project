@@ -99,3 +99,4 @@ static func create_RootTable( _fbb : FlatBufferBuilder,
 	builder.add_external_array( external_array );
 	builder.add_external( external );
 	return builder.finish();
+

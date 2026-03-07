@@ -5,7 +5,7 @@
 @warning_ignore_start('unsafe_method_access')
 @warning_ignore_start('unsafe_call_argument')
 
-static func get_root( _bytes : PackedByteArray ) -> Monster:
+static func get_root( _bytes: PackedByteArray ) -> Monster:
 	return get_Monster( _bytes, _bytes.decode_u32(0) )
 
 enum Color_ {
@@ -20,40 +20,40 @@ enum Equipment {
 }
 
 static func create_Vec3(
-		_x : float,
-		_y : float,
-		_z : float ) -> Vec3 :
-	var val : Vec3 = Vec3.new()
+		_x: float,
+		_y: float,
+		_z: float ) -> Vec3 :
+	var val: Vec3 = Vec3.new()
 	val.z = _z;
 	val.y = _y;
 	val.x = _x;
 	return val
 
 class Vec3 extends FlatBuffer:
-	const size : int = 12
+	const size: int = 12
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		if bytes_.is_empty(): 
-			bytes = PackedByteArray()
-			bytes.resize( size )
+			_fb_bytes = PackedByteArray()
+			_fb_bytes.resize( size )
 		else:
 			assert(start_ + size <= bytes_.size())
-			bytes = bytes_; start = start_
+			_fb_bytes = bytes_; _fb_start = start_
 
 	# [================[ x ]================]
-	var x : float :
-		get(): return bytes.decode_float(start + 0)
-		set(v): bytes.encode_float(start + 0, v)
+	var x: float :
+		get(): return _fb_bytes.decode_float(_fb_start + 0)
+		set(v): _fb_bytes.encode_float(_fb_start + 0, v)
 
 	# [================[ y ]================]
-	var y : float :
-		get(): return bytes.decode_float(start + 4)
-		set(v): bytes.encode_float(start + 4, v)
+	var y: float :
+		get(): return _fb_bytes.decode_float(_fb_start + 4)
+		set(v): _fb_bytes.encode_float(_fb_start + 4, v)
 
 	# [================[ z ]================]
-	var z : float :
-		get(): return bytes.decode_float(start + 8)
-		set(v): bytes.encode_float(start + 8, v)
+	var z: float :
+		get(): return _fb_bytes.decode_float(_fb_start + 8)
+		set(v): _fb_bytes.encode_float(_fb_start + 8, v)
 
 
 class Monster extends FlatBuffer:
@@ -72,8 +72,8 @@ class Monster extends FlatBuffer:
 		VT_PATH = 24
 	}
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
-		bytes = bytes_; start = start_
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
 	func pos_is_present() -> bool:
@@ -110,174 +110,174 @@ class Monster extends FlatBuffer:
 
 	# [================[ pos ]================]
 	func pos() -> Vec3:
-		var field_offset : int = get_field_offset( vtable.VT_POS )
+		var field_offset: int = get_field_offset( vtable.VT_POS )
 		if not field_offset: return null
-		return _Monster_schema.get_Vec3( bytes, start + field_offset )
+		return _Monster_schema.get_Vec3( _fb_bytes, _fb_start + field_offset )
 
 	# [================[ mana ]================]
 	func mana() -> int:
-		var foffset : int = get_field_offset( vtable.VT_MANA )
+		var foffset: int = get_field_offset( vtable.VT_MANA )
 		if not foffset: return 150
-		return bytes.decode_s16( start + foffset )
+		return _fb_bytes.decode_s16( _fb_start + foffset )
 
 	# [================[ hp ]================]
 	func hp() -> int:
-		var foffset : int = get_field_offset( vtable.VT_HP )
+		var foffset: int = get_field_offset( vtable.VT_HP )
 		if not foffset: return 100
-		return bytes.decode_s16( start + foffset )
+		return _fb_bytes.decode_s16( _fb_start + foffset )
 
 	# [================[ name ]================]
 	func name() -> String:
-		var field_start : int = get_field_start( vtable.VT_NAME )
+		var field_start: int = get_field_start( vtable.VT_NAME )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 	# [================[ inventory ]================]
 	func inventory_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_INVENTORY )
+		var array_start: int = get_field_start( vtable.VT_INVENTORY )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func inventory() -> PackedByteArray:
-		var array_start : int = get_field_start( vtable.VT_INVENTORY )
+		var array_start: int = get_field_start( vtable.VT_INVENTORY )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		return bytes.slice( array_start, array_start + array_size )
+		return _fb_bytes.slice( array_start, array_start + array_size )
 
-	func inventory_at( index : int ) -> int:
-		var array_start : int = get_field_start( vtable.VT_INVENTORY )
+	func inventory_at( index: int ) -> int:
+		var array_start: int = get_field_start( vtable.VT_INVENTORY )
 		if not array_start: return 0
 		array_start += 4
-		return bytes[array_start + index]
+		return _fb_bytes[array_start + index]
 
 	# [================[ color ]================]
 	func color() -> Color_:
-		var foffset : int = get_field_offset( vtable.VT_COLOR )
+		var foffset: int = get_field_offset( vtable.VT_COLOR )
 		if not foffset: return 2 as Color_
-		return bytes.decode_s8( start + foffset ) as Color_
+		return _fb_bytes.decode_s8( _fb_start + foffset ) as Color_
 
 	# [================[ weapons ]================]
 	func weapons_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_WEAPONS )
+		var array_start: int = get_field_start( vtable.VT_WEAPONS )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func weapons() -> Array:
-		var array_start : int = get_field_start( vtable.VT_WEAPONS )
+		var array_start: int = get_field_start( vtable.VT_WEAPONS )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : Array
+		var array: Array
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var p : int = array_start + i * 4
-			array[i] = _Monster_schema.get_Weapon( bytes, p + bytes.decode_u32( p ) )
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Monster_schema.get_Weapon( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func weapons_at( idx : int, into : Weapon = null ) -> Weapon:
-		var field_start : int = get_field_start( vtable.VT_WEAPONS )
-		var array_size : int = bytes.decode_u32( field_start )
-		var array_start : int = field_start + 4
+	func weapons_at( idx: int, into: Weapon = null ) -> Weapon:
+		var field_start: int = get_field_start( vtable.VT_WEAPONS )
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
 		assert( idx < array_size, 'index is out of bounds')
-		var relative_offset : int = array_start + idx * 4
-		var offset : int = relative_offset + bytes.decode_u32( relative_offset )
+		var relative_offset: int = array_start + idx * 4
+		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
-			into.bytes = bytes
+			into.bytes = _fb_bytes
 			into.start = relative_offset
 			return into
-		return _Monster_schema.get_Weapon( bytes, offset )
+		return _Monster_schema.get_Weapon( _fb_bytes, offset )
 
 	# [================[ equipped_type ]================]
 	func equipped_type() -> Equipment:
-		var foffset : int = get_field_offset( vtable.VT_EQUIPPED_TYPE )
+		var foffset: int = get_field_offset( vtable.VT_EQUIPPED_TYPE )
 		if not foffset: return 0 as Equipment
-		return bytes.decode_u8( start + foffset ) as Equipment
+		return _fb_bytes.decode_u8( _fb_start + foffset ) as Equipment
 
 	# [================[ equipped ]================]
 	func equipped() -> Variant:
-		var field_start : int = get_field_start( vtable.VT_EQUIPPED )
+		var field_start: int = get_field_start( vtable.VT_EQUIPPED )
 		if not field_start: return null
 		match( equipped_type() ):
 			Equipment.WEAPON:
-				return _Monster_schema.get_Weapon( bytes, field_start )
+				return _Monster_schema.get_Weapon( _fb_bytes, field_start )
 			_: pass
 		return null
 
 	# [================[ path ]================]
 	func path_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_PATH )
+		var array_start: int = get_field_start( vtable.VT_PATH )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func path() -> Array[Vec3]:
-		var array_start : int = get_field_start( vtable.VT_PATH )
+		var array_start: int = get_field_start( vtable.VT_PATH )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : Array[Vec3]
+		var array: Array[Vec3]
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			array[i] = _Monster_schema.get_Vec3(bytes, array_start + i * 12 )
+		for i: int in array_size:
+			array[i] = _Monster_schema.get_Vec3(_fb_bytes, array_start + i * 12 )
 		return array
 
-	func path_at( idx : int, into : Vec3 = null ) -> Vec3:
-		var field_start : int = get_field_start( vtable.VT_PATH )
-		var array_size : int = bytes.decode_u32( field_start )
-		var array_start : int = field_start + 4
+	func path_at( idx: int, into: Vec3 = null ) -> Vec3:
+		var field_start: int = get_field_start( vtable.VT_PATH )
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
 		assert( idx < array_size, 'index is out of bounds')
-		var relative_offset : int = array_start + idx * 4
-		var offset : int = relative_offset + bytes.decode_u32( relative_offset )
+		var relative_offset: int = array_start + idx * 4
+		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
-			into.bytes = bytes
+			into.bytes = _fb_bytes
 			into.start = relative_offset
 			return into
-		return _Monster_schema.get_Vec3( bytes, offset )
+		return _Monster_schema.get_Vec3( _fb_bytes, offset )
 
 
 class MonsterBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
-	var start_ : int
+	var start_: int
 
-	func _init( _fbb : FlatBufferBuilder ) -> void:
+	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_pos( pos : Vec3 ) -> void:
+	func add_pos( pos: Vec3 ) -> void:
 		fbb_.add_bytes( Monster.vtable.VT_POS, pos.bytes ) 
 
-	func add_mana( mana : int ) -> void:
+	func add_mana( mana: int ) -> void:
 		fbb_.add_element_short_default( Monster.vtable.VT_MANA, mana, 150 )
 
-	func add_hp( hp : int ) -> void:
+	func add_hp( hp: int ) -> void:
 		fbb_.add_element_short_default( Monster.vtable.VT_HP, hp, 100 )
 
-	func add_name( name_offset : int ) -> void:
+	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( Monster.vtable.VT_NAME, name_offset )
 
-	func add_inventory( inventory_offset : int ) -> void:
+	func add_inventory( inventory_offset: int ) -> void:
 		fbb_.add_offset( Monster.vtable.VT_INVENTORY, inventory_offset )
 
-	func add_color( color : Color_ ) -> void:
+	func add_color( color: Color_ ) -> void:
 		fbb_.add_element_byte( Monster.vtable.VT_COLOR, color )
 
-	func add_weapons( weapons_offset : int ) -> void:
+	func add_weapons( weapons_offset: int ) -> void:
 		fbb_.add_offset( Monster.vtable.VT_WEAPONS, weapons_offset )
 
-	func add_equipped_type( equipped_type : Equipment ) -> void:
+	func add_equipped_type( equipped_type: Equipment ) -> void:
 		fbb_.add_element_ubyte( Monster.vtable.VT_EQUIPPED_TYPE, equipped_type )
 
-	func add_equipped( equipped_offset : int ) -> void:
+	func add_equipped( equipped_offset: int ) -> void:
 		fbb_.add_offset( Monster.vtable.VT_EQUIPPED, equipped_offset )
 
-	func add_path( path_offset : int ) -> void:
+	func add_path( path_offset: int ) -> void:
 		fbb_.add_offset( Monster.vtable.VT_PATH, path_offset )
 
 	func finish() -> int:
-		var end : int = fbb_.end_table( start_ )
-		var o : int = end
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
 		return o;
 
 
@@ -287,8 +287,8 @@ class Weapon extends FlatBuffer:
 		VT_DAMAGE = 6
 	}
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
-		bytes = bytes_; start = start_
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
 	func name_is_present() -> bool:
@@ -299,57 +299,57 @@ class Weapon extends FlatBuffer:
 
 	# [================[ name ]================]
 	func name() -> String:
-		var field_start : int = get_field_start( vtable.VT_NAME )
+		var field_start: int = get_field_start( vtable.VT_NAME )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 	# [================[ damage ]================]
 	func damage() -> int:
-		var foffset : int = get_field_offset( vtable.VT_DAMAGE )
+		var foffset: int = get_field_offset( vtable.VT_DAMAGE )
 		if not foffset: return 0
-		return bytes.decode_s16( start + foffset )
+		return _fb_bytes.decode_s16( _fb_start + foffset )
 
 
 class WeaponBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
-	var start_ : int
+	var start_: int
 
-	func _init( _fbb : FlatBufferBuilder ) -> void:
+	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_name( name_offset : int ) -> void:
+	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( Weapon.vtable.VT_NAME, name_offset )
 
-	func add_damage( damage : int ) -> void:
+	func add_damage( damage: int ) -> void:
 		fbb_.add_element_short_default( Weapon.vtable.VT_DAMAGE, damage, 0 )
 
 	func finish() -> int:
-		var end : int = fbb_.end_table( start_ )
-		var o : int = end
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
 		return o;
 
 
-static func get_Vec3( _bytes : PackedByteArray, _start : int = 0 ) -> Vec3:
+static func get_Vec3( _bytes: PackedByteArray, _start: int = 0 ) -> Vec3:
 	assert(not _bytes.is_empty())
 	return Vec3.new(_bytes, _start)
 
-static func get_Monster( _bytes : PackedByteArray, _start : int = 0 ) -> Monster:
+static func get_Monster( _bytes: PackedByteArray, _start: int = 0 ) -> Monster:
 	assert(not _bytes.is_empty())
 	return Monster.new(_bytes, _start)
 
-static func create_Monster( _fbb : FlatBufferBuilder,
-		pos : Vec3,
-		mana : int,
-		hp : int,
-		name : int,
-		inventory : int,
-		color : Color_,
-		weapons : int,
-		equipped_type : Equipment,
-		equipped : int,
-		path : int ) -> int :
-	var builder : MonsterBuilder = MonsterBuilder.new( _fbb );
+static func create_Monster( _fbb: FlatBufferBuilder,
+		pos: Vec3,
+		mana: int,
+		hp: int,
+		name: int,
+		inventory: int,
+		color: Color_,
+		weapons: int,
+		equipped_type: Equipment,
+		equipped: int,
+		path: int ) -> int :
+	var builder: MonsterBuilder = MonsterBuilder.new( _fbb );
 	builder.add_path( path );
 	builder.add_equipped( equipped );
 	builder.add_weapons( weapons );
@@ -362,14 +362,14 @@ static func create_Monster( _fbb : FlatBufferBuilder,
 	builder.add_color( color );
 	return builder.finish();
 
-static func get_Weapon( _bytes : PackedByteArray, _start : int = 0 ) -> Weapon:
+static func get_Weapon( _bytes: PackedByteArray, _start: int = 0 ) -> Weapon:
 	assert(not _bytes.is_empty())
 	return Weapon.new(_bytes, _start)
 
-static func create_Weapon( _fbb : FlatBufferBuilder,
-		name : int,
-		damage : int ) -> int :
-	var builder : WeaponBuilder = WeaponBuilder.new( _fbb );
+static func create_Weapon( _fbb: FlatBufferBuilder,
+		name: int,
+		damage: int ) -> int :
+	var builder: WeaponBuilder = WeaponBuilder.new( _fbb );
 	builder.add_name( name );
 	builder.add_damage( damage );
 	return builder.finish();

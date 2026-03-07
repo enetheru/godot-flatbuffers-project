@@ -14,7 +14,7 @@ class MyTable extends FlatBuffer:
 	}
 
 	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
-		bytes = bytes_; start = start_
+		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
 	func first_field_is_present() -> bool:
@@ -24,7 +24,7 @@ class MyTable extends FlatBuffer:
 	func first_field() -> int:
 		var foffset : int = get_field_offset( vtable.VT_FIRST_FIELD )
 		if not foffset: return 0
-		return bytes.decode_s32( start + foffset )
+		return _fb_bytes.decode_s32( _fb_start + foffset )
 
 	# TODO inplace-mutators
 	# bool mutate_first_field(int32_t _first_field = 0) {

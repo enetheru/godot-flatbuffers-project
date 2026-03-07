@@ -18,7 +18,7 @@ func _run_test() -> int:
 	print("z: ", z)
 
 	# struct
-	var struct = CustomStruct.new()
+	var struct := CustomStruct.new()
 	struct.x = x; struct.y = y
 	print( "encode.x: ", struct.x )
 	print( "encode.y: ", struct.y )
@@ -26,8 +26,8 @@ func _run_test() -> int:
 	TEST_EQ(73, struct.y, "struct.x")
 
 	# construct Table
-	var fbb = FlatBufferBuilder.new()
-	var offset = schema.create_RootTable( fbb, struct, z )
+	var fbb := FlatBufferBuilder.new()
+	var offset:int = schema.create_RootTable( fbb, struct, z )
 	fbb.finish(offset)
 
 	# get packed bytes

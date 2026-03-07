@@ -1,8 +1,10 @@
 include "godot.fbs";
 
-struct CustomStruct{
+struct CustomStruct {
+	is_true:bool;
 	x : int;
 	y : float;
+	w:Vector3;
 }
 
 table RootTable{

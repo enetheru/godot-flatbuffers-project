@@ -5,7 +5,7 @@
 @warning_ignore_start('unsafe_method_access')
 @warning_ignore_start('unsafe_call_argument')
 
-static func get_root( _bytes : PackedByteArray ) -> RootTable:
+static func get_root( _bytes: PackedByteArray ) -> RootTable:
 	return get_RootTable( _bytes, _bytes.decode_u32(0) )
 
 class RootTable extends FlatBuffer:
@@ -23,7 +23,7 @@ class RootTable extends FlatBuffer:
 		VT_F_DOUBLE = 24
 	}
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		bytes = bytes_; start = start_
 
 	# Presence Functions
@@ -62,135 +62,135 @@ class RootTable extends FlatBuffer:
 
 	# [================[ f_bool ]================]
 	func f_bool() -> int:
-		var foffset : int = get_field_offset( vtable.VT_F_BOOL )
+		var foffset: int = get_field_offset( vtable.VT_F_BOOL )
 		if not foffset: return 0
 		return bytes.decode_u8( start + foffset )
 
 	# [================[ f_byte ]================]
 	func f_byte() -> bool:
-		var foffset : int = get_field_offset( vtable.VT_F_BYTE )
+		var foffset: int = get_field_offset( vtable.VT_F_BYTE )
 		if not foffset: return 0
 		return bytes.decode_s8( start + foffset )
 
 	# [================[ f_ubyte ]================]
 	func f_ubyte() -> int:
-		var foffset : int = get_field_offset( vtable.VT_F_UBYTE )
+		var foffset: int = get_field_offset( vtable.VT_F_UBYTE )
 		if not foffset: return 0
 		return bytes.decode_u8( start + foffset )
 
 	# [================[ f_short ]================]
 	func f_short() -> int:
-		var foffset : int = get_field_offset( vtable.VT_F_SHORT )
+		var foffset: int = get_field_offset( vtable.VT_F_SHORT )
 		if not foffset: return 0
 		return bytes.decode_s16( start + foffset )
 
 	# [================[ f_ushort ]================]
 	func f_ushort() -> int:
-		var foffset : int = get_field_offset( vtable.VT_F_USHORT )
+		var foffset: int = get_field_offset( vtable.VT_F_USHORT )
 		if not foffset: return 0
 		return bytes.decode_u16( start + foffset )
 
 	# [================[ f_int ]================]
 	func f_int() -> int:
-		var foffset : int = get_field_offset( vtable.VT_F_INT )
+		var foffset: int = get_field_offset( vtable.VT_F_INT )
 		if not foffset: return 0
 		return bytes.decode_s32( start + foffset )
 
 	# [================[ f_uint ]================]
 	func f_uint() -> int:
-		var foffset : int = get_field_offset( vtable.VT_F_UINT )
+		var foffset: int = get_field_offset( vtable.VT_F_UINT )
 		if not foffset: return 0
 		return bytes.decode_u32( start + foffset )
 
 	# [================[ f_long ]================]
 	func f_long() -> int:
-		var foffset : int = get_field_offset( vtable.VT_F_LONG )
+		var foffset: int = get_field_offset( vtable.VT_F_LONG )
 		if not foffset: return 0
 		return bytes.decode_s64( start + foffset )
 
 	# [================[ f_ulong ]================]
 	func f_ulong() -> int:
-		var foffset : int = get_field_offset( vtable.VT_F_ULONG )
+		var foffset: int = get_field_offset( vtable.VT_F_ULONG )
 		if not foffset: return 0
 		return bytes.decode_u64( start + foffset )
 
 	# [================[ f_float ]================]
 	func f_float() -> float:
-		var foffset : int = get_field_offset( vtable.VT_F_FLOAT )
+		var foffset: int = get_field_offset( vtable.VT_F_FLOAT )
 		if not foffset: return 0.0
 		return bytes.decode_float( start + foffset )
 
 	# [================[ f_double ]================]
 	func f_double() -> float:
-		var foffset : int = get_field_offset( vtable.VT_F_DOUBLE )
+		var foffset: int = get_field_offset( vtable.VT_F_DOUBLE )
 		if not foffset: return 0.0
 		return bytes.decode_double( start + foffset )
 
 
 class RootTableBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
-	var start_ : int
+	var start_: int
 
-	func _init( _fbb : FlatBufferBuilder ) -> void:
+	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_f_bool( f_bool : int ) -> void:
+	func add_f_bool( f_bool: int ) -> void:
 		fbb_.add_element_bool_default( RootTable.vtable.VT_F_BOOL, f_bool, 0 )
 
-	func add_f_byte( f_byte : bool ) -> void:
+	func add_f_byte( f_byte: bool ) -> void:
 		fbb_.add_element_byte_default( RootTable.vtable.VT_F_BYTE, f_byte, 0 )
 
-	func add_f_ubyte( f_ubyte : int ) -> void:
+	func add_f_ubyte( f_ubyte: int ) -> void:
 		fbb_.add_element_ubyte_default( RootTable.vtable.VT_F_UBYTE, f_ubyte, 0 )
 
-	func add_f_short( f_short : int ) -> void:
+	func add_f_short( f_short: int ) -> void:
 		fbb_.add_element_short_default( RootTable.vtable.VT_F_SHORT, f_short, 0 )
 
-	func add_f_ushort( f_ushort : int ) -> void:
+	func add_f_ushort( f_ushort: int ) -> void:
 		fbb_.add_element_ushort_default( RootTable.vtable.VT_F_USHORT, f_ushort, 0 )
 
-	func add_f_int( f_int : int ) -> void:
+	func add_f_int( f_int: int ) -> void:
 		fbb_.add_element_int_default( RootTable.vtable.VT_F_INT, f_int, 0 )
 
-	func add_f_uint( f_uint : int ) -> void:
+	func add_f_uint( f_uint: int ) -> void:
 		fbb_.add_element_uint_default( RootTable.vtable.VT_F_UINT, f_uint, 0 )
 
-	func add_f_long( f_long : int ) -> void:
+	func add_f_long( f_long: int ) -> void:
 		fbb_.add_element_long_default( RootTable.vtable.VT_F_LONG, f_long, 0 )
 
-	func add_f_ulong( f_ulong : int ) -> void:
+	func add_f_ulong( f_ulong: int ) -> void:
 		fbb_.add_element_ulong_default( RootTable.vtable.VT_F_ULONG, f_ulong, 0 )
 
-	func add_f_float( f_float : float ) -> void:
+	func add_f_float( f_float: float ) -> void:
 		fbb_.add_element_float_default( RootTable.vtable.VT_F_FLOAT, f_float, 0.0 )
 
-	func add_f_double( f_double : float ) -> void:
+	func add_f_double( f_double: float ) -> void:
 		fbb_.add_element_double_default( RootTable.vtable.VT_F_DOUBLE, f_double, 0.0 )
 
 	func finish() -> int:
-		var end : int = fbb_.end_table( start_ )
-		var o : int = end
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
 		return o;
 
 
-static func get_RootTable( _bytes : PackedByteArray, _start : int = 0 ) -> RootTable:
+static func get_RootTable( _bytes: PackedByteArray, _start: int = 0 ) -> RootTable:
 	assert(not _bytes.is_empty())
 	return RootTable.new(_bytes, _start)
 
-static func create_RootTable( _fbb : FlatBufferBuilder,
-		f_bool : int,
-		f_byte : bool,
-		f_ubyte : int,
-		f_short : int,
-		f_ushort : int,
-		f_int : int,
-		f_uint : int,
-		f_long : int,
-		f_ulong : int,
-		f_float : float,
-		f_double : float ) -> int :
-	var builder : RootTableBuilder = RootTableBuilder.new( _fbb );
+static func create_RootTable( _fbb: FlatBufferBuilder,
+		f_bool: int,
+		f_byte: bool,
+		f_ubyte: int,
+		f_short: int,
+		f_ushort: int,
+		f_int: int,
+		f_uint: int,
+		f_long: int,
+		f_ulong: int,
+		f_float: float,
+		f_double: float ) -> int :
+	var builder: RootTableBuilder = RootTableBuilder.new( _fbb );
 	builder.add_f_double( f_double );
 	builder.add_f_ulong( f_ulong );
 	builder.add_f_long( f_long );

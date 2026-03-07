@@ -12,19 +12,49 @@
 // INCLUDE,# = include string_constant ;
 include "godot.fbs";
 
+// ATTRIBUTE_DECL
+attribute ident;
+attribute "</tt>ident<tt>";
+
+// FILE_EXTENSION_DECL - unimplemented
+// file_extension "string_constant";
+
+// FILE_IDENTIFIER_DECL - unimplemented
+// file_identifier "string_constant";
+
 // NAMESPACE_DECL, # = namespace ident ( . ident )* ;
 namespace  Schema.Test;
+
+// I'm splitting enum and union declaration
+// ENUM_DECL
+/// Enum Variations
+enum Enum1:short {}
+enum Enum2:short {
+}
+enum Enum3:short
+{
+}
+enum Enum4:short //comment   
+{ }
+enum Fruit:short { // Comment
+	// Plain Enum
+	APPLES,
+	BANNAS,MORE_BANNANAS, EVEN_MORE_BANANNAS = 4,
+	ORANGES = 1,
+	// commasep( enumval_decl ) 
+}
+
+// UNION_DECL, # = ( enum ident : type | union ident ) metadata { commasep( enumval_decl ) }
 
 // TYPE_DECL, # = ( table | struct ) ident metadata { field_decl+ }
 table TableDecl {
 	// FIELD_DECL, # = ident : type [ = scalar ] metadata ;
 	//SCALAR
-	ident1 : bool;
-	ident2 : byte = 32;
-	ident3 : ubyte = 64;
-	ident4 : short = 12345;
+	scalar_bool : bool;
+	scalar_int : int = 32;
+	scalar_float : float = 5.3;
 	//VECTOR
-	ident5 : [ushort];
+	ident5 : [uint];
 	//ARRAY
 	//ident6 : [ushort:-123];
 	//STRUCT
@@ -32,18 +62,19 @@ table TableDecl {
 	//UNION
 }
 
-// ENUM_DECL, # = ( enum ident : type | union ident ) metadata { commasep( enumval_decl ) }
+
 // ROOT_DECL, # = root_type ident ;
-// FILE_EXTENSION_DECL, # = file_extension string_constant ;
-// FILE_IDENTIFIER_DECL, # = file_identifier string_constant ;
-// ATTRIBUTE_DECL, # = attribute ident | "</tt>ident<tt>" ;
+//root_type TableDecl;
+
 // RPC_DECL, # = rpc_service ident { rpc_method+ }
+// RPC_METHOD, # = ident ( ident ) : ident metadata ;
+
 // OBJECT, # = { commasep( ident : value ) }
 
-// ENUM_DECL, # = ( enum ident : type | union ident ) metadata { commasep( enumval_decl ) }
-// ROOT_DECL, # = root_type ident ;
+
+
 // FIELD_DECL, # = ident : type [ = scalar ] metadata ;
-// RPC_METHOD, # = ident ( ident ) : ident metadata ;
+
 // TYPE, # = bool | byte | ubyte | short | ushort | int | uint | float | long | ulong | double | int8 | uint8 | int16 | uint16 | int32 | uint32| int64 | uint64 | float32 | float64 | string | [ type ] | ident
 // ENUMVAL_DECL, # = ident [ = integer_constant ]
 // METADATA, # = [ ( commasep( ident [ : single_value ] ) ) ]
@@ -51,20 +82,24 @@ table TableDecl {
 
 // SINGLE_VALUE, # = scalar | string_constant
 // VALUE, # = single_value | object | [ commasep( value ) ]
-// COMMASEP, #(x) = [ x ( , x )* ]
 
 // STRING_CONSTANT, # = \".*?\\"
-// IDENT, # = [a-zA-Z_][a-zA-Z0-9_]*
-// #DIGIT, # [:digit:] = [0-9]
-// #XDIGIT, # [:xdigit:] = [0-9a-fA-F]
-// #DEC_INTEGER_CONSTANT, # = [-+]?[:digit:]+
-// #HEX_INTEGER_CONSTANT, # = [-+]?0[xX][:xdigit:]+
+// BOOLEAN_CONSTANT, # = true | false
 // INTEGER_CONSTANT, # = dec_integer_constant | hex_integer_constant
-// #DEC_FLOAT_CONSTANT, # = [-+]?(([.][:digit:]+)|([:digit:]+[.][:digit:]*)|([:digit:]+))([eE][-+]?[:digit:]+)?
-// #HEX_FLOAT_CONSTANT, # = [-+]?0[xX](([.][:xdigit:]+)|([:xdigit:]+[.][:xdigit:]*)|([:xdigit:]+))([pP][-+]?[:digit:]+)
-// #SPECIAL_FLOAT_CONSTANT, # = [-+]?(nan|inf|infinity)
-// #FLOAT_CONSTANT, # = dec_float_constant | hex_float_constant | special_float_constant
-// #BOOLEAN_CONSTANT, # = true | false
+// FLOAT_CONSTANT, # = dec_float_constant | hex_float_constant | special_float_constant
+
+
+
+// #DEC_INTEGER_CONSTANT, # = [-+]?[:digit:]+
+// HEX_INTEGER_CONSTANT, # = [-+]?0[xX][:xdigit:]+
+
+// COMMASEP, #(x) = [ x ( , x )* ]
+// IDENT, # = [a-zA-Z_][a-zA-Z0-9_]*
+// DIGIT, # [:digit:] = [0-9]
+// XDIGIT, # [:xdigit:] = [0-9a-fA-F]
+// DEC_FLOAT_CONSTANT, # = [-+]?(([.][:digit:]+)|([:digit:]+[.][:digit:]*)|([:digit:]+))([eE][-+]?[:digit:]+)?
+// HEX_FLOAT_CONSTANT, # = [-+]?0[xX](([.][:xdigit:]+)|([:xdigit:]+[.][:xdigit:]*)|([:xdigit:]+))([pP][-+]?[:digit:]+)
+// SPECIAL_FLOAT_CONSTANT, # = [-+]?(nan|inf|infinity)
 
 
 /// Error cases

@@ -5,7 +5,7 @@
 @warning_ignore_start('unsafe_method_access')
 @warning_ignore_start('unsafe_call_argument')
 
-static func get_root( _bytes : PackedByteArray ) -> Schema:
+static func get_root( _bytes: PackedByteArray ) -> Schema:
 	return get_Schema( _bytes, _bytes.decode_u32(0) )
 
 enum BaseType {
@@ -50,8 +50,8 @@ class Type extends FlatBuffer:
 		VT_ELEMENT_SIZE = 14
 	}
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
-		bytes = bytes_; start = start_
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
 	func base_type_is_present() -> bool:
@@ -74,72 +74,74 @@ class Type extends FlatBuffer:
 
 	# [================[ base_type ]================]
 	func base_type() -> BaseType:
-		var foffset : int = get_field_offset( vtable.VT_BASE_TYPE )
+		var foffset: int = get_field_offset( vtable.VT_BASE_TYPE )
 		if not foffset: return 0 as BaseType
-		return bytes.decode_s8( start + foffset ) as BaseType
+		var decoded: BaseType = _fb_bytes.decode_s8( _fb_start + foffset )
+		return decoded
 
 	# [================[ element ]================]
 	func element() -> BaseType:
-		var foffset : int = get_field_offset( vtable.VT_ELEMENT )
+		var foffset: int = get_field_offset( vtable.VT_ELEMENT )
 		if not foffset: return 0 as BaseType
-		return bytes.decode_s8( start + foffset ) as BaseType
+		var decoded: BaseType = _fb_bytes.decode_s8( _fb_start + foffset )
+		return decoded
 
 	# [================[ index ]================]
 	func index() -> int:
-		var foffset : int = get_field_offset( vtable.VT_INDEX )
+		var foffset: int = get_field_offset( vtable.VT_INDEX )
 		if not foffset: return -1
-		return bytes.decode_s32( start + foffset )
+		return _fb_bytes.decode_s32( _fb_start + foffset )
 
 	# [================[ fixed_length ]================]
 	func fixed_length() -> int:
-		var foffset : int = get_field_offset( vtable.VT_FIXED_LENGTH )
+		var foffset: int = get_field_offset( vtable.VT_FIXED_LENGTH )
 		if not foffset: return 0
-		return bytes.decode_u16( start + foffset )
+		return _fb_bytes.decode_u16( _fb_start + foffset )
 
 	# [================[ base_size ]================]
 	# The size (octets) of the `base_type` field.
 	func base_size() -> int:
-		var foffset : int = get_field_offset( vtable.VT_BASE_SIZE )
+		var foffset: int = get_field_offset( vtable.VT_BASE_SIZE )
 		if not foffset: return 4
-		return bytes.decode_u32( start + foffset )
+		return _fb_bytes.decode_u32( _fb_start + foffset )
 
 	# [================[ element_size ]================]
 	# The size (octets) of the `element` field, if present.
 	func element_size() -> int:
-		var foffset : int = get_field_offset( vtable.VT_ELEMENT_SIZE )
+		var foffset: int = get_field_offset( vtable.VT_ELEMENT_SIZE )
 		if not foffset: return 0
-		return bytes.decode_u32( start + foffset )
+		return _fb_bytes.decode_u32( _fb_start + foffset )
 
 
 class TypeBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
-	var start_ : int
+	var start_: int
 
-	func _init( _fbb : FlatBufferBuilder ) -> void:
+	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_base_type( base_type : BaseType ) -> void:
+	func add_base_type( base_type: BaseType ) -> void:
 		fbb_.add_element_byte( Type.vtable.VT_BASE_TYPE, base_type )
 
-	func add_element( element : BaseType ) -> void:
+	func add_element( element: BaseType ) -> void:
 		fbb_.add_element_byte( Type.vtable.VT_ELEMENT, element )
 
-	func add_index( index : int ) -> void:
+	func add_index( index: int ) -> void:
 		fbb_.add_element_int_default( Type.vtable.VT_INDEX, index, -1 )
 
-	func add_fixed_length( fixed_length : int ) -> void:
+	func add_fixed_length( fixed_length: int ) -> void:
 		fbb_.add_element_ushort_default( Type.vtable.VT_FIXED_LENGTH, fixed_length, 0 )
 
-	func add_base_size( base_size : int ) -> void:
+	func add_base_size( base_size: int ) -> void:
 		fbb_.add_element_uint_default( Type.vtable.VT_BASE_SIZE, base_size, 4 )
 
-	func add_element_size( element_size : int ) -> void:
+	func add_element_size( element_size: int ) -> void:
 		fbb_.add_element_uint_default( Type.vtable.VT_ELEMENT_SIZE, element_size, 0 )
 
 	func finish() -> int:
-		var end : int = fbb_.end_table( start_ )
-		var o : int = end
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
 		return o;
 
 
@@ -149,8 +151,8 @@ class KeyValue extends FlatBuffer:
 		VT_VALUE = 6
 	}
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
-		bytes = bytes_; start = start_
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
 	# key is required
@@ -163,34 +165,34 @@ class KeyValue extends FlatBuffer:
 
 	# [================[ key ]================]
 	func key() -> String:
-		var field_start : int = get_field_start( vtable.VT_KEY )
+		var field_start: int = get_field_start( vtable.VT_KEY )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 	# [================[ value ]================]
 	func value() -> String:
-		var field_start : int = get_field_start( vtable.VT_VALUE )
+		var field_start: int = get_field_start( vtable.VT_VALUE )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 
 class KeyValueBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
-	var start_ : int
+	var start_: int
 
-	func _init( _fbb : FlatBufferBuilder ) -> void:
+	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_key( key_offset : int ) -> void:
+	func add_key( key_offset: int ) -> void:
 		fbb_.add_offset( KeyValue.vtable.VT_KEY, key_offset )
 
-	func add_value( value_offset : int ) -> void:
+	func add_value( value_offset: int ) -> void:
 		fbb_.add_offset( KeyValue.vtable.VT_VALUE, value_offset )
 
 	func finish() -> int:
-		var end : int = fbb_.end_table( start_ )
-		var o : int = end
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
 		fbb_.Required(o, KeyValue.vtable.VT_KEY);
 		return o;
 
@@ -206,8 +208,8 @@ class EnumVal extends FlatBuffer:
 		VT_ATTRIBUTES = 14
 	}
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
-		bytes = bytes_; start = start_
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
 	# name is required
@@ -231,108 +233,108 @@ class EnumVal extends FlatBuffer:
 
 	# [================[ name ]================]
 	func name() -> String:
-		var field_start : int = get_field_start( vtable.VT_NAME )
+		var field_start: int = get_field_start( vtable.VT_NAME )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 	# [================[ value ]================]
 	func value() -> int:
-		var foffset : int = get_field_offset( vtable.VT_VALUE )
+		var foffset: int = get_field_offset( vtable.VT_VALUE )
 		if not foffset: return 0
-		return bytes.decode_s64( start + foffset )
+		return _fb_bytes.decode_s64( _fb_start + foffset )
 
 	# [================[ union_type ]================]
 	func union_type() -> _Reflection_schema.Type:
-		var field_start : int = get_field_start( vtable.VT_UNION_TYPE )
+		var field_start: int = get_field_start( vtable.VT_UNION_TYPE )
 		if not field_start: return null
-		return _Reflection_schema.get_Type( bytes, field_start )
+		return _Reflection_schema.get_Type( _fb_bytes, field_start )
 
 	# [================[ documentation ]================]
 	func documentation_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_DOCUMENTATION )
+		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func documentation() -> PackedStringArray:
-		var array_start : int = get_field_start( vtable.VT_DOCUMENTATION )
+		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : PackedStringArray
+		var array: PackedStringArray
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var idx : int = array_start + i * 4
-			var element_start : int = idx + bytes.decode_u32( idx )
+		for i: int in array_size:
+			var idx: int = array_start + i * 4
+			var element_start: int = idx + _fb_bytes.decode_u32( idx )
 			array[i] = decode_String( element_start )
 		return array
 
-	func documentation_at( index : int ) -> String:
-		var array_start : int = get_field_start( vtable.VT_DOCUMENTATION )
+	func documentation_at( index: int ) -> String:
+		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return ''
 		array_start += 4
-		var string_start : int = array_start + index * 4
-		string_start += bytes.decode_u32( string_start )
+		var string_start: int = array_start + index * 4
+		string_start += _fb_bytes.decode_u32( string_start )
 		return decode_String( string_start )
 
 	# [================[ attributes ]================]
 	func attributes_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_ATTRIBUTES )
+		var array_start: int = get_field_start( vtable.VT_ATTRIBUTES )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func attributes() -> Array:
-		var array_start : int = get_field_start( vtable.VT_ATTRIBUTES )
+		var array_start: int = get_field_start( vtable.VT_ATTRIBUTES )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : Array
+		var array: Array
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var p : int = array_start + i * 4
-			array[i] = _Reflection_schema.get_KeyValue( bytes, p + bytes.decode_u32( p ) )
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.get_KeyValue( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func attributes_at( idx : int, into : KeyValue = null ) -> KeyValue:
-		var field_start : int = get_field_start( vtable.VT_ATTRIBUTES )
-		var array_size : int = bytes.decode_u32( field_start )
-		var array_start : int = field_start + 4
+	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
+		var field_start: int = get_field_start( vtable.VT_ATTRIBUTES )
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
 		assert( idx < array_size, 'index is out of bounds')
-		var relative_offset : int = array_start + idx * 4
-		var offset : int = relative_offset + bytes.decode_u32( relative_offset )
+		var relative_offset: int = array_start + idx * 4
+		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
-			into.bytes = bytes
-			into.start = relative_offset
+			into._fb_bytes = _fb_bytes
+			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_KeyValue( bytes, offset )
+		return _Reflection_schema.get_KeyValue( _fb_bytes, offset )
 
 
 class EnumValBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
-	var start_ : int
+	var start_: int
 
-	func _init( _fbb : FlatBufferBuilder ) -> void:
+	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_name( name_offset : int ) -> void:
+	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( EnumVal.vtable.VT_NAME, name_offset )
 
-	func add_value( value : int ) -> void:
+	func add_value( value: int ) -> void:
 		fbb_.add_element_long_default( EnumVal.vtable.VT_VALUE, value, 0 )
 
-	func add_union_type( union_type_offset : int ) -> void:
+	func add_union_type( union_type_offset: int ) -> void:
 		fbb_.add_offset( EnumVal.vtable.VT_UNION_TYPE, union_type_offset )
 
-	func add_documentation( documentation_offset : int ) -> void:
+	func add_documentation( documentation_offset: int ) -> void:
 		fbb_.add_offset( EnumVal.vtable.VT_DOCUMENTATION, documentation_offset )
 
-	func add_attributes( attributes_offset : int ) -> void:
+	func add_attributes( attributes_offset: int ) -> void:
 		fbb_.add_offset( EnumVal.vtable.VT_ATTRIBUTES, attributes_offset )
 
 	func finish() -> int:
-		var end : int = fbb_.end_table( start_ )
-		var o : int = end
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
 		fbb_.Required(o, EnumVal.vtable.VT_NAME);
 		return o;
 
@@ -350,8 +352,8 @@ class Enum extends FlatBuffer:
 		VT_DECLARATION_FILE = 16
 	}
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
-		bytes = bytes_; start = start_
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
 	# name is required
@@ -383,153 +385,153 @@ class Enum extends FlatBuffer:
 
 	# [================[ name ]================]
 	func name() -> String:
-		var field_start : int = get_field_start( vtable.VT_NAME )
+		var field_start: int = get_field_start( vtable.VT_NAME )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 	# [================[ values ]================]
 	func values_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_VALUES )
+		var array_start: int = get_field_start( vtable.VT_VALUES )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func values() -> Array:
-		var array_start : int = get_field_start( vtable.VT_VALUES )
+		var array_start: int = get_field_start( vtable.VT_VALUES )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : Array
+		var array: Array
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var p : int = array_start + i * 4
-			array[i] = _Reflection_schema.get_EnumVal( bytes, p + bytes.decode_u32( p ) )
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.get_EnumVal( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func values_at( idx : int, into : EnumVal = null ) -> EnumVal:
-		var field_start : int = get_field_start( vtable.VT_VALUES )
-		var array_size : int = bytes.decode_u32( field_start )
-		var array_start : int = field_start + 4
+	func values_at( idx: int, into: EnumVal = null ) -> EnumVal:
+		var field_start: int = get_field_start( vtable.VT_VALUES )
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
 		assert( idx < array_size, 'index is out of bounds')
-		var relative_offset : int = array_start + idx * 4
-		var offset : int = relative_offset + bytes.decode_u32( relative_offset )
+		var relative_offset: int = array_start + idx * 4
+		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
-			into.bytes = bytes
-			into.start = relative_offset
+			into._fb_bytes = _fb_bytes
+			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_EnumVal( bytes, offset )
+		return _Reflection_schema.get_EnumVal( _fb_bytes, offset )
 
 	# [================[ is_union ]================]
-	func is_union() -> int:
-		var foffset : int = get_field_offset( vtable.VT_IS_UNION )
+	func is_union() -> bool:
+		var foffset: int = get_field_offset( vtable.VT_IS_UNION )
 		if not foffset: return 0
-		return bytes.decode_u8( start + foffset )
+		return _fb_bytes.decode_u8( _fb_start + foffset )
 
 	# [================[ underlying_type ]================]
 	func underlying_type() -> _Reflection_schema.Type:
-		var field_start : int = get_field_start( vtable.VT_UNDERLYING_TYPE )
+		var field_start: int = get_field_start( vtable.VT_UNDERLYING_TYPE )
 		if not field_start: return null
-		return _Reflection_schema.get_Type( bytes, field_start )
+		return _Reflection_schema.get_Type( _fb_bytes, field_start )
 
 	# [================[ attributes ]================]
 	func attributes_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_ATTRIBUTES )
+		var array_start: int = get_field_start( vtable.VT_ATTRIBUTES )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func attributes() -> Array:
-		var array_start : int = get_field_start( vtable.VT_ATTRIBUTES )
+		var array_start: int = get_field_start( vtable.VT_ATTRIBUTES )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : Array
+		var array: Array
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var p : int = array_start + i * 4
-			array[i] = _Reflection_schema.get_KeyValue( bytes, p + bytes.decode_u32( p ) )
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.get_KeyValue( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func attributes_at( idx : int, into : KeyValue = null ) -> KeyValue:
-		var field_start : int = get_field_start( vtable.VT_ATTRIBUTES )
-		var array_size : int = bytes.decode_u32( field_start )
-		var array_start : int = field_start + 4
+	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
+		var field_start: int = get_field_start( vtable.VT_ATTRIBUTES )
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
 		assert( idx < array_size, 'index is out of bounds')
-		var relative_offset : int = array_start + idx * 4
-		var offset : int = relative_offset + bytes.decode_u32( relative_offset )
+		var relative_offset: int = array_start + idx * 4
+		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
-			into.bytes = bytes
-			into.start = relative_offset
+			into._fb_bytes = _fb_bytes
+			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_KeyValue( bytes, offset )
+		return _Reflection_schema.get_KeyValue( _fb_bytes, offset )
 
 	# [================[ documentation ]================]
 	func documentation_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_DOCUMENTATION )
+		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func documentation() -> PackedStringArray:
-		var array_start : int = get_field_start( vtable.VT_DOCUMENTATION )
+		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : PackedStringArray
+		var array: PackedStringArray
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var idx : int = array_start + i * 4
-			var element_start : int = idx + bytes.decode_u32( idx )
+		for i: int in array_size:
+			var idx: int = array_start + i * 4
+			var element_start: int = idx + _fb_bytes.decode_u32( idx )
 			array[i] = decode_String( element_start )
 		return array
 
-	func documentation_at( index : int ) -> String:
-		var array_start : int = get_field_start( vtable.VT_DOCUMENTATION )
+	func documentation_at( index: int ) -> String:
+		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return ''
 		array_start += 4
-		var string_start : int = array_start + index * 4
-		string_start += bytes.decode_u32( string_start )
+		var string_start: int = array_start + index * 4
+		string_start += _fb_bytes.decode_u32( string_start )
 		return decode_String( string_start )
 
 	# [================[ declaration_file ]================]
 	# File that this Enum is declared in.
 	func declaration_file() -> String:
-		var field_start : int = get_field_start( vtable.VT_DECLARATION_FILE )
+		var field_start: int = get_field_start( vtable.VT_DECLARATION_FILE )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 
 class EnumBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
-	var start_ : int
+	var start_: int
 
-	func _init( _fbb : FlatBufferBuilder ) -> void:
+	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_name( name_offset : int ) -> void:
+	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( Enum.vtable.VT_NAME, name_offset )
 
-	func add_values( values_offset : int ) -> void:
+	func add_values( values_offset: int ) -> void:
 		fbb_.add_offset( Enum.vtable.VT_VALUES, values_offset )
 
-	func add_is_union( is_union : int ) -> void:
+	func add_is_union( is_union: bool ) -> void:
 		fbb_.add_element_bool_default( Enum.vtable.VT_IS_UNION, is_union, 0 )
 
-	func add_underlying_type( underlying_type_offset : int ) -> void:
+	func add_underlying_type( underlying_type_offset: int ) -> void:
 		fbb_.add_offset( Enum.vtable.VT_UNDERLYING_TYPE, underlying_type_offset )
 
-	func add_attributes( attributes_offset : int ) -> void:
+	func add_attributes( attributes_offset: int ) -> void:
 		fbb_.add_offset( Enum.vtable.VT_ATTRIBUTES, attributes_offset )
 
-	func add_documentation( documentation_offset : int ) -> void:
+	func add_documentation( documentation_offset: int ) -> void:
 		fbb_.add_offset( Enum.vtable.VT_DOCUMENTATION, documentation_offset )
 
-	func add_declaration_file( declaration_file_offset : int ) -> void:
+	func add_declaration_file( declaration_file_offset: int ) -> void:
 		fbb_.add_offset( Enum.vtable.VT_DECLARATION_FILE, declaration_file_offset )
 
 	func finish() -> int:
-		var end : int = fbb_.end_table( start_ )
-		var o : int = end
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
 		fbb_.Required(o, Enum.vtable.VT_NAME);
 		fbb_.Required(o, Enum.vtable.VT_VALUES);
 		fbb_.Required(o, Enum.vtable.VT_UNDERLYING_TYPE);
@@ -555,8 +557,8 @@ class Field extends FlatBuffer:
 		VT_PADDING = 28
 	}
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
-		bytes = bytes_; start = start_
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
 	# name is required
@@ -604,181 +606,181 @@ class Field extends FlatBuffer:
 
 	# [================[ name ]================]
 	func name() -> String:
-		var field_start : int = get_field_start( vtable.VT_NAME )
+		var field_start: int = get_field_start( vtable.VT_NAME )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 	# [================[ type ]================]
 	func type() -> _Reflection_schema.Type:
-		var field_start : int = get_field_start( vtable.VT_TYPE )
+		var field_start: int = get_field_start( vtable.VT_TYPE )
 		if not field_start: return null
-		return _Reflection_schema.get_Type( bytes, field_start )
+		return _Reflection_schema.get_Type( _fb_bytes, field_start )
 
 	# [================[ id ]================]
 	func id() -> int:
-		var foffset : int = get_field_offset( vtable.VT_ID )
+		var foffset: int = get_field_offset( vtable.VT_ID )
 		if not foffset: return 0
-		return bytes.decode_u16( start + foffset )
+		return _fb_bytes.decode_u16( _fb_start + foffset )
 
 	# [================[ offset ]================]
 	func offset() -> int:
-		var foffset : int = get_field_offset( vtable.VT_OFFSET )
+		var foffset: int = get_field_offset( vtable.VT_OFFSET )
 		if not foffset: return 0
-		return bytes.decode_u16( start + foffset )
+		return _fb_bytes.decode_u16( _fb_start + foffset )
 
 	# [================[ default_integer ]================]
 	func default_integer() -> int:
-		var foffset : int = get_field_offset( vtable.VT_DEFAULT_INTEGER )
+		var foffset: int = get_field_offset( vtable.VT_DEFAULT_INTEGER )
 		if not foffset: return 0
-		return bytes.decode_s64( start + foffset )
+		return _fb_bytes.decode_s64( _fb_start + foffset )
 
 	# [================[ default_real ]================]
 	func default_real() -> float:
-		var foffset : int = get_field_offset( vtable.VT_DEFAULT_REAL )
+		var foffset: int = get_field_offset( vtable.VT_DEFAULT_REAL )
 		if not foffset: return 0.0
-		return bytes.decode_double( start + foffset )
+		return _fb_bytes.decode_double( _fb_start + foffset )
 
 	# [================[ deprecated ]================]
-	func deprecated() -> int:
-		var foffset : int = get_field_offset( vtable.VT_DEPRECATED )
+	func deprecated() -> bool:
+		var foffset: int = get_field_offset( vtable.VT_DEPRECATED )
 		if not foffset: return 0
-		return bytes.decode_u8( start + foffset )
+		return _fb_bytes.decode_u8( _fb_start + foffset )
 
 	# [================[ required ]================]
-	func required() -> int:
-		var foffset : int = get_field_offset( vtable.VT_REQUIRED )
+	func required() -> bool:
+		var foffset: int = get_field_offset( vtable.VT_REQUIRED )
 		if not foffset: return 0
-		return bytes.decode_u8( start + foffset )
+		return _fb_bytes.decode_u8( _fb_start + foffset )
 
 	# [================[ key ]================]
-	func key() -> int:
-		var foffset : int = get_field_offset( vtable.VT_KEY )
+	func key() -> bool:
+		var foffset: int = get_field_offset( vtable.VT_KEY )
 		if not foffset: return 0
-		return bytes.decode_u8( start + foffset )
+		return _fb_bytes.decode_u8( _fb_start + foffset )
 
 	# [================[ attributes ]================]
 	func attributes_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_ATTRIBUTES )
+		var array_start: int = get_field_start( vtable.VT_ATTRIBUTES )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func attributes() -> Array:
-		var array_start : int = get_field_start( vtable.VT_ATTRIBUTES )
+		var array_start: int = get_field_start( vtable.VT_ATTRIBUTES )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : Array
+		var array: Array
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var p : int = array_start + i * 4
-			array[i] = _Reflection_schema.get_KeyValue( bytes, p + bytes.decode_u32( p ) )
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.get_KeyValue( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func attributes_at( idx : int, into : KeyValue = null ) -> KeyValue:
-		var field_start : int = get_field_start( vtable.VT_ATTRIBUTES )
-		var array_size : int = bytes.decode_u32( field_start )
-		var array_start : int = field_start + 4
+	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
+		var field_start: int = get_field_start( vtable.VT_ATTRIBUTES )
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
 		assert( idx < array_size, 'index is out of bounds')
-		var relative_offset : int = array_start + idx * 4
-		var offset : int = relative_offset + bytes.decode_u32( relative_offset )
+		var relative_offset: int = array_start + idx * 4
+		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
-			into.bytes = bytes
-			into.start = relative_offset
+			into._fb_bytes = _fb_bytes
+			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_KeyValue( bytes, offset )
+		return _Reflection_schema.get_KeyValue( _fb_bytes, offset )
 
 	# [================[ documentation ]================]
 	func documentation_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_DOCUMENTATION )
+		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func documentation() -> PackedStringArray:
-		var array_start : int = get_field_start( vtable.VT_DOCUMENTATION )
+		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : PackedStringArray
+		var array: PackedStringArray
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var idx : int = array_start + i * 4
-			var element_start : int = idx + bytes.decode_u32( idx )
+		for i: int in array_size:
+			var idx: int = array_start + i * 4
+			var element_start: int = idx + _fb_bytes.decode_u32( idx )
 			array[i] = decode_String( element_start )
 		return array
 
-	func documentation_at( index : int ) -> String:
-		var array_start : int = get_field_start( vtable.VT_DOCUMENTATION )
+	func documentation_at( index: int ) -> String:
+		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return ''
 		array_start += 4
-		var string_start : int = array_start + index * 4
-		string_start += bytes.decode_u32( string_start )
+		var string_start: int = array_start + index * 4
+		string_start += _fb_bytes.decode_u32( string_start )
 		return decode_String( string_start )
 
 	# [================[ optional ]================]
-	func optional() -> int:
-		var foffset : int = get_field_offset( vtable.VT_OPTIONAL )
+	func optional() -> bool:
+		var foffset: int = get_field_offset( vtable.VT_OPTIONAL )
 		if not foffset: return 0
-		return bytes.decode_u8( start + foffset )
+		return _fb_bytes.decode_u8( _fb_start + foffset )
 
 	# [================[ padding ]================]
 	# Number of padding octets to always add after this field. Structs only.
 	func padding() -> int:
-		var foffset : int = get_field_offset( vtable.VT_PADDING )
+		var foffset: int = get_field_offset( vtable.VT_PADDING )
 		if not foffset: return 0
-		return bytes.decode_u16( start + foffset )
+		return _fb_bytes.decode_u16( _fb_start + foffset )
 
 
 class FieldBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
-	var start_ : int
+	var start_: int
 
-	func _init( _fbb : FlatBufferBuilder ) -> void:
+	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_name( name_offset : int ) -> void:
+	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( Field.vtable.VT_NAME, name_offset )
 
-	func add_type( type_offset : int ) -> void:
+	func add_type( type_offset: int ) -> void:
 		fbb_.add_offset( Field.vtable.VT_TYPE, type_offset )
 
-	func add_id( id : int ) -> void:
+	func add_id( id: int ) -> void:
 		fbb_.add_element_ushort_default( Field.vtable.VT_ID, id, 0 )
 
-	func add_offset( offset : int ) -> void:
+	func add_offset( offset: int ) -> void:
 		fbb_.add_element_ushort_default( Field.vtable.VT_OFFSET, offset, 0 )
 
-	func add_default_integer( default_integer : int ) -> void:
+	func add_default_integer( default_integer: int ) -> void:
 		fbb_.add_element_long_default( Field.vtable.VT_DEFAULT_INTEGER, default_integer, 0 )
 
-	func add_default_real( default_real : float ) -> void:
+	func add_default_real( default_real: float ) -> void:
 		fbb_.add_element_double_default( Field.vtable.VT_DEFAULT_REAL, default_real, 0.0 )
 
-	func add_deprecated( deprecated : int ) -> void:
+	func add_deprecated( deprecated: bool ) -> void:
 		fbb_.add_element_bool_default( Field.vtable.VT_DEPRECATED, deprecated, 0 )
 
-	func add_required( required : int ) -> void:
+	func add_required( required: bool ) -> void:
 		fbb_.add_element_bool_default( Field.vtable.VT_REQUIRED, required, 0 )
 
-	func add_key( key : int ) -> void:
+	func add_key( key: bool ) -> void:
 		fbb_.add_element_bool_default( Field.vtable.VT_KEY, key, 0 )
 
-	func add_attributes( attributes_offset : int ) -> void:
+	func add_attributes( attributes_offset: int ) -> void:
 		fbb_.add_offset( Field.vtable.VT_ATTRIBUTES, attributes_offset )
 
-	func add_documentation( documentation_offset : int ) -> void:
+	func add_documentation( documentation_offset: int ) -> void:
 		fbb_.add_offset( Field.vtable.VT_DOCUMENTATION, documentation_offset )
 
-	func add_optional( optional : int ) -> void:
+	func add_optional( optional: bool ) -> void:
 		fbb_.add_element_bool_default( Field.vtable.VT_OPTIONAL, optional, 0 )
 
-	func add_padding( padding : int ) -> void:
+	func add_padding( padding: int ) -> void:
 		fbb_.add_element_ushort_default( Field.vtable.VT_PADDING, padding, 0 )
 
 	func finish() -> int:
-		var end : int = fbb_.end_table( start_ )
-		var o : int = end
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
 		fbb_.Required(o, Field.vtable.VT_NAME);
 		fbb_.Required(o, Field.vtable.VT_TYPE);
 		return o;
@@ -798,8 +800,8 @@ class Object_ extends FlatBuffer:
 		VT_DECLARATION_FILE = 18
 	}
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
-		bytes = bytes_; start = start_
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
 	# name is required
@@ -832,162 +834,162 @@ class Object_ extends FlatBuffer:
 
 	# [================[ name ]================]
 	func name() -> String:
-		var field_start : int = get_field_start( vtable.VT_NAME )
+		var field_start: int = get_field_start( vtable.VT_NAME )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 	# [================[ fields ]================]
 	func fields_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_FIELDS )
+		var array_start: int = get_field_start( vtable.VT_FIELDS )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func fields() -> Array:
-		var array_start : int = get_field_start( vtable.VT_FIELDS )
+		var array_start: int = get_field_start( vtable.VT_FIELDS )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : Array
+		var array: Array
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var p : int = array_start + i * 4
-			array[i] = _Reflection_schema.get_Field( bytes, p + bytes.decode_u32( p ) )
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.get_Field( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func fields_at( idx : int, into : Field = null ) -> Field:
-		var field_start : int = get_field_start( vtable.VT_FIELDS )
-		var array_size : int = bytes.decode_u32( field_start )
-		var array_start : int = field_start + 4
+	func fields_at( idx: int, into: Field = null ) -> Field:
+		var field_start: int = get_field_start( vtable.VT_FIELDS )
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
 		assert( idx < array_size, 'index is out of bounds')
-		var relative_offset : int = array_start + idx * 4
-		var offset : int = relative_offset + bytes.decode_u32( relative_offset )
+		var relative_offset: int = array_start + idx * 4
+		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
-			into.bytes = bytes
-			into.start = relative_offset
+			into._fb_bytes = _fb_bytes
+			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_Field( bytes, offset )
+		return _Reflection_schema.get_Field( _fb_bytes, offset )
 
 	# [================[ is_struct ]================]
-	func is_struct() -> int:
-		var foffset : int = get_field_offset( vtable.VT_IS_STRUCT )
+	func is_struct() -> bool:
+		var foffset: int = get_field_offset( vtable.VT_IS_STRUCT )
 		if not foffset: return 0
-		return bytes.decode_u8( start + foffset )
+		return _fb_bytes.decode_u8( _fb_start + foffset )
 
 	# [================[ minalign ]================]
 	func minalign() -> int:
-		var foffset : int = get_field_offset( vtable.VT_MINALIGN )
+		var foffset: int = get_field_offset( vtable.VT_MINALIGN )
 		if not foffset: return 0
-		return bytes.decode_s32( start + foffset )
+		return _fb_bytes.decode_s32( _fb_start + foffset )
 
 	# [================[ bytesize ]================]
 	func bytesize() -> int:
-		var foffset : int = get_field_offset( vtable.VT_BYTESIZE )
+		var foffset: int = get_field_offset( vtable.VT_BYTESIZE )
 		if not foffset: return 0
-		return bytes.decode_s32( start + foffset )
+		return _fb_bytes.decode_s32( _fb_start + foffset )
 
 	# [================[ attributes ]================]
 	func attributes_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_ATTRIBUTES )
+		var array_start: int = get_field_start( vtable.VT_ATTRIBUTES )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func attributes() -> Array:
-		var array_start : int = get_field_start( vtable.VT_ATTRIBUTES )
+		var array_start: int = get_field_start( vtable.VT_ATTRIBUTES )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : Array
+		var array: Array
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var p : int = array_start + i * 4
-			array[i] = _Reflection_schema.get_KeyValue( bytes, p + bytes.decode_u32( p ) )
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.get_KeyValue( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func attributes_at( idx : int, into : KeyValue = null ) -> KeyValue:
-		var field_start : int = get_field_start( vtable.VT_ATTRIBUTES )
-		var array_size : int = bytes.decode_u32( field_start )
-		var array_start : int = field_start + 4
+	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
+		var field_start: int = get_field_start( vtable.VT_ATTRIBUTES )
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
 		assert( idx < array_size, 'index is out of bounds')
-		var relative_offset : int = array_start + idx * 4
-		var offset : int = relative_offset + bytes.decode_u32( relative_offset )
+		var relative_offset: int = array_start + idx * 4
+		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
-			into.bytes = bytes
-			into.start = relative_offset
+			into._fb_bytes = _fb_bytes
+			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_KeyValue( bytes, offset )
+		return _Reflection_schema.get_KeyValue( _fb_bytes, offset )
 
 	# [================[ documentation ]================]
 	func documentation_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_DOCUMENTATION )
+		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func documentation() -> PackedStringArray:
-		var array_start : int = get_field_start( vtable.VT_DOCUMENTATION )
+		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : PackedStringArray
+		var array: PackedStringArray
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var idx : int = array_start + i * 4
-			var element_start : int = idx + bytes.decode_u32( idx )
+		for i: int in array_size:
+			var idx: int = array_start + i * 4
+			var element_start: int = idx + _fb_bytes.decode_u32( idx )
 			array[i] = decode_String( element_start )
 		return array
 
-	func documentation_at( index : int ) -> String:
-		var array_start : int = get_field_start( vtable.VT_DOCUMENTATION )
+	func documentation_at( index: int ) -> String:
+		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return ''
 		array_start += 4
-		var string_start : int = array_start + index * 4
-		string_start += bytes.decode_u32( string_start )
+		var string_start: int = array_start + index * 4
+		string_start += _fb_bytes.decode_u32( string_start )
 		return decode_String( string_start )
 
 	# [================[ declaration_file ]================]
 	# File that this Object is declared in.
 	func declaration_file() -> String:
-		var field_start : int = get_field_start( vtable.VT_DECLARATION_FILE )
+		var field_start: int = get_field_start( vtable.VT_DECLARATION_FILE )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 
 class Object_Builder extends RefCounted:
 	var fbb_: FlatBufferBuilder
-	var start_ : int
+	var start_: int
 
-	func _init( _fbb : FlatBufferBuilder ) -> void:
+	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_name( name_offset : int ) -> void:
+	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( Object_.vtable.VT_NAME, name_offset )
 
-	func add_fields( fields_offset : int ) -> void:
+	func add_fields( fields_offset: int ) -> void:
 		fbb_.add_offset( Object_.vtable.VT_FIELDS, fields_offset )
 
-	func add_is_struct( is_struct : int ) -> void:
+	func add_is_struct( is_struct: bool ) -> void:
 		fbb_.add_element_bool_default( Object_.vtable.VT_IS_STRUCT, is_struct, 0 )
 
-	func add_minalign( minalign : int ) -> void:
+	func add_minalign( minalign: int ) -> void:
 		fbb_.add_element_int_default( Object_.vtable.VT_MINALIGN, minalign, 0 )
 
-	func add_bytesize( bytesize : int ) -> void:
+	func add_bytesize( bytesize: int ) -> void:
 		fbb_.add_element_int_default( Object_.vtable.VT_BYTESIZE, bytesize, 0 )
 
-	func add_attributes( attributes_offset : int ) -> void:
+	func add_attributes( attributes_offset: int ) -> void:
 		fbb_.add_offset( Object_.vtable.VT_ATTRIBUTES, attributes_offset )
 
-	func add_documentation( documentation_offset : int ) -> void:
+	func add_documentation( documentation_offset: int ) -> void:
 		fbb_.add_offset( Object_.vtable.VT_DOCUMENTATION, documentation_offset )
 
-	func add_declaration_file( declaration_file_offset : int ) -> void:
+	func add_declaration_file( declaration_file_offset: int ) -> void:
 		fbb_.add_offset( Object_.vtable.VT_DECLARATION_FILE, declaration_file_offset )
 
 	func finish() -> int:
-		var end : int = fbb_.end_table( start_ )
-		var o : int = end
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
 		fbb_.Required(o, Object_.vtable.VT_NAME);
 		fbb_.Required(o, Object_.vtable.VT_FIELDS);
 		return o;
@@ -1004,8 +1006,8 @@ class RPCCall extends FlatBuffer:
 		VT_DOCUMENTATION = 12
 	}
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
-		bytes = bytes_; start = start_
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
 	# name is required
@@ -1031,108 +1033,108 @@ class RPCCall extends FlatBuffer:
 
 	# [================[ name ]================]
 	func name() -> String:
-		var field_start : int = get_field_start( vtable.VT_NAME )
+		var field_start: int = get_field_start( vtable.VT_NAME )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 	# [================[ request ]================]
 	func request() -> _Reflection_schema.Object_:
-		var field_start : int = get_field_start( vtable.VT_REQUEST )
+		var field_start: int = get_field_start( vtable.VT_REQUEST )
 		if not field_start: return null
-		return _Reflection_schema.get_Object_( bytes, field_start )
+		return _Reflection_schema.get_Object_( _fb_bytes, field_start )
 
 	# [================[ response ]================]
 	func response() -> _Reflection_schema.Object_:
-		var field_start : int = get_field_start( vtable.VT_RESPONSE )
+		var field_start: int = get_field_start( vtable.VT_RESPONSE )
 		if not field_start: return null
-		return _Reflection_schema.get_Object_( bytes, field_start )
+		return _Reflection_schema.get_Object_( _fb_bytes, field_start )
 
 	# [================[ attributes ]================]
 	func attributes_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_ATTRIBUTES )
+		var array_start: int = get_field_start( vtable.VT_ATTRIBUTES )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func attributes() -> Array:
-		var array_start : int = get_field_start( vtable.VT_ATTRIBUTES )
+		var array_start: int = get_field_start( vtable.VT_ATTRIBUTES )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : Array
+		var array: Array
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var p : int = array_start + i * 4
-			array[i] = _Reflection_schema.get_KeyValue( bytes, p + bytes.decode_u32( p ) )
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.get_KeyValue( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func attributes_at( idx : int, into : KeyValue = null ) -> KeyValue:
-		var field_start : int = get_field_start( vtable.VT_ATTRIBUTES )
-		var array_size : int = bytes.decode_u32( field_start )
-		var array_start : int = field_start + 4
+	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
+		var field_start: int = get_field_start( vtable.VT_ATTRIBUTES )
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
 		assert( idx < array_size, 'index is out of bounds')
-		var relative_offset : int = array_start + idx * 4
-		var offset : int = relative_offset + bytes.decode_u32( relative_offset )
+		var relative_offset: int = array_start + idx * 4
+		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
-			into.bytes = bytes
-			into.start = relative_offset
+			into._fb_bytes = _fb_bytes
+			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_KeyValue( bytes, offset )
+		return _Reflection_schema.get_KeyValue( _fb_bytes, offset )
 
 	# [================[ documentation ]================]
 	func documentation_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_DOCUMENTATION )
+		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func documentation() -> PackedStringArray:
-		var array_start : int = get_field_start( vtable.VT_DOCUMENTATION )
+		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : PackedStringArray
+		var array: PackedStringArray
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var idx : int = array_start + i * 4
-			var element_start : int = idx + bytes.decode_u32( idx )
+		for i: int in array_size:
+			var idx: int = array_start + i * 4
+			var element_start: int = idx + _fb_bytes.decode_u32( idx )
 			array[i] = decode_String( element_start )
 		return array
 
-	func documentation_at( index : int ) -> String:
-		var array_start : int = get_field_start( vtable.VT_DOCUMENTATION )
+	func documentation_at( index: int ) -> String:
+		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return ''
 		array_start += 4
-		var string_start : int = array_start + index * 4
-		string_start += bytes.decode_u32( string_start )
+		var string_start: int = array_start + index * 4
+		string_start += _fb_bytes.decode_u32( string_start )
 		return decode_String( string_start )
 
 
 class RPCCallBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
-	var start_ : int
+	var start_: int
 
-	func _init( _fbb : FlatBufferBuilder ) -> void:
+	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_name( name_offset : int ) -> void:
+	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( RPCCall.vtable.VT_NAME, name_offset )
 
-	func add_request( request_offset : int ) -> void:
+	func add_request( request_offset: int ) -> void:
 		fbb_.add_offset( RPCCall.vtable.VT_REQUEST, request_offset )
 
-	func add_response( response_offset : int ) -> void:
+	func add_response( response_offset: int ) -> void:
 		fbb_.add_offset( RPCCall.vtable.VT_RESPONSE, response_offset )
 
-	func add_attributes( attributes_offset : int ) -> void:
+	func add_attributes( attributes_offset: int ) -> void:
 		fbb_.add_offset( RPCCall.vtable.VT_ATTRIBUTES, attributes_offset )
 
-	func add_documentation( documentation_offset : int ) -> void:
+	func add_documentation( documentation_offset: int ) -> void:
 		fbb_.add_offset( RPCCall.vtable.VT_DOCUMENTATION, documentation_offset )
 
 	func finish() -> int:
-		var end : int = fbb_.end_table( start_ )
-		var o : int = end
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
 		fbb_.Required(o, RPCCall.vtable.VT_NAME);
 		fbb_.Required(o, RPCCall.vtable.VT_REQUEST);
 		fbb_.Required(o, RPCCall.vtable.VT_RESPONSE);
@@ -1150,8 +1152,8 @@ class Service extends FlatBuffer:
 		VT_DECLARATION_FILE = 12
 	}
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
-		bytes = bytes_; start = start_
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
 	# name is required
@@ -1173,135 +1175,135 @@ class Service extends FlatBuffer:
 
 	# [================[ name ]================]
 	func name() -> String:
-		var field_start : int = get_field_start( vtable.VT_NAME )
+		var field_start: int = get_field_start( vtable.VT_NAME )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 	# [================[ calls ]================]
 	func calls_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_CALLS )
+		var array_start: int = get_field_start( vtable.VT_CALLS )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func calls() -> Array:
-		var array_start : int = get_field_start( vtable.VT_CALLS )
+		var array_start: int = get_field_start( vtable.VT_CALLS )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : Array
+		var array: Array
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var p : int = array_start + i * 4
-			array[i] = _Reflection_schema.get_RPCCall( bytes, p + bytes.decode_u32( p ) )
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.get_RPCCall( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func calls_at( idx : int, into : RPCCall = null ) -> RPCCall:
-		var field_start : int = get_field_start( vtable.VT_CALLS )
-		var array_size : int = bytes.decode_u32( field_start )
-		var array_start : int = field_start + 4
+	func calls_at( idx: int, into: RPCCall = null ) -> RPCCall:
+		var field_start: int = get_field_start( vtable.VT_CALLS )
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
 		assert( idx < array_size, 'index is out of bounds')
-		var relative_offset : int = array_start + idx * 4
-		var offset : int = relative_offset + bytes.decode_u32( relative_offset )
+		var relative_offset: int = array_start + idx * 4
+		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
-			into.bytes = bytes
-			into.start = relative_offset
+			into._fb_bytes = _fb_bytes
+			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_RPCCall( bytes, offset )
+		return _Reflection_schema.get_RPCCall( _fb_bytes, offset )
 
 	# [================[ attributes ]================]
 	func attributes_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_ATTRIBUTES )
+		var array_start: int = get_field_start( vtable.VT_ATTRIBUTES )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func attributes() -> Array:
-		var array_start : int = get_field_start( vtable.VT_ATTRIBUTES )
+		var array_start: int = get_field_start( vtable.VT_ATTRIBUTES )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : Array
+		var array: Array
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var p : int = array_start + i * 4
-			array[i] = _Reflection_schema.get_KeyValue( bytes, p + bytes.decode_u32( p ) )
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.get_KeyValue( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func attributes_at( idx : int, into : KeyValue = null ) -> KeyValue:
-		var field_start : int = get_field_start( vtable.VT_ATTRIBUTES )
-		var array_size : int = bytes.decode_u32( field_start )
-		var array_start : int = field_start + 4
+	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
+		var field_start: int = get_field_start( vtable.VT_ATTRIBUTES )
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
 		assert( idx < array_size, 'index is out of bounds')
-		var relative_offset : int = array_start + idx * 4
-		var offset : int = relative_offset + bytes.decode_u32( relative_offset )
+		var relative_offset: int = array_start + idx * 4
+		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
-			into.bytes = bytes
-			into.start = relative_offset
+			into._fb_bytes = _fb_bytes
+			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_KeyValue( bytes, offset )
+		return _Reflection_schema.get_KeyValue( _fb_bytes, offset )
 
 	# [================[ documentation ]================]
 	func documentation_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_DOCUMENTATION )
+		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func documentation() -> PackedStringArray:
-		var array_start : int = get_field_start( vtable.VT_DOCUMENTATION )
+		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : PackedStringArray
+		var array: PackedStringArray
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var idx : int = array_start + i * 4
-			var element_start : int = idx + bytes.decode_u32( idx )
+		for i: int in array_size:
+			var idx: int = array_start + i * 4
+			var element_start: int = idx + _fb_bytes.decode_u32( idx )
 			array[i] = decode_String( element_start )
 		return array
 
-	func documentation_at( index : int ) -> String:
-		var array_start : int = get_field_start( vtable.VT_DOCUMENTATION )
+	func documentation_at( index: int ) -> String:
+		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return ''
 		array_start += 4
-		var string_start : int = array_start + index * 4
-		string_start += bytes.decode_u32( string_start )
+		var string_start: int = array_start + index * 4
+		string_start += _fb_bytes.decode_u32( string_start )
 		return decode_String( string_start )
 
 	# [================[ declaration_file ]================]
 	# File that this Service is declared in.
 	func declaration_file() -> String:
-		var field_start : int = get_field_start( vtable.VT_DECLARATION_FILE )
+		var field_start: int = get_field_start( vtable.VT_DECLARATION_FILE )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 
 class ServiceBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
-	var start_ : int
+	var start_: int
 
-	func _init( _fbb : FlatBufferBuilder ) -> void:
+	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_name( name_offset : int ) -> void:
+	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( Service.vtable.VT_NAME, name_offset )
 
-	func add_calls( calls_offset : int ) -> void:
+	func add_calls( calls_offset: int ) -> void:
 		fbb_.add_offset( Service.vtable.VT_CALLS, calls_offset )
 
-	func add_attributes( attributes_offset : int ) -> void:
+	func add_attributes( attributes_offset: int ) -> void:
 		fbb_.add_offset( Service.vtable.VT_ATTRIBUTES, attributes_offset )
 
-	func add_documentation( documentation_offset : int ) -> void:
+	func add_documentation( documentation_offset: int ) -> void:
 		fbb_.add_offset( Service.vtable.VT_DOCUMENTATION, documentation_offset )
 
-	func add_declaration_file( declaration_file_offset : int ) -> void:
+	func add_declaration_file( declaration_file_offset: int ) -> void:
 		fbb_.add_offset( Service.vtable.VT_DECLARATION_FILE, declaration_file_offset )
 
 	func finish() -> int:
-		var end : int = fbb_.end_table( start_ )
-		var o : int = end
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
 		fbb_.Required(o, Service.vtable.VT_NAME);
 		return o;
 
@@ -1315,8 +1317,8 @@ class SchemaFile extends FlatBuffer:
 		VT_INCLUDED_FILENAMES = 6
 	}
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
-		bytes = bytes_; start = start_
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
 	# filename is required
@@ -1330,56 +1332,56 @@ class SchemaFile extends FlatBuffer:
 	# [================[ filename ]================]
 	# Filename, relative to project root.
 	func filename() -> String:
-		var field_start : int = get_field_start( vtable.VT_FILENAME )
+		var field_start: int = get_field_start( vtable.VT_FILENAME )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 	# [================[ included_filenames ]================]
 	# Names of included files, relative to project root.
 	func included_filenames_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_INCLUDED_FILENAMES )
+		var array_start: int = get_field_start( vtable.VT_INCLUDED_FILENAMES )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func included_filenames() -> PackedStringArray:
-		var array_start : int = get_field_start( vtable.VT_INCLUDED_FILENAMES )
+		var array_start: int = get_field_start( vtable.VT_INCLUDED_FILENAMES )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : PackedStringArray
+		var array: PackedStringArray
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var idx : int = array_start + i * 4
-			var element_start : int = idx + bytes.decode_u32( idx )
+		for i: int in array_size:
+			var idx: int = array_start + i * 4
+			var element_start: int = idx + _fb_bytes.decode_u32( idx )
 			array[i] = decode_String( element_start )
 		return array
 
-	func included_filenames_at( index : int ) -> String:
-		var array_start : int = get_field_start( vtable.VT_INCLUDED_FILENAMES )
+	func included_filenames_at( index: int ) -> String:
+		var array_start: int = get_field_start( vtable.VT_INCLUDED_FILENAMES )
 		if not array_start: return ''
 		array_start += 4
-		var string_start : int = array_start + index * 4
-		string_start += bytes.decode_u32( string_start )
+		var string_start: int = array_start + index * 4
+		string_start += _fb_bytes.decode_u32( string_start )
 		return decode_String( string_start )
 
 
 class SchemaFileBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
-	var start_ : int
+	var start_: int
 
-	func _init( _fbb : FlatBufferBuilder ) -> void:
+	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_filename( filename_offset : int ) -> void:
+	func add_filename( filename_offset: int ) -> void:
 		fbb_.add_offset( SchemaFile.vtable.VT_FILENAME, filename_offset )
 
-	func add_included_filenames( included_filenames_offset : int ) -> void:
+	func add_included_filenames( included_filenames_offset: int ) -> void:
 		fbb_.add_offset( SchemaFile.vtable.VT_INCLUDED_FILENAMES, included_filenames_offset )
 
 	func finish() -> int:
-		var end : int = fbb_.end_table( start_ )
-		var o : int = end
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
 		fbb_.Required(o, SchemaFile.vtable.VT_FILENAME);
 		return o;
 
@@ -1398,8 +1400,8 @@ class Schema extends FlatBuffer:
 		VT_FBS_FILES = 18
 	}
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
-		bytes = bytes_; start = start_
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
 	# objects is required
@@ -1432,211 +1434,212 @@ class Schema extends FlatBuffer:
 
 	# [================[ objects ]================]
 	func objects_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_OBJECTS )
+		var array_start: int = get_field_start( vtable.VT_OBJECTS )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func objects() -> Array:
-		var array_start : int = get_field_start( vtable.VT_OBJECTS )
+		var array_start: int = get_field_start( vtable.VT_OBJECTS )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : Array
+		var array: Array
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var p : int = array_start + i * 4
-			array[i] = _Reflection_schema.get_Object_( bytes, p + bytes.decode_u32( p ) )
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.get_Object_( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func objects_at( idx : int, into : Object_ = null ) -> Object_:
-		var field_start : int = get_field_start( vtable.VT_OBJECTS )
-		var array_size : int = bytes.decode_u32( field_start )
-		var array_start : int = field_start + 4
+	func objects_at( idx: int, into: Object_ = null ) -> Object_:
+		var field_start: int = get_field_start( vtable.VT_OBJECTS )
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
 		assert( idx < array_size, 'index is out of bounds')
-		var relative_offset : int = array_start + idx * 4
-		var offset : int = relative_offset + bytes.decode_u32( relative_offset )
+		var relative_offset: int = array_start + idx * 4
+		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
-			into.bytes = bytes
-			into.start = relative_offset
+			into._fb_bytes = _fb_bytes
+			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_Object_( bytes, offset )
+		return _Reflection_schema.get_Object_( _fb_bytes, offset )
 
 	# [================[ enums ]================]
 	func enums_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_ENUMS )
+		var array_start: int = get_field_start( vtable.VT_ENUMS )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func enums() -> Array:
-		var array_start : int = get_field_start( vtable.VT_ENUMS )
+		var array_start: int = get_field_start( vtable.VT_ENUMS )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : Array
+		var array: Array
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var p : int = array_start + i * 4
-			array[i] = _Reflection_schema.get_Enum( bytes, p + bytes.decode_u32( p ) )
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.get_Enum( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func enums_at( idx : int, into : Enum = null ) -> Enum:
-		var field_start : int = get_field_start( vtable.VT_ENUMS )
-		var array_size : int = bytes.decode_u32( field_start )
-		var array_start : int = field_start + 4
+	func enums_at( idx: int, into: Enum = null ) -> Enum:
+		var field_start: int = get_field_start( vtable.VT_ENUMS )
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
 		assert( idx < array_size, 'index is out of bounds')
-		var relative_offset : int = array_start + idx * 4
-		var offset : int = relative_offset + bytes.decode_u32( relative_offset )
+		var relative_offset: int = array_start + idx * 4
+		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
-			into.bytes = bytes
-			into.start = relative_offset
+			into._fb_bytes = _fb_bytes
+			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_Enum( bytes, offset )
+		return _Reflection_schema.get_Enum( _fb_bytes, offset )
 
 	# [================[ file_ident ]================]
 	func file_ident() -> String:
-		var field_start : int = get_field_start( vtable.VT_FILE_IDENT )
+		var field_start: int = get_field_start( vtable.VT_FILE_IDENT )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 	# [================[ file_ext ]================]
 	func file_ext() -> String:
-		var field_start : int = get_field_start( vtable.VT_FILE_EXT )
+		var field_start: int = get_field_start( vtable.VT_FILE_EXT )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 	# [================[ root_table ]================]
 	func root_table() -> _Reflection_schema.Object_:
-		var field_start : int = get_field_start( vtable.VT_ROOT_TABLE )
+		var field_start: int = get_field_start( vtable.VT_ROOT_TABLE )
 		if not field_start: return null
-		return _Reflection_schema.get_Object_( bytes, field_start )
+		return _Reflection_schema.get_Object_( _fb_bytes, field_start )
 
 	# [================[ services ]================]
 	func services_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_SERVICES )
+		var array_start: int = get_field_start( vtable.VT_SERVICES )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func services() -> Array:
-		var array_start : int = get_field_start( vtable.VT_SERVICES )
+		var array_start: int = get_field_start( vtable.VT_SERVICES )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : Array
+		var array: Array
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var p : int = array_start + i * 4
-			array[i] = _Reflection_schema.get_Service( bytes, p + bytes.decode_u32( p ) )
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.get_Service( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func services_at( idx : int, into : Service = null ) -> Service:
-		var field_start : int = get_field_start( vtable.VT_SERVICES )
-		var array_size : int = bytes.decode_u32( field_start )
-		var array_start : int = field_start + 4
+	func services_at( idx: int, into: Service = null ) -> Service:
+		var field_start: int = get_field_start( vtable.VT_SERVICES )
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
 		assert( idx < array_size, 'index is out of bounds')
-		var relative_offset : int = array_start + idx * 4
-		var offset : int = relative_offset + bytes.decode_u32( relative_offset )
+		var relative_offset: int = array_start + idx * 4
+		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
-			into.bytes = bytes
-			into.start = relative_offset
+			into._fb_bytes = _fb_bytes
+			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_Service( bytes, offset )
+		return _Reflection_schema.get_Service( _fb_bytes, offset )
 
 	# [================[ advanced_features ]================]
 	func advanced_features() -> AdvancedFeatures:
-		var foffset : int = get_field_offset( vtable.VT_ADVANCED_FEATURES )
+		var foffset: int = get_field_offset( vtable.VT_ADVANCED_FEATURES )
 		if not foffset: return 0 as AdvancedFeatures
-		return bytes.decode_u64( start + foffset ) as AdvancedFeatures
+		var decoded: AdvancedFeatures = _fb_bytes.decode_u64( _fb_start + foffset )
+		return decoded
 
 	# [================[ fbs_files ]================]
 	# All the files used in this compilation. Files are relative to where
 # flatc was invoked.
 	func fbs_files_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_FBS_FILES )
+		var array_start: int = get_field_start( vtable.VT_FBS_FILES )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func fbs_files() -> Array:
-		var array_start : int = get_field_start( vtable.VT_FBS_FILES )
+		var array_start: int = get_field_start( vtable.VT_FBS_FILES )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : Array
+		var array: Array
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var p : int = array_start + i * 4
-			array[i] = _Reflection_schema.get_SchemaFile( bytes, p + bytes.decode_u32( p ) )
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.get_SchemaFile( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func fbs_files_at( idx : int, into : SchemaFile = null ) -> SchemaFile:
-		var field_start : int = get_field_start( vtable.VT_FBS_FILES )
-		var array_size : int = bytes.decode_u32( field_start )
-		var array_start : int = field_start + 4
+	func fbs_files_at( idx: int, into: SchemaFile = null ) -> SchemaFile:
+		var field_start: int = get_field_start( vtable.VT_FBS_FILES )
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
 		assert( idx < array_size, 'index is out of bounds')
-		var relative_offset : int = array_start + idx * 4
-		var offset : int = relative_offset + bytes.decode_u32( relative_offset )
+		var relative_offset: int = array_start + idx * 4
+		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
-			into.bytes = bytes
-			into.start = relative_offset
+			into._fb_bytes = _fb_bytes
+			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_SchemaFile( bytes, offset )
+		return _Reflection_schema.get_SchemaFile( _fb_bytes, offset )
 
 
 class SchemaBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
-	var start_ : int
+	var start_: int
 
-	func _init( _fbb : FlatBufferBuilder ) -> void:
+	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_objects( objects_offset : int ) -> void:
+	func add_objects( objects_offset: int ) -> void:
 		fbb_.add_offset( Schema.vtable.VT_OBJECTS, objects_offset )
 
-	func add_enums( enums_offset : int ) -> void:
+	func add_enums( enums_offset: int ) -> void:
 		fbb_.add_offset( Schema.vtable.VT_ENUMS, enums_offset )
 
-	func add_file_ident( file_ident_offset : int ) -> void:
+	func add_file_ident( file_ident_offset: int ) -> void:
 		fbb_.add_offset( Schema.vtable.VT_FILE_IDENT, file_ident_offset )
 
-	func add_file_ext( file_ext_offset : int ) -> void:
+	func add_file_ext( file_ext_offset: int ) -> void:
 		fbb_.add_offset( Schema.vtable.VT_FILE_EXT, file_ext_offset )
 
-	func add_root_table( root_table_offset : int ) -> void:
+	func add_root_table( root_table_offset: int ) -> void:
 		fbb_.add_offset( Schema.vtable.VT_ROOT_TABLE, root_table_offset )
 
-	func add_services( services_offset : int ) -> void:
+	func add_services( services_offset: int ) -> void:
 		fbb_.add_offset( Schema.vtable.VT_SERVICES, services_offset )
 
-	func add_advanced_features( advanced_features : AdvancedFeatures ) -> void:
+	func add_advanced_features( advanced_features: AdvancedFeatures ) -> void:
 		fbb_.add_element_ulong( Schema.vtable.VT_ADVANCED_FEATURES, advanced_features )
 
-	func add_fbs_files( fbs_files_offset : int ) -> void:
+	func add_fbs_files( fbs_files_offset: int ) -> void:
 		fbb_.add_offset( Schema.vtable.VT_FBS_FILES, fbs_files_offset )
 
 	func finish() -> int:
-		var end : int = fbb_.end_table( start_ )
-		var o : int = end
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
 		fbb_.Required(o, Schema.vtable.VT_OBJECTS);
 		fbb_.Required(o, Schema.vtable.VT_ENUMS);
 		return o;
 
 
-static func get_Type( _bytes : PackedByteArray, _start : int = 0 ) -> Type:
+static func get_Type( _bytes: PackedByteArray, _start: int = 0 ) -> Type:
 	assert(not _bytes.is_empty())
 	return Type.new(_bytes, _start)
 
-static func create_Type( _fbb : FlatBufferBuilder,
-		base_type : BaseType,
-		element : BaseType,
-		index : int,
-		fixed_length : int,
-		base_size : int,
-		element_size : int ) -> int :
-	var builder : TypeBuilder = TypeBuilder.new( _fbb );
+static func create_Type( _fbb: FlatBufferBuilder,
+		base_type: BaseType,
+		element: BaseType,
+		index: int,
+		fixed_length: int,
+		base_size: int,
+		element_size: int ) -> int :
+	var builder: TypeBuilder = TypeBuilder.new( _fbb );
 	builder.add_element_size( element_size );
 	builder.add_base_size( base_size );
 	builder.add_index( index );
@@ -1645,29 +1648,29 @@ static func create_Type( _fbb : FlatBufferBuilder,
 	builder.add_base_type( base_type );
 	return builder.finish();
 
-static func get_KeyValue( _bytes : PackedByteArray, _start : int = 0 ) -> KeyValue:
+static func get_KeyValue( _bytes: PackedByteArray, _start: int = 0 ) -> KeyValue:
 	assert(not _bytes.is_empty())
 	return KeyValue.new(_bytes, _start)
 
-static func create_KeyValue( _fbb : FlatBufferBuilder,
-		key : int,
-		value : int ) -> int :
-	var builder : KeyValueBuilder = KeyValueBuilder.new( _fbb );
+static func create_KeyValue( _fbb: FlatBufferBuilder,
+		key: int,
+		value: int ) -> int :
+	var builder: KeyValueBuilder = KeyValueBuilder.new( _fbb );
 	builder.add_value( value );
 	builder.add_key( key );
 	return builder.finish();
 
-static func get_EnumVal( _bytes : PackedByteArray, _start : int = 0 ) -> EnumVal:
+static func get_EnumVal( _bytes: PackedByteArray, _start: int = 0 ) -> EnumVal:
 	assert(not _bytes.is_empty())
 	return EnumVal.new(_bytes, _start)
 
-static func create_EnumVal( _fbb : FlatBufferBuilder,
-		name : int,
-		value : int,
-		union_type : int,
-		documentation : int,
-		attributes : int ) -> int :
-	var builder : EnumValBuilder = EnumValBuilder.new( _fbb );
+static func create_EnumVal( _fbb: FlatBufferBuilder,
+		name: int,
+		value: int,
+		union_type: int,
+		documentation: int,
+		attributes: int ) -> int :
+	var builder: EnumValBuilder = EnumValBuilder.new( _fbb );
 	builder.add_value( value );
 	builder.add_attributes( attributes );
 	builder.add_documentation( documentation );
@@ -1675,19 +1678,19 @@ static func create_EnumVal( _fbb : FlatBufferBuilder,
 	builder.add_name( name );
 	return builder.finish();
 
-static func get_Enum( _bytes : PackedByteArray, _start : int = 0 ) -> Enum:
+static func get_Enum( _bytes: PackedByteArray, _start: int = 0 ) -> Enum:
 	assert(not _bytes.is_empty())
 	return Enum.new(_bytes, _start)
 
-static func create_Enum( _fbb : FlatBufferBuilder,
-		name : int,
-		values : int,
-		is_union : int,
-		underlying_type : int,
-		attributes : int,
-		documentation : int,
-		declaration_file : int ) -> int :
-	var builder : EnumBuilder = EnumBuilder.new( _fbb );
+static func create_Enum( _fbb: FlatBufferBuilder,
+		name: int,
+		values: int,
+		is_union: bool,
+		underlying_type: int,
+		attributes: int,
+		documentation: int,
+		declaration_file: int ) -> int :
+	var builder: EnumBuilder = EnumBuilder.new( _fbb );
 	builder.add_declaration_file( declaration_file );
 	builder.add_documentation( documentation );
 	builder.add_attributes( attributes );
@@ -1697,25 +1700,25 @@ static func create_Enum( _fbb : FlatBufferBuilder,
 	builder.add_is_union( is_union );
 	return builder.finish();
 
-static func get_Field( _bytes : PackedByteArray, _start : int = 0 ) -> Field:
+static func get_Field( _bytes: PackedByteArray, _start: int = 0 ) -> Field:
 	assert(not _bytes.is_empty())
 	return Field.new(_bytes, _start)
 
-static func create_Field( _fbb : FlatBufferBuilder,
-		name : int,
-		type : int,
-		id : int,
-		offset : int,
-		default_integer : int,
-		default_real : float,
-		deprecated : int,
-		required : int,
-		key : int,
-		attributes : int,
-		documentation : int,
-		optional : int,
-		padding : int ) -> int :
-	var builder : FieldBuilder = FieldBuilder.new( _fbb );
+static func create_Field( _fbb: FlatBufferBuilder,
+		name: int,
+		type: int,
+		id: int,
+		offset: int,
+		default_integer: int,
+		default_real: float,
+		deprecated: bool,
+		required: bool,
+		key: bool,
+		attributes: int,
+		documentation: int,
+		optional: bool,
+		padding: int ) -> int :
+	var builder: FieldBuilder = FieldBuilder.new( _fbb );
 	builder.add_default_real( default_real );
 	builder.add_default_integer( default_integer );
 	builder.add_documentation( documentation );
@@ -1731,20 +1734,20 @@ static func create_Field( _fbb : FlatBufferBuilder,
 	builder.add_deprecated( deprecated );
 	return builder.finish();
 
-static func get_Object_( _bytes : PackedByteArray, _start : int = 0 ) -> Object_:
+static func get_Object_( _bytes: PackedByteArray, _start: int = 0 ) -> Object_:
 	assert(not _bytes.is_empty())
 	return Object_.new(_bytes, _start)
 
-static func create_Object_( _fbb : FlatBufferBuilder,
-		name : int,
-		fields : int,
-		is_struct : int,
-		minalign : int,
-		bytesize : int,
-		attributes : int,
-		documentation : int,
-		declaration_file : int ) -> int :
-	var builder : Object_Builder = Object_Builder.new( _fbb );
+static func create_Object_( _fbb: FlatBufferBuilder,
+		name: int,
+		fields: int,
+		is_struct: bool,
+		minalign: int,
+		bytesize: int,
+		attributes: int,
+		documentation: int,
+		declaration_file: int ) -> int :
+	var builder: Object_Builder = Object_Builder.new( _fbb );
 	builder.add_declaration_file( declaration_file );
 	builder.add_documentation( documentation );
 	builder.add_attributes( attributes );
@@ -1755,17 +1758,17 @@ static func create_Object_( _fbb : FlatBufferBuilder,
 	builder.add_is_struct( is_struct );
 	return builder.finish();
 
-static func get_RPCCall( _bytes : PackedByteArray, _start : int = 0 ) -> RPCCall:
+static func get_RPCCall( _bytes: PackedByteArray, _start: int = 0 ) -> RPCCall:
 	assert(not _bytes.is_empty())
 	return RPCCall.new(_bytes, _start)
 
-static func create_RPCCall( _fbb : FlatBufferBuilder,
-		name : int,
-		request : int,
-		response : int,
-		attributes : int,
-		documentation : int ) -> int :
-	var builder : RPCCallBuilder = RPCCallBuilder.new( _fbb );
+static func create_RPCCall( _fbb: FlatBufferBuilder,
+		name: int,
+		request: int,
+		response: int,
+		attributes: int,
+		documentation: int ) -> int :
+	var builder: RPCCallBuilder = RPCCallBuilder.new( _fbb );
 	builder.add_documentation( documentation );
 	builder.add_attributes( attributes );
 	builder.add_response( response );
@@ -1773,17 +1776,17 @@ static func create_RPCCall( _fbb : FlatBufferBuilder,
 	builder.add_name( name );
 	return builder.finish();
 
-static func get_Service( _bytes : PackedByteArray, _start : int = 0 ) -> Service:
+static func get_Service( _bytes: PackedByteArray, _start: int = 0 ) -> Service:
 	assert(not _bytes.is_empty())
 	return Service.new(_bytes, _start)
 
-static func create_Service( _fbb : FlatBufferBuilder,
-		name : int,
-		calls : int,
-		attributes : int,
-		documentation : int,
-		declaration_file : int ) -> int :
-	var builder : ServiceBuilder = ServiceBuilder.new( _fbb );
+static func create_Service( _fbb: FlatBufferBuilder,
+		name: int,
+		calls: int,
+		attributes: int,
+		documentation: int,
+		declaration_file: int ) -> int :
+	var builder: ServiceBuilder = ServiceBuilder.new( _fbb );
 	builder.add_declaration_file( declaration_file );
 	builder.add_documentation( documentation );
 	builder.add_attributes( attributes );
@@ -1791,32 +1794,32 @@ static func create_Service( _fbb : FlatBufferBuilder,
 	builder.add_name( name );
 	return builder.finish();
 
-static func get_SchemaFile( _bytes : PackedByteArray, _start : int = 0 ) -> SchemaFile:
+static func get_SchemaFile( _bytes: PackedByteArray, _start: int = 0 ) -> SchemaFile:
 	assert(not _bytes.is_empty())
 	return SchemaFile.new(_bytes, _start)
 
-static func create_SchemaFile( _fbb : FlatBufferBuilder,
-		filename : int,
-		included_filenames : int ) -> int :
-	var builder : SchemaFileBuilder = SchemaFileBuilder.new( _fbb );
+static func create_SchemaFile( _fbb: FlatBufferBuilder,
+		filename: int,
+		included_filenames: int ) -> int :
+	var builder: SchemaFileBuilder = SchemaFileBuilder.new( _fbb );
 	builder.add_included_filenames( included_filenames );
 	builder.add_filename( filename );
 	return builder.finish();
 
-static func get_Schema( _bytes : PackedByteArray, _start : int = 0 ) -> Schema:
+static func get_Schema( _bytes: PackedByteArray, _start: int = 0 ) -> Schema:
 	assert(not _bytes.is_empty())
 	return Schema.new(_bytes, _start)
 
-static func create_Schema( _fbb : FlatBufferBuilder,
-		objects : int,
-		enums : int,
-		file_ident : int,
-		file_ext : int,
-		root_table : int,
-		services : int,
-		advanced_features : AdvancedFeatures,
-		fbs_files : int ) -> int :
-	var builder : SchemaBuilder = SchemaBuilder.new( _fbb );
+static func create_Schema( _fbb: FlatBufferBuilder,
+		objects: int,
+		enums: int,
+		file_ident: int,
+		file_ext: int,
+		root_table: int,
+		services: int,
+		advanced_features: AdvancedFeatures,
+		fbs_files: int ) -> int :
+	var builder: SchemaBuilder = SchemaBuilder.new( _fbb );
 	builder.add_advanced_features( advanced_features );
 	builder.add_fbs_files( fbs_files );
 	builder.add_services( services );

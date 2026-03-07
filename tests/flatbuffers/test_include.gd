@@ -13,12 +13,10 @@ func _run_test() -> int:
 	# Process the schema, should produce no errors.
 	
 	var run_dict:Dictionary = FlatBuffersPlugin.generate(schema_include, GEN_OPTS)
-	var run_output:PackedStringArray = run_dict.output
-	TEST_EQ(0, run_dict.retcode, '\n'.join(run_output))
+	TEST_EQ(0, run_dict.retcode, run_dict.output)
 	
 	run_dict = FlatBuffersPlugin.generate(schema_minimum)
-	run_output = run_dict.output
-	TEST_EQ(0, run_dict.retcode, '\n'.join(run_output))
+	TEST_EQ(0, run_dict.retcode, run_dict.output)
 	
 	
 	logp( "" )

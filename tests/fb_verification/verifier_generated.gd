@@ -5,7 +5,7 @@
 @warning_ignore_start('unsafe_method_access')
 @warning_ignore_start('unsafe_call_argument')
 
-static func get_root( _bytes : PackedByteArray ) -> MyTable:
+static func get_root( _bytes: PackedByteArray ) -> MyTable:
 	return get_MyTable( _bytes, _bytes.decode_u32(0) )
 
 class MyTable extends FlatBuffer:
@@ -13,8 +13,8 @@ class MyTable extends FlatBuffer:
 		VT_FIRST_FIELD = 4
 	}
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
-		bytes = bytes_; start = start_
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
 	func first_field_is_present() -> bool:
@@ -22,34 +22,34 @@ class MyTable extends FlatBuffer:
 
 	# [================[ first_field ]================]
 	func first_field() -> int:
-		var foffset : int = get_field_offset( vtable.VT_FIRST_FIELD )
+		var foffset: int = get_field_offset( vtable.VT_FIRST_FIELD )
 		if not foffset: return 0
-		return bytes.decode_s32( start + foffset )
+		return _fb_bytes.decode_s32( _fb_start + foffset )
 
 
 class MyTableBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
-	var start_ : int
+	var start_: int
 
-	func _init( _fbb : FlatBufferBuilder ) -> void:
+	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_first_field( first_field : int ) -> void:
+	func add_first_field( first_field: int ) -> void:
 		fbb_.add_element_int_default( MyTable.vtable.VT_FIRST_FIELD, first_field, 0 )
 
 	func finish() -> int:
-		var end : int = fbb_.end_table( start_ )
-		var o : int = end
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
 		return o;
 
 
-static func get_MyTable( _bytes : PackedByteArray, _start : int = 0 ) -> MyTable:
+static func get_MyTable( _bytes: PackedByteArray, _start: int = 0 ) -> MyTable:
 	assert(not _bytes.is_empty())
 	return MyTable.new(_bytes, _start)
 
-static func create_MyTable( _fbb : FlatBufferBuilder,
-		first_field : int ) -> int :
-	var builder : MyTableBuilder = MyTableBuilder.new( _fbb );
+static func create_MyTable( _fbb: FlatBufferBuilder,
+		first_field: int ) -> int :
+	var builder: MyTableBuilder = MyTableBuilder.new( _fbb );
 	builder.add_first_field( first_field );
 	return builder.finish();

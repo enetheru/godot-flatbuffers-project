@@ -5,21 +5,25 @@
 @warning_ignore_start('unsafe_method_access')
 @warning_ignore_start('unsafe_call_argument')
 
-static func get_root( _bytes : PackedByteArray ) -> RootTable:
+static func get_root( _bytes: PackedByteArray ) -> RootTable:
 	return get_RootTable( _bytes, _bytes.decode_u32(0) )
 
 static func create_CustomStruct(
-		_x : int,
-		_y : float ) -> CustomStruct :
-	var val : CustomStruct = CustomStruct.new()
+		_is_true: bool,
+		_x: int,
+		_y: float,
+		_w: Vector3 ) -> CustomStruct :
+	var val: CustomStruct = CustomStruct.new()
+	val.w = _w;
 	val.y = _y;
 	val.x = _x;
+	val.is_true = _is_true;
 	return val
 
 class CustomStruct extends FlatBuffer:
-	const size : int = 8
+	const size: int = 24
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		if bytes_.is_empty(): 
 			bytes = PackedByteArray()
 			bytes.resize( size )
@@ -27,15 +31,25 @@ class CustomStruct extends FlatBuffer:
 			assert(start_ + size <= bytes_.size())
 			bytes = bytes_; start = start_
 
+	# [================[ is_true ]================]
+	var is_true: bool :
+		get(): return bytes.decode_u8(start + 0)
+		set(v): bytes.encode_u8(start + 0, v)
+
 	# [================[ x ]================]
-	var x : int :
-		get(): return bytes.decode_s32(start + 0)
-		set(v): bytes.encode_s32(start + 0, v)
+	var x: int :
+		get(): return bytes.decode_s32(start + 4)
+		set(v): bytes.encode_s32(start + 4, v)
 
 	# [================[ y ]================]
-	var y : float :
-		get(): return bytes.decode_float(start + 4)
-		set(v): bytes.encode_float(start + 4, v)
+	var y: float :
+		get(): return bytes.decode_float(start + 8)
+		set(v): bytes.encode_float(start + 8, v)
+
+	# [================[ w ]================]
+	var w: Vector3 :
+		get(): return decode_Vector3(start + 12)
+		set(v): encode_Vector3(start + 12, v)
 
 
 class RootTable extends FlatBuffer:
@@ -46,7 +60,7 @@ class RootTable extends FlatBuffer:
 		VT_Z = 6
 	}
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		bytes = bytes_; start = start_
 
 	# Presence Functions
@@ -58,49 +72,49 @@ class RootTable extends FlatBuffer:
 
 	# [================[ custom_struct ]================]
 	func custom_struct() -> CustomStruct:
-		var field_offset : int = get_field_offset( vtable.VT_CUSTOM_STRUCT )
+		var field_offset: int = get_field_offset( vtable.VT_CUSTOM_STRUCT )
 		if not field_offset: return null
 		return _struct_schema.get_CustomStruct( bytes, start + field_offset )
 
 	# [================[ z ]================]
 	func z() -> int:
-		var foffset : int = get_field_offset( vtable.VT_Z )
+		var foffset: int = get_field_offset( vtable.VT_Z )
 		if not foffset: return 0
 		return bytes.decode_s32( start + foffset )
 
 
 class RootTableBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
-	var start_ : int
+	var start_: int
 
-	func _init( _fbb : FlatBufferBuilder ) -> void:
+	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_custom_struct( custom_struct : CustomStruct ) -> void:
+	func add_custom_struct( custom_struct: CustomStruct ) -> void:
 		fbb_.add_bytes( RootTable.vtable.VT_CUSTOM_STRUCT, custom_struct.bytes ) 
 
-	func add_z( z : int ) -> void:
+	func add_z( z: int ) -> void:
 		fbb_.add_element_int_default( RootTable.vtable.VT_Z, z, 0 )
 
 	func finish() -> int:
-		var end : int = fbb_.end_table( start_ )
-		var o : int = end
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
 		return o;
 
 
-static func get_CustomStruct( _bytes : PackedByteArray, _start : int = 0 ) -> CustomStruct:
+static func get_CustomStruct( _bytes: PackedByteArray, _start: int = 0 ) -> CustomStruct:
 	assert(not _bytes.is_empty())
 	return CustomStruct.new(_bytes, _start)
 
-static func get_RootTable( _bytes : PackedByteArray, _start : int = 0 ) -> RootTable:
+static func get_RootTable( _bytes: PackedByteArray, _start: int = 0 ) -> RootTable:
 	assert(not _bytes.is_empty())
 	return RootTable.new(_bytes, _start)
 
-static func create_RootTable( _fbb : FlatBufferBuilder,
-		custom_struct : CustomStruct,
-		z : int ) -> int :
-	var builder : RootTableBuilder = RootTableBuilder.new( _fbb );
+static func create_RootTable( _fbb: FlatBufferBuilder,
+		custom_struct: CustomStruct,
+		z: int ) -> int :
+	var builder: RootTableBuilder = RootTableBuilder.new( _fbb );
 	builder.add_z( z );
 	builder.add_custom_struct( custom_struct );
 	return builder.finish();
