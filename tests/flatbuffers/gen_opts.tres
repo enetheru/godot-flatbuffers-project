@@ -5,6 +5,6 @@
 [resource]
 script = ExtResource("1_4dquj")
 name = "test_opts"
-flatc_exe = "C:/Godot/Projects/Enetheru.flatbuffers-project/addons/enetheru.flatbuffers-extension/bin/flatc.debug.exe"
+flatc_exe = "C:/Godot/Projects/Enetheru.flatbuffers-project/addons/enetheru.flatbuffers-extension/bin/flatc.exe"
 include_paths = PackedStringArray("\"res://tests/flatbuffers/schemas/\"")
 metadata/_custom_type_script = "uid://bf5ukybn2h3kd"

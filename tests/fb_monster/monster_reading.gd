@@ -37,7 +37,7 @@ func read_orc_flatbuffer( bytes:PackedByteArray ) -> void:
 	# Note: root object pointers are NOT the same as `buffer_pointer`.
 	# `GetMonster` is a convenience function that calls `GetRoot<Monster>`, the
 	# latter is also available for non-root types.
-	
+
 	# NOTE: GetRoot is not implemented
 	# But if I was to, it might look something like:
 	# static func get_root( script:GDScript, bytes:PackedByteArray ) -> Object
@@ -111,15 +111,15 @@ func read_orc_flatbuffer( bytes:PackedByteArray ) -> void:
 	# auto weapon_len = weapons->size();
 	var weapon_len:int = weapons.size()
 	var weapon_len_:int = monster.weapons_size()
-	
+
 	# NOTE: [] operator does not return a typed object.
 	var second_weapon:schema.Weapon = weapons[1]
-	
+
 	# auto second_weapon_name = weapons->Get(1)->name()->str();
 	var second_weapon_name:String = second_weapon.name()
 	# the _at function can return a typed object
 	var second_weapon_name_:String = monster.weapons_at(1).name()
-	
+
 	# auto second_weapon_damage = weapons->Get(1)->damage()
 	var second_weapon_damage:int = second_weapon.damage()
 	var second_weapon_damage_:int = monster.weapons_at(1).damage()
