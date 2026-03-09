@@ -16,7 +16,7 @@ const generated_file = "res://tests/flatbuffers/schemas/grammar_generated.gd"
 
 func _run_test() -> int:
 	
-	if generate_gdscript():
+	if await generate_gdscript():
 		logp("Failed to generate GDScript from FlatBuffers schema")
 		return runcode
 	
@@ -29,7 +29,7 @@ func _run_test() -> int:
 
 
 func generate_gdscript() -> bool:
-	var run_dict:Dictionary = FlatBuffersPlugin.generate(schema_file)
+	var run_dict:Dictionary = await FlatBuffersPlugin.generate(schema_file)
 	if TEST_EQ_RET(0, run_dict.retcode, str(run_dict.output)) == RetCode.TEST_FAILED:
 		var gen_output:PackedStringArray = run_dict.output
 		logp("[color=salmon]" + '\n'.join(gen_output) + "[/color]")

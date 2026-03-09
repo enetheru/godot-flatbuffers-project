@@ -30,7 +30,7 @@ const Schema = preload("schemas/minimum_generated.gd")
 
 func _run_test() -> int:
 	
-	if generate_gdscript():
+	if await generate_gdscript():
 		logp("Failed to generate GDScript from FlatBuffers schema")
 		return runcode
 	
@@ -43,14 +43,14 @@ func _run_test() -> int:
 		return runcode
 	
 
-	var rt:Schema.Minimum = Schema.get_root(bytes)
+	var rt:Schema.Minimum = Schema.get_Minimum(bytes)
 	print("decoded: %X" %rt.my_field() )
 	TEST_EQ(value, rt.my_field())
 
 	return runcode
 
 func generate_gdscript() -> bool:
-	var run_dict:Dictionary = FlatBuffersPlugin.generate(schema_file)
+	var run_dict:Dictionary = await FlatBuffersPlugin.generate(schema_file)
 	return TEST_EQ_RET(0, run_dict.retcode, str(run_dict.output))
 
 

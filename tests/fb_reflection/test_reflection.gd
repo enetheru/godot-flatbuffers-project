@@ -7,7 +7,7 @@ const generated_file:String = "res://tests/fb_reflection/Reflection_generated.gd
 
 func _run_test() -> int:
 	logp("[b]== Generate GDScript ==[/b]")
-	var run_report:Dictionary = FlatBuffersPlugin.generate(schema_file)
+	var run_report:Dictionary = await FlatBuffersPlugin.generate(schema_file)
 	var run_output:String = run_report.output
 	TEST_EQ(0, run_report.retcode, run_output)
 
@@ -22,7 +22,7 @@ func _run_test() -> int:
 		output.append( error_string( FileAccess.get_open_error() ) )
 		return RetCode.TEST_FAILED
 
-	var root_table:FlatBuffer = script.call('get_root', bfbs )
+	var root_table:FlatBuffer = script.call('get_Schema', bfbs )
 	if not root_table:
 		output.append( "Failure to decode bfbs using Reflection.fbs")
 		return RetCode.TEST_FAILED

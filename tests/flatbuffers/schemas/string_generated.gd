@@ -5,16 +5,13 @@
 @warning_ignore_start('unsafe_method_access')
 @warning_ignore_start('unsafe_call_argument')
 
-static func get_root( _bytes : PackedByteArray ) -> RootTable:
-	return get_RootTable( _bytes, _bytes.decode_u32(0) )
-
 class RootTable extends FlatBuffer:
 	enum vtable{
 		VT_MY_STRING = 4
 	}
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
-		bytes = bytes_; start = start_
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
 	func my_string_is_present() -> bool:
@@ -22,35 +19,35 @@ class RootTable extends FlatBuffer:
 
 	# [================[ my_string ]================]
 	func my_string() -> String:
-		var field_start : int = get_field_start( vtable.VT_MY_STRING )
+		var field_start: int = get_field_start( vtable.VT_MY_STRING )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 
 class RootTableBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
-	var start_ : int
+	var start_: int
 
-	func _init( _fbb : FlatBufferBuilder ) -> void:
+	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_my_string( my_string_offset : int ) -> void:
+	func add_my_string( my_string_offset: int ) -> void:
 		fbb_.add_offset( RootTable.vtable.VT_MY_STRING, my_string_offset )
 
 	func finish() -> int:
-		var end : int = fbb_.end_table( start_ )
-		var o : int = end
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
 		return o;
 
 
-static func get_RootTable( _bytes : PackedByteArray, _start : int = 0 ) -> RootTable:
-	assert(not _bytes.is_empty())
-	return RootTable.new(_bytes, _start)
-
-static func create_RootTable( _fbb : FlatBufferBuilder,
-		my_string : int ) -> int :
-	var builder : RootTableBuilder = RootTableBuilder.new( _fbb );
+static func create_RootTable( _fbb: FlatBufferBuilder,
+		my_string: int ) -> int :
+	var builder: RootTableBuilder = RootTableBuilder.new( _fbb );
 	builder.add_my_string( my_string );
 	return builder.finish();
+
+static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
+	assert(not _bytes.is_empty())
+	return RootTable.new(_bytes, _bytes.decode_u32(0))
 

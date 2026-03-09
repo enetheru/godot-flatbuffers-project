@@ -5,9 +5,6 @@
 @warning_ignore_start('unsafe_method_access')
 @warning_ignore_start('unsafe_call_argument')
 
-static func get_root( _bytes: PackedByteArray ) -> Minimum:
-	return get_Minimum( _bytes, _bytes.decode_u32(0) )
-
 class Minimum extends FlatBuffer:
 	enum vtable{
 		VT_MY_FIELD = 4
@@ -44,13 +41,13 @@ class MinimumBuilder extends RefCounted:
 		return o;
 
 
-static func get_Minimum( _bytes: PackedByteArray, _start: int = 0 ) -> Minimum:
-	assert(not _bytes.is_empty())
-	return Minimum.new(_bytes, _start)
-
 static func create_Minimum( _fbb: FlatBufferBuilder,
 		my_field: int ) -> int :
 	var builder: MinimumBuilder = MinimumBuilder.new( _fbb );
 	builder.add_my_field( my_field );
 	return builder.finish();
+
+static func get_Minimum( _bytes: PackedByteArray ) -> Minimum:
+	assert(not _bytes.is_empty())
+	return Minimum.new(_bytes, _bytes.decode_u32(0))
 

@@ -67,7 +67,7 @@ func Use( decoded:Variant ) -> int:
 	var pba:PackedByteArray = decoded
 	sum = 0;
 	#auto foobarcontainer = GetFooBarContainer(decoded);
-	var foobarcontainer:FB.FBFooBarContainer = FB.get_FBFooBarContainer(pba, pba.decode_u32(0))
+	var foobarcontainer:FB.FBFooBarContainer = FB.get_FBFooBarContainer(pba)
 	sum = 0;
 	Add(foobarcontainer.initialized())
 	Add(foobarcontainer.location().length());

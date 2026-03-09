@@ -5,9 +5,6 @@
 @warning_ignore_start('unsafe_method_access')
 @warning_ignore_start('unsafe_call_argument')
 
-static func get_root( _bytes: PackedByteArray ) -> Schema:
-	return get_Schema( _bytes, _bytes.decode_u32(0) )
-
 enum BaseType {
 	NONE = 0,
 	UTYPE = 1,
@@ -145,6 +142,22 @@ class TypeBuilder extends RefCounted:
 		return o;
 
 
+static func create_Type( _fbb: FlatBufferBuilder,
+		base_type: BaseType,
+		element: BaseType,
+		index: int,
+		fixed_length: int,
+		base_size: int,
+		element_size: int ) -> int :
+	var builder: TypeBuilder = TypeBuilder.new( _fbb );
+	builder.add_element_size( element_size );
+	builder.add_base_size( base_size );
+	builder.add_index( index );
+	builder.add_fixed_length( fixed_length );
+	builder.add_element( element );
+	builder.add_base_type( base_type );
+	return builder.finish();
+
 class KeyValue extends FlatBuffer:
 	enum vtable{
 		VT_KEY = 4,
@@ -197,6 +210,14 @@ class KeyValueBuilder extends RefCounted:
 		return o;
 
 
+static func create_KeyValue( _fbb: FlatBufferBuilder,
+		key: int,
+		value: int ) -> int :
+	var builder: KeyValueBuilder = KeyValueBuilder.new( _fbb );
+	builder.add_value( value );
+	builder.add_key( key );
+	return builder.finish();
+
 class EnumVal extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
 
@@ -247,7 +268,7 @@ class EnumVal extends FlatBuffer:
 	func union_type() -> _Reflection_schema.Type:
 		var field_start: int = get_field_start( vtable.VT_UNION_TYPE )
 		if not field_start: return null
-		return _Reflection_schema.get_Type( _fb_bytes, field_start )
+		return _Reflection_schema.Type.new( _fb_bytes, field_start )
 
 	# [================[ documentation ]================]
 	func documentation_size() -> int:
@@ -291,22 +312,24 @@ class EnumVal extends FlatBuffer:
 		if array.resize( array_size ) != OK: return []
 		for i: int in array_size:
 			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.get_KeyValue( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
 		var field_start: int = get_field_start( vtable.VT_ATTRIBUTES )
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4
 		var relative_offset: int = array_start + idx * 4
 		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
 			into._fb_bytes = _fb_bytes
 			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_KeyValue( _fb_bytes, offset )
+		return _Reflection_schema.KeyValue.new( _fb_bytes, offset )
 
 
 class EnumValBuilder extends RefCounted:
@@ -338,6 +361,20 @@ class EnumValBuilder extends RefCounted:
 		fbb_.Required(o, EnumVal.vtable.VT_NAME);
 		return o;
 
+
+static func create_EnumVal( _fbb: FlatBufferBuilder,
+		name: int,
+		value: int,
+		union_type: int,
+		documentation: int,
+		attributes: int ) -> int :
+	var builder: EnumValBuilder = EnumValBuilder.new( _fbb );
+	builder.add_value( value );
+	builder.add_attributes( attributes );
+	builder.add_documentation( documentation );
+	builder.add_union_type( union_type );
+	builder.add_name( name );
+	return builder.finish();
 
 class Enum extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
@@ -404,22 +441,24 @@ class Enum extends FlatBuffer:
 		if array.resize( array_size ) != OK: return []
 		for i: int in array_size:
 			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.get_EnumVal( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+			array[i] = _Reflection_schema.EnumVal.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
 	func values_at( idx: int, into: EnumVal = null ) -> EnumVal:
 		var field_start: int = get_field_start( vtable.VT_VALUES )
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4
 		var relative_offset: int = array_start + idx * 4
 		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
 			into._fb_bytes = _fb_bytes
 			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_EnumVal( _fb_bytes, offset )
+		return _Reflection_schema.EnumVal.new( _fb_bytes, offset )
 
 	# [================[ is_union ]================]
 	func is_union() -> bool:
@@ -431,7 +470,7 @@ class Enum extends FlatBuffer:
 	func underlying_type() -> _Reflection_schema.Type:
 		var field_start: int = get_field_start( vtable.VT_UNDERLYING_TYPE )
 		if not field_start: return null
-		return _Reflection_schema.get_Type( _fb_bytes, field_start )
+		return _Reflection_schema.Type.new( _fb_bytes, field_start )
 
 	# [================[ attributes ]================]
 	func attributes_size() -> int:
@@ -448,22 +487,24 @@ class Enum extends FlatBuffer:
 		if array.resize( array_size ) != OK: return []
 		for i: int in array_size:
 			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.get_KeyValue( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
 		var field_start: int = get_field_start( vtable.VT_ATTRIBUTES )
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4
 		var relative_offset: int = array_start + idx * 4
 		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
 			into._fb_bytes = _fb_bytes
 			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_KeyValue( _fb_bytes, offset )
+		return _Reflection_schema.KeyValue.new( _fb_bytes, offset )
 
 	# [================[ documentation ]================]
 	func documentation_size() -> int:
@@ -537,6 +578,24 @@ class EnumBuilder extends RefCounted:
 		fbb_.Required(o, Enum.vtable.VT_UNDERLYING_TYPE);
 		return o;
 
+
+static func create_Enum( _fbb: FlatBufferBuilder,
+		name: int,
+		values: int,
+		is_union: bool,
+		underlying_type: int,
+		attributes: int,
+		documentation: int,
+		declaration_file: int ) -> int :
+	var builder: EnumBuilder = EnumBuilder.new( _fbb );
+	builder.add_declaration_file( declaration_file );
+	builder.add_documentation( documentation );
+	builder.add_attributes( attributes );
+	builder.add_underlying_type( underlying_type );
+	builder.add_values( values );
+	builder.add_name( name );
+	builder.add_is_union( is_union );
+	return builder.finish();
 
 class Field extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
@@ -614,7 +673,7 @@ class Field extends FlatBuffer:
 	func type() -> _Reflection_schema.Type:
 		var field_start: int = get_field_start( vtable.VT_TYPE )
 		if not field_start: return null
-		return _Reflection_schema.get_Type( _fb_bytes, field_start )
+		return _Reflection_schema.Type.new( _fb_bytes, field_start )
 
 	# [================[ id ]================]
 	func id() -> int:
@@ -673,22 +732,24 @@ class Field extends FlatBuffer:
 		if array.resize( array_size ) != OK: return []
 		for i: int in array_size:
 			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.get_KeyValue( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
 		var field_start: int = get_field_start( vtable.VT_ATTRIBUTES )
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4
 		var relative_offset: int = array_start + idx * 4
 		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
 			into._fb_bytes = _fb_bytes
 			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_KeyValue( _fb_bytes, offset )
+		return _Reflection_schema.KeyValue.new( _fb_bytes, offset )
 
 	# [================[ documentation ]================]
 	func documentation_size() -> int:
@@ -786,6 +847,36 @@ class FieldBuilder extends RefCounted:
 		return o;
 
 
+static func create_Field( _fbb: FlatBufferBuilder,
+		name: int,
+		type: int,
+		id: int,
+		offset: int,
+		default_integer: int,
+		default_real: float,
+		deprecated: bool,
+		required: bool,
+		key: bool,
+		attributes: int,
+		documentation: int,
+		optional: bool,
+		padding: int ) -> int :
+	var builder: FieldBuilder = FieldBuilder.new( _fbb );
+	builder.add_default_real( default_real );
+	builder.add_default_integer( default_integer );
+	builder.add_documentation( documentation );
+	builder.add_attributes( attributes );
+	builder.add_type( type );
+	builder.add_name( name );
+	builder.add_padding( padding );
+	builder.add_offset( offset );
+	builder.add_id( id );
+	builder.add_optional( optional );
+	builder.add_key( key );
+	builder.add_required( required );
+	builder.add_deprecated( deprecated );
+	return builder.finish();
+
 class Object_ extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
 
@@ -853,22 +944,24 @@ class Object_ extends FlatBuffer:
 		if array.resize( array_size ) != OK: return []
 		for i: int in array_size:
 			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.get_Field( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+			array[i] = _Reflection_schema.Field.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
 	func fields_at( idx: int, into: Field = null ) -> Field:
 		var field_start: int = get_field_start( vtable.VT_FIELDS )
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4
 		var relative_offset: int = array_start + idx * 4
 		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
 			into._fb_bytes = _fb_bytes
 			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_Field( _fb_bytes, offset )
+		return _Reflection_schema.Field.new( _fb_bytes, offset )
 
 	# [================[ is_struct ]================]
 	func is_struct() -> bool:
@@ -903,22 +996,24 @@ class Object_ extends FlatBuffer:
 		if array.resize( array_size ) != OK: return []
 		for i: int in array_size:
 			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.get_KeyValue( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
 		var field_start: int = get_field_start( vtable.VT_ATTRIBUTES )
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4
 		var relative_offset: int = array_start + idx * 4
 		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
 			into._fb_bytes = _fb_bytes
 			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_KeyValue( _fb_bytes, offset )
+		return _Reflection_schema.KeyValue.new( _fb_bytes, offset )
 
 	# [================[ documentation ]================]
 	func documentation_size() -> int:
@@ -995,6 +1090,26 @@ class Object_Builder extends RefCounted:
 		return o;
 
 
+static func create_Object_( _fbb: FlatBufferBuilder,
+		name: int,
+		fields: int,
+		is_struct: bool,
+		minalign: int,
+		bytesize: int,
+		attributes: int,
+		documentation: int,
+		declaration_file: int ) -> int :
+	var builder: Object_Builder = Object_Builder.new( _fbb );
+	builder.add_declaration_file( declaration_file );
+	builder.add_documentation( documentation );
+	builder.add_attributes( attributes );
+	builder.add_bytesize( bytesize );
+	builder.add_minalign( minalign );
+	builder.add_fields( fields );
+	builder.add_name( name );
+	builder.add_is_struct( is_struct );
+	return builder.finish();
+
 class RPCCall extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
 
@@ -1041,13 +1156,13 @@ class RPCCall extends FlatBuffer:
 	func request() -> _Reflection_schema.Object_:
 		var field_start: int = get_field_start( vtable.VT_REQUEST )
 		if not field_start: return null
-		return _Reflection_schema.get_Object_( _fb_bytes, field_start )
+		return _Reflection_schema.Object_.new( _fb_bytes, field_start )
 
 	# [================[ response ]================]
 	func response() -> _Reflection_schema.Object_:
 		var field_start: int = get_field_start( vtable.VT_RESPONSE )
 		if not field_start: return null
-		return _Reflection_schema.get_Object_( _fb_bytes, field_start )
+		return _Reflection_schema.Object_.new( _fb_bytes, field_start )
 
 	# [================[ attributes ]================]
 	func attributes_size() -> int:
@@ -1064,22 +1179,24 @@ class RPCCall extends FlatBuffer:
 		if array.resize( array_size ) != OK: return []
 		for i: int in array_size:
 			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.get_KeyValue( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
 		var field_start: int = get_field_start( vtable.VT_ATTRIBUTES )
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4
 		var relative_offset: int = array_start + idx * 4
 		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
 			into._fb_bytes = _fb_bytes
 			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_KeyValue( _fb_bytes, offset )
+		return _Reflection_schema.KeyValue.new( _fb_bytes, offset )
 
 	# [================[ documentation ]================]
 	func documentation_size() -> int:
@@ -1141,6 +1258,20 @@ class RPCCallBuilder extends RefCounted:
 		return o;
 
 
+static func create_RPCCall( _fbb: FlatBufferBuilder,
+		name: int,
+		request: int,
+		response: int,
+		attributes: int,
+		documentation: int ) -> int :
+	var builder: RPCCallBuilder = RPCCallBuilder.new( _fbb );
+	builder.add_documentation( documentation );
+	builder.add_attributes( attributes );
+	builder.add_response( response );
+	builder.add_request( request );
+	builder.add_name( name );
+	return builder.finish();
+
 class Service extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
 
@@ -1194,22 +1325,24 @@ class Service extends FlatBuffer:
 		if array.resize( array_size ) != OK: return []
 		for i: int in array_size:
 			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.get_RPCCall( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+			array[i] = _Reflection_schema.RPCCall.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
 	func calls_at( idx: int, into: RPCCall = null ) -> RPCCall:
 		var field_start: int = get_field_start( vtable.VT_CALLS )
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4
 		var relative_offset: int = array_start + idx * 4
 		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
 			into._fb_bytes = _fb_bytes
 			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_RPCCall( _fb_bytes, offset )
+		return _Reflection_schema.RPCCall.new( _fb_bytes, offset )
 
 	# [================[ attributes ]================]
 	func attributes_size() -> int:
@@ -1226,22 +1359,24 @@ class Service extends FlatBuffer:
 		if array.resize( array_size ) != OK: return []
 		for i: int in array_size:
 			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.get_KeyValue( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
 		var field_start: int = get_field_start( vtable.VT_ATTRIBUTES )
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4
 		var relative_offset: int = array_start + idx * 4
 		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
 			into._fb_bytes = _fb_bytes
 			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_KeyValue( _fb_bytes, offset )
+		return _Reflection_schema.KeyValue.new( _fb_bytes, offset )
 
 	# [================[ documentation ]================]
 	func documentation_size() -> int:
@@ -1307,6 +1442,20 @@ class ServiceBuilder extends RefCounted:
 		fbb_.Required(o, Service.vtable.VT_NAME);
 		return o;
 
+
+static func create_Service( _fbb: FlatBufferBuilder,
+		name: int,
+		calls: int,
+		attributes: int,
+		documentation: int,
+		declaration_file: int ) -> int :
+	var builder: ServiceBuilder = ServiceBuilder.new( _fbb );
+	builder.add_declaration_file( declaration_file );
+	builder.add_documentation( documentation );
+	builder.add_attributes( attributes );
+	builder.add_calls( calls );
+	builder.add_name( name );
+	return builder.finish();
 
 # File specific information.
 # Symbols declared within a file may be recovered by iterating over all
@@ -1386,6 +1535,14 @@ class SchemaFileBuilder extends RefCounted:
 		return o;
 
 
+static func create_SchemaFile( _fbb: FlatBufferBuilder,
+		filename: int,
+		included_filenames: int ) -> int :
+	var builder: SchemaFileBuilder = SchemaFileBuilder.new( _fbb );
+	builder.add_included_filenames( included_filenames );
+	builder.add_filename( filename );
+	return builder.finish();
+
 class Schema extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
 
@@ -1447,22 +1604,24 @@ class Schema extends FlatBuffer:
 		if array.resize( array_size ) != OK: return []
 		for i: int in array_size:
 			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.get_Object_( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+			array[i] = _Reflection_schema.Object_.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
 	func objects_at( idx: int, into: Object_ = null ) -> Object_:
 		var field_start: int = get_field_start( vtable.VT_OBJECTS )
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4
 		var relative_offset: int = array_start + idx * 4
 		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
 			into._fb_bytes = _fb_bytes
 			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_Object_( _fb_bytes, offset )
+		return _Reflection_schema.Object_.new( _fb_bytes, offset )
 
 	# [================[ enums ]================]
 	func enums_size() -> int:
@@ -1479,22 +1638,24 @@ class Schema extends FlatBuffer:
 		if array.resize( array_size ) != OK: return []
 		for i: int in array_size:
 			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.get_Enum( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+			array[i] = _Reflection_schema.Enum.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
 	func enums_at( idx: int, into: Enum = null ) -> Enum:
 		var field_start: int = get_field_start( vtable.VT_ENUMS )
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4
 		var relative_offset: int = array_start + idx * 4
 		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
 			into._fb_bytes = _fb_bytes
 			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_Enum( _fb_bytes, offset )
+		return _Reflection_schema.Enum.new( _fb_bytes, offset )
 
 	# [================[ file_ident ]================]
 	func file_ident() -> String:
@@ -1512,7 +1673,7 @@ class Schema extends FlatBuffer:
 	func root_table() -> _Reflection_schema.Object_:
 		var field_start: int = get_field_start( vtable.VT_ROOT_TABLE )
 		if not field_start: return null
-		return _Reflection_schema.get_Object_( _fb_bytes, field_start )
+		return _Reflection_schema.Object_.new( _fb_bytes, field_start )
 
 	# [================[ services ]================]
 	func services_size() -> int:
@@ -1529,22 +1690,24 @@ class Schema extends FlatBuffer:
 		if array.resize( array_size ) != OK: return []
 		for i: int in array_size:
 			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.get_Service( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+			array[i] = _Reflection_schema.Service.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
 	func services_at( idx: int, into: Service = null ) -> Service:
 		var field_start: int = get_field_start( vtable.VT_SERVICES )
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4
 		var relative_offset: int = array_start + idx * 4
 		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
 			into._fb_bytes = _fb_bytes
 			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_Service( _fb_bytes, offset )
+		return _Reflection_schema.Service.new( _fb_bytes, offset )
 
 	# [================[ advanced_features ]================]
 	func advanced_features() -> AdvancedFeatures:
@@ -1570,22 +1733,24 @@ class Schema extends FlatBuffer:
 		if array.resize( array_size ) != OK: return []
 		for i: int in array_size:
 			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.get_SchemaFile( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+			array[i] = _Reflection_schema.SchemaFile.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
 	func fbs_files_at( idx: int, into: SchemaFile = null ) -> SchemaFile:
 		var field_start: int = get_field_start( vtable.VT_FBS_FILES )
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4
 		var relative_offset: int = array_start + idx * 4
 		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
 			into._fb_bytes = _fb_bytes
 			into._fb_start = relative_offset
 			return into
-		return _Reflection_schema.get_SchemaFile( _fb_bytes, offset )
+		return _Reflection_schema.SchemaFile.new( _fb_bytes, offset )
 
 
 class SchemaBuilder extends RefCounted:
@@ -1628,188 +1793,6 @@ class SchemaBuilder extends RefCounted:
 		return o;
 
 
-static func get_Type( _bytes: PackedByteArray, _start: int = 0 ) -> Type:
-	assert(not _bytes.is_empty())
-	return Type.new(_bytes, _start)
-
-static func create_Type( _fbb: FlatBufferBuilder,
-		base_type: BaseType,
-		element: BaseType,
-		index: int,
-		fixed_length: int,
-		base_size: int,
-		element_size: int ) -> int :
-	var builder: TypeBuilder = TypeBuilder.new( _fbb );
-	builder.add_element_size( element_size );
-	builder.add_base_size( base_size );
-	builder.add_index( index );
-	builder.add_fixed_length( fixed_length );
-	builder.add_element( element );
-	builder.add_base_type( base_type );
-	return builder.finish();
-
-static func get_KeyValue( _bytes: PackedByteArray, _start: int = 0 ) -> KeyValue:
-	assert(not _bytes.is_empty())
-	return KeyValue.new(_bytes, _start)
-
-static func create_KeyValue( _fbb: FlatBufferBuilder,
-		key: int,
-		value: int ) -> int :
-	var builder: KeyValueBuilder = KeyValueBuilder.new( _fbb );
-	builder.add_value( value );
-	builder.add_key( key );
-	return builder.finish();
-
-static func get_EnumVal( _bytes: PackedByteArray, _start: int = 0 ) -> EnumVal:
-	assert(not _bytes.is_empty())
-	return EnumVal.new(_bytes, _start)
-
-static func create_EnumVal( _fbb: FlatBufferBuilder,
-		name: int,
-		value: int,
-		union_type: int,
-		documentation: int,
-		attributes: int ) -> int :
-	var builder: EnumValBuilder = EnumValBuilder.new( _fbb );
-	builder.add_value( value );
-	builder.add_attributes( attributes );
-	builder.add_documentation( documentation );
-	builder.add_union_type( union_type );
-	builder.add_name( name );
-	return builder.finish();
-
-static func get_Enum( _bytes: PackedByteArray, _start: int = 0 ) -> Enum:
-	assert(not _bytes.is_empty())
-	return Enum.new(_bytes, _start)
-
-static func create_Enum( _fbb: FlatBufferBuilder,
-		name: int,
-		values: int,
-		is_union: bool,
-		underlying_type: int,
-		attributes: int,
-		documentation: int,
-		declaration_file: int ) -> int :
-	var builder: EnumBuilder = EnumBuilder.new( _fbb );
-	builder.add_declaration_file( declaration_file );
-	builder.add_documentation( documentation );
-	builder.add_attributes( attributes );
-	builder.add_underlying_type( underlying_type );
-	builder.add_values( values );
-	builder.add_name( name );
-	builder.add_is_union( is_union );
-	return builder.finish();
-
-static func get_Field( _bytes: PackedByteArray, _start: int = 0 ) -> Field:
-	assert(not _bytes.is_empty())
-	return Field.new(_bytes, _start)
-
-static func create_Field( _fbb: FlatBufferBuilder,
-		name: int,
-		type: int,
-		id: int,
-		offset: int,
-		default_integer: int,
-		default_real: float,
-		deprecated: bool,
-		required: bool,
-		key: bool,
-		attributes: int,
-		documentation: int,
-		optional: bool,
-		padding: int ) -> int :
-	var builder: FieldBuilder = FieldBuilder.new( _fbb );
-	builder.add_default_real( default_real );
-	builder.add_default_integer( default_integer );
-	builder.add_documentation( documentation );
-	builder.add_attributes( attributes );
-	builder.add_type( type );
-	builder.add_name( name );
-	builder.add_padding( padding );
-	builder.add_offset( offset );
-	builder.add_id( id );
-	builder.add_optional( optional );
-	builder.add_key( key );
-	builder.add_required( required );
-	builder.add_deprecated( deprecated );
-	return builder.finish();
-
-static func get_Object_( _bytes: PackedByteArray, _start: int = 0 ) -> Object_:
-	assert(not _bytes.is_empty())
-	return Object_.new(_bytes, _start)
-
-static func create_Object_( _fbb: FlatBufferBuilder,
-		name: int,
-		fields: int,
-		is_struct: bool,
-		minalign: int,
-		bytesize: int,
-		attributes: int,
-		documentation: int,
-		declaration_file: int ) -> int :
-	var builder: Object_Builder = Object_Builder.new( _fbb );
-	builder.add_declaration_file( declaration_file );
-	builder.add_documentation( documentation );
-	builder.add_attributes( attributes );
-	builder.add_bytesize( bytesize );
-	builder.add_minalign( minalign );
-	builder.add_fields( fields );
-	builder.add_name( name );
-	builder.add_is_struct( is_struct );
-	return builder.finish();
-
-static func get_RPCCall( _bytes: PackedByteArray, _start: int = 0 ) -> RPCCall:
-	assert(not _bytes.is_empty())
-	return RPCCall.new(_bytes, _start)
-
-static func create_RPCCall( _fbb: FlatBufferBuilder,
-		name: int,
-		request: int,
-		response: int,
-		attributes: int,
-		documentation: int ) -> int :
-	var builder: RPCCallBuilder = RPCCallBuilder.new( _fbb );
-	builder.add_documentation( documentation );
-	builder.add_attributes( attributes );
-	builder.add_response( response );
-	builder.add_request( request );
-	builder.add_name( name );
-	return builder.finish();
-
-static func get_Service( _bytes: PackedByteArray, _start: int = 0 ) -> Service:
-	assert(not _bytes.is_empty())
-	return Service.new(_bytes, _start)
-
-static func create_Service( _fbb: FlatBufferBuilder,
-		name: int,
-		calls: int,
-		attributes: int,
-		documentation: int,
-		declaration_file: int ) -> int :
-	var builder: ServiceBuilder = ServiceBuilder.new( _fbb );
-	builder.add_declaration_file( declaration_file );
-	builder.add_documentation( documentation );
-	builder.add_attributes( attributes );
-	builder.add_calls( calls );
-	builder.add_name( name );
-	return builder.finish();
-
-static func get_SchemaFile( _bytes: PackedByteArray, _start: int = 0 ) -> SchemaFile:
-	assert(not _bytes.is_empty())
-	return SchemaFile.new(_bytes, _start)
-
-static func create_SchemaFile( _fbb: FlatBufferBuilder,
-		filename: int,
-		included_filenames: int ) -> int :
-	var builder: SchemaFileBuilder = SchemaFileBuilder.new( _fbb );
-	builder.add_included_filenames( included_filenames );
-	builder.add_filename( filename );
-	return builder.finish();
-
-static func get_Schema( _bytes: PackedByteArray, _start: int = 0 ) -> Schema:
-	assert(not _bytes.is_empty())
-	return Schema.new(_bytes, _start)
-
 static func create_Schema( _fbb: FlatBufferBuilder,
 		objects: int,
 		enums: int,
@@ -1829,4 +1812,8 @@ static func create_Schema( _fbb: FlatBufferBuilder,
 	builder.add_enums( enums );
 	builder.add_objects( objects );
 	return builder.finish();
+
+static func get_Schema( _bytes: PackedByteArray ) -> Schema:
+	assert(not _bytes.is_empty())
+	return Schema.new(_bytes, _bytes.decode_u32(0))
 

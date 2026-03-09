@@ -16,13 +16,13 @@ extends TestBase
 ## }
 ## root_type Minimum;
 ## [/codeblock]
-## Steps:
-## - schema parsing - Not relevant right now
-## - code generation
-## - encoding
-## - verification
-## - decoding
-## - using
+## Testing Phases:[br]
+## - Schema parsing - Not relevant right now [br]
+## - Code generation[br]
+## - Encoding[br]
+## - Verification[br]
+## - Decoding[br]
+## - Using[br]
 
 const schema_file = "res://tests/flatbuffers/schemas/minimum.fbs"
 const Schema = preload("schemas/minimum_generated.gd")
@@ -30,7 +30,7 @@ const Schema = preload("schemas/minimum_generated.gd")
 
 func _run_test() -> int:
 	logp("[b]== Generate GDScript ==[/b]")
-	if not generate_gdscript():
+	if not await generate_gdscript():
 		logp("Failed to generate GDScript from FlatBuffers schema")
 		return runcode
 	
@@ -54,7 +54,7 @@ func _run_test() -> int:
 		# TEST_TRUE(fb_table.verify(verifier), "verifying fb_table")
 		
 		logp("[b]== Decoding ==[/b]")
-		var decoded:Schema.Minimum = Schema.get_root(bytes)
+		var decoded:Schema.Minimum = Schema.get_Minimum(bytes)
 		
 		logp("[b]== Using ==[/b]")
 		
@@ -65,7 +65,7 @@ func _run_test() -> int:
 
 ## Generate the GDScript from the flatbuffer schema file.
 func generate_gdscript() -> bool:
-	var run_dict:Dictionary = FlatBuffersPlugin.generate(schema_file)
+	var run_dict:Dictionary = await FlatBuffersPlugin.generate(schema_file)
 	return TEST_EQ_RET(0, run_dict.retcode, str(run_dict.output))
 
 

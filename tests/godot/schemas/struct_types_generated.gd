@@ -5,38 +5,35 @@
 @warning_ignore_start('unsafe_method_access')
 @warning_ignore_start('unsafe_call_argument')
 
-static func get_root( _bytes : PackedByteArray ) -> RootTable:
-	return get_RootTable( _bytes, _bytes.decode_u32(0) )
+class CustomStruct extends FlatBuffer:
+	const size: int = 8
+
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		if bytes_.is_empty(): 
+			_fb_bytes = PackedByteArray()
+			_fb_bytes.resize( size )
+		else:
+			assert(start_ + size <= bytes_.size())
+			_fb_bytes = bytes_; _fb_start = start_
+
+	# [================[ x ]================]
+	var x: int :
+		get(): return _fb_bytes.decode_s32(_fb_start + 0)
+		set(v): _fb_bytes.encode_s32(_fb_start + 0, v)
+
+	# [================[ y ]================]
+	var y: float :
+		get(): return _fb_bytes.decode_float(_fb_start + 4)
+		set(v): _fb_bytes.encode_float(_fb_start + 4, v)
+
 
 static func create_CustomStruct(
-		_x : int,
-		_y : float ) -> CustomStruct :
-	var val : CustomStruct = CustomStruct.new()
+		_x: int,
+		_y: float ) -> CustomStruct :
+	var val: CustomStruct = CustomStruct.new()
 	val.y = _y;
 	val.x = _x;
 	return val
-
-class CustomStruct extends FlatBuffer:
-	const size : int = 8
-
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
-		if bytes_.is_empty(): 
-			bytes = PackedByteArray()
-			bytes.resize( size )
-		else:
-			assert(start_ + size <= bytes_.size())
-			bytes = bytes_; start = start_
-
-	# [================[ x ]================]
-	var x : int :
-		get(): return bytes.decode_s32(start + 0)
-		set(v): bytes.encode_s32(start + 0, v)
-
-	# [================[ y ]================]
-	var y : float :
-		get(): return bytes.decode_float(start + 4)
-		set(v): bytes.encode_float(start + 4, v)
-
 
 class RootTable extends FlatBuffer:
 	enum vtable{
@@ -58,8 +55,8 @@ class RootTable extends FlatBuffer:
 		VT_VECTOR4I = 34
 	}
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
-		bytes = bytes_; start = start_
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
 	func faabb_is_present() -> bool:
@@ -177,92 +174,84 @@ class RootTable extends FlatBuffer:
 
 class RootTableBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
-	var start_ : int
+	var start_: int
 
-	func _init( _fbb : FlatBufferBuilder ) -> void:
+	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_faabb( faabb : AABB ) -> void:
+	func add_faabb( faabb: AABB ) -> void:
 		fbb_.add_AABB( RootTable.vtable.VT_FAABB, faabb )
 
-	func add_fbasis( fbasis : Basis ) -> void:
+	func add_fbasis( fbasis: Basis ) -> void:
 		fbb_.add_Basis( RootTable.vtable.VT_FBASIS, fbasis )
 
-	func add_fcolor( fcolor : Color ) -> void:
+	func add_fcolor( fcolor: Color ) -> void:
 		fbb_.add_Color( RootTable.vtable.VT_FCOLOR, fcolor )
 
-	func add_fplane( fplane : Plane ) -> void:
+	func add_fplane( fplane: Plane ) -> void:
 		fbb_.add_Plane( RootTable.vtable.VT_FPLANE, fplane )
 
-	func add_fprojection( fprojection : Projection ) -> void:
+	func add_fprojection( fprojection: Projection ) -> void:
 		fbb_.add_Projection( RootTable.vtable.VT_FPROJECTION, fprojection )
 
-	func add_fquaternion( fquaternion : Quaternion ) -> void:
+	func add_fquaternion( fquaternion: Quaternion ) -> void:
 		fbb_.add_Quaternion( RootTable.vtable.VT_FQUATERNION, fquaternion )
 
-	func add_frect2( frect2 : Rect2 ) -> void:
+	func add_frect2( frect2: Rect2 ) -> void:
 		fbb_.add_Rect2( RootTable.vtable.VT_FRECT2, frect2 )
 
-	func add_frect2i( frect2i : Rect2i ) -> void:
+	func add_frect2i( frect2i: Rect2i ) -> void:
 		fbb_.add_Rect2i( RootTable.vtable.VT_FRECT2I, frect2i )
 
-	func add_ftransform2d( ftransform2d : Transform2D ) -> void:
+	func add_ftransform2d( ftransform2d: Transform2D ) -> void:
 		fbb_.add_Transform2D( RootTable.vtable.VT_FTRANSFORM2D, ftransform2d )
 
-	func add_ftransform3d( ftransform3d : Transform3D ) -> void:
+	func add_ftransform3d( ftransform3d: Transform3D ) -> void:
 		fbb_.add_Transform3D( RootTable.vtable.VT_FTRANSFORM3D, ftransform3d )
 
-	func add_fvector2( fvector2 : Vector2 ) -> void:
+	func add_fvector2( fvector2: Vector2 ) -> void:
 		fbb_.add_Vector2( RootTable.vtable.VT_FVECTOR2, fvector2 )
 
-	func add_fvector2i( fvector2i : Vector2i ) -> void:
+	func add_fvector2i( fvector2i: Vector2i ) -> void:
 		fbb_.add_Vector2i( RootTable.vtable.VT_FVECTOR2I, fvector2i )
 
-	func add_fvector3( fvector3 : Vector3 ) -> void:
+	func add_fvector3( fvector3: Vector3 ) -> void:
 		fbb_.add_Vector3( RootTable.vtable.VT_FVECTOR3, fvector3 )
 
-	func add_fvector3i( fvector3i : Vector3i ) -> void:
+	func add_fvector3i( fvector3i: Vector3i ) -> void:
 		fbb_.add_Vector3i( RootTable.vtable.VT_FVECTOR3I, fvector3i )
 
-	func add_fvector4( fvector4 : Vector4 ) -> void:
+	func add_fvector4( fvector4: Vector4 ) -> void:
 		fbb_.add_Vector4( RootTable.vtable.VT_FVECTOR4, fvector4 )
 
-	func add_vector4i( vector4i : Vector4i ) -> void:
+	func add_vector4i( vector4i: Vector4i ) -> void:
 		fbb_.add_Vector4i( RootTable.vtable.VT_VECTOR4I, vector4i )
 
 	func finish() -> int:
-		var end : int = fbb_.end_table( start_ )
-		var o : int = end
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
 		return o;
 
 
-static func get_CustomStruct( _bytes : PackedByteArray, _start : int = 0 ) -> CustomStruct:
-	assert(not _bytes.is_empty())
-	return CustomStruct.new(_bytes, _start)
-
-static func get_RootTable( _bytes : PackedByteArray, _start : int = 0 ) -> RootTable:
-	assert(not _bytes.is_empty())
-	return RootTable.new(_bytes, _start)
-
-static func create_RootTable( _fbb : FlatBufferBuilder,
-		faabb : AABB,
-		fbasis : Basis,
-		fcolor : Color,
-		fplane : Plane,
-		fprojection : Projection,
-		fquaternion : Quaternion,
-		frect2 : Rect2,
-		frect2i : Rect2i,
-		ftransform2d : Transform2D,
-		ftransform3d : Transform3D,
-		fvector2 : Vector2,
-		fvector2i : Vector2i,
-		fvector3 : Vector3,
-		fvector3i : Vector3i,
-		fvector4 : Vector4,
-		vector4i : Vector4i ) -> int :
-	var builder : RootTableBuilder = RootTableBuilder.new( _fbb );
+static func create_RootTable( _fbb: FlatBufferBuilder,
+		faabb: AABB,
+		fbasis: Basis,
+		fcolor: Color,
+		fplane: Plane,
+		fprojection: Projection,
+		fquaternion: Quaternion,
+		frect2: Rect2,
+		frect2i: Rect2i,
+		ftransform2d: Transform2D,
+		ftransform3d: Transform3D,
+		fvector2: Vector2,
+		fvector2i: Vector2i,
+		fvector3: Vector3,
+		fvector3i: Vector3i,
+		fvector4: Vector4,
+		vector4i: Vector4i ) -> int :
+	var builder: RootTableBuilder = RootTableBuilder.new( _fbb );
 	builder.add_vector4i( vector4i );
 	builder.add_fvector4( fvector4 );
 	builder.add_fvector3i( fvector3i );
@@ -280,3 +269,7 @@ static func create_RootTable( _fbb : FlatBufferBuilder,
 	builder.add_fbasis( fbasis );
 	builder.add_faabb( faabb );
 	return builder.finish();
+
+static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
+	assert(not _bytes.is_empty())
+	return RootTable.new(_bytes, _bytes.decode_u32(0))

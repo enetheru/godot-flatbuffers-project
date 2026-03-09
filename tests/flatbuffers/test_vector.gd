@@ -18,10 +18,11 @@ func _run_test() -> int:
 	return runcode
 
 
-func initial_sanity_check():
+func initial_sanity_check() -> void:
 	var test_int : int = u64
 	var test_vec : Vector3i = Vector3i(u32,u32,u32)
 	var test_bytes : PackedByteArray
+	@warning_ignore("return_value_discarded")
 	test_bytes.resize(24)
 	test_bytes.encode_u64(0, test_int)
 	test_bytes.encode_s32(8, test_vec.x )
@@ -41,24 +42,25 @@ func item_check() -> PackedByteArray:
 
 	#Serialise an item
 	var fbb := FlatBufferBuilder.create(1)
-	var item_ofs = schema.create_Item(fbb,id, pos)
+	var item_ofs:int = schema.create_Item(fbb,id, pos)
 	fbb.finish(item_ofs)
 
 	var item_bytes : PackedByteArray = fbb.to_packed_byte_array()
 
 	# Item is the root of this buffer.
-	var item : Item = schema.get_Item(item_bytes, item_bytes.decode_u32(0))
+	var item : Item = schema.Item.new(item_bytes, item_bytes.decode_u32(0))
 
 	logd("item.id: %d" % item.id() )
 	logd(["item.pos: %s" % item.pos()] )
-	logd(["item:", bytes_view(item.bytes)] )
+	var bytes:PackedByteArray = item._fb_bytes 
+	logd(["item:", bytes_view(bytes)] )
 	logd()
 	TEST_EQ(id, item.id())
 	TEST_EQ(pos, item.pos())
 
 	return item_bytes
 
-func bag_check( item_bytes : PackedByteArray ):
+func bag_check( item_bytes : PackedByteArray ) -> void:
 	logd( "Bag Check" )
 	# Reset the builder
 	var fbb := FlatBufferBuilder.create(1)
@@ -73,7 +75,7 @@ func bag_check( item_bytes : PackedByteArray ):
 	var bag_bytes : PackedByteArray = fbb.to_packed_byte_array()
 
 	# bag is the root of this buffer.
-	var bag : Bag = schema.get_Bag(bag_bytes, bag_bytes.decode_u32(0))
+	var bag : Bag = schema.Bag.new(bag_bytes, bag_bytes.decode_u32(0))
 
 	logd("bag.id: %d" % bag.id() )
 	logd(["bag.item_size: %s" % bag.item_size()] )
@@ -82,18 +84,20 @@ func bag_check( item_bytes : PackedByteArray ):
 	logd()
 
 	var bag_item_bytes : PackedByteArray = bag.item()
-	var bag_item : Item = schema.get_Item(bag_item_bytes, bag_item_bytes.decode_u32(0) )
+	var bag_item : Item = schema.Item.new(bag_item_bytes, bag_item_bytes.decode_u32(0) )
 	logd("bag.item.id: %d" % bag_item.id() )
 	logd(["bag.item.pos: %s" % bag_item.pos()] )
-	logd(["bag.item:", bytes_view(bag_item.bytes)] )
-	logd(["bag:", bytes_view(bag.bytes)] )
+	var _bytes : PackedByteArray = bag_item._fb_bytes
+	logd(["bag.item:", bytes_view(_bytes)] )
+	_bytes = bag._fb_bytes
+	logd(["bag:", bytes_view(_bytes)] )
 	TEST_EQ(id, bag_item.id())
 	TEST_EQ(pos, bag_item.pos())
 	logd()
 	return
 
 
-func root_table_check( item_bytes : PackedByteArray ):
+func root_table_check( item_bytes : PackedByteArray ) -> void:
 	logd( "RootTable Check" )
 	# Reset the builder
 	var fbb := FlatBufferBuilder.create(1)
@@ -115,8 +119,7 @@ func root_table_check( item_bytes : PackedByteArray ):
 	fbb.reset()
 
 	# RootTable is the root of this buffer.
-	var root_table : RootTable = schema.get_RootTable(
-		root_table_bytes, root_table_bytes.decode_u32(0))
+	var root_table : RootTable = schema.get_RootTable(root_table_bytes)
 
 	TEST_TRUE( root_table.list_is_present(), "presence of list" )
 	logd("rt.list.size(): %d" % root_table.list_size() )
@@ -132,7 +135,7 @@ func root_table_check( item_bytes : PackedByteArray ):
 		logd()
 
 		var bag_item_bytes : PackedByteArray = bag.item()
-		var bag_item : Item = schema.get_Item(bag_item_bytes, bag_item_bytes.decode_u32(0) )
+		var bag_item : Item = schema.Item.new(bag_item_bytes, bag_item_bytes.decode_u32(0) )
 		logd("bag.item.id: %d" % bag_item.id() )
 		logd(["bag.item.pos: %s" % bag_item.pos()] )
 		TEST_EQ(id, bag_item.id())
@@ -151,7 +154,7 @@ func root_table_check( item_bytes : PackedByteArray ):
 		logd()
 
 		var bag_item_bytes : PackedByteArray = bag.item()
-		var bag_item : Item = schema.get_Item(bag_item_bytes, bag_item_bytes.decode_u32(0) )
+		var bag_item : Item = schema.Item.new(bag_item_bytes, bag_item_bytes.decode_u32(0) )
 		logd("bag.item.id: %d" % bag_item.id() )
 		logd(["bag.item.pos: %s" % bag_item.pos()] )
 		TEST_EQ(id, bag_item.id())

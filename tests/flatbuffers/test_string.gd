@@ -36,6 +36,6 @@ func long_way() -> void:
 
 
 func reconstruction( buffer : PackedByteArray ) -> void:
-	var root_table := schema.get_root( buffer )
+	var root_table := schema.get_RootTable( buffer )
 
 	TEST_EQ( root_table.my_string(), test_string, "my_string()" )

@@ -31,12 +31,12 @@ func _run_test() -> int:
 	# lets ruin the first 8 bytes
 	packed.encode_u32(0, 0x0FFFFFFFFFFFFFFF)
 	verifier.set_buffer(packed)
-	fb_table.bytes = packed
-	fb_table.start = packed.decode_u32(0)
+	fb_table._fb_bytes = packed
+	fb_table._fb_start = packed.decode_u32(0)
 
 	if TEST_FALSE_RET(fb_table.verify(verifier), "broken table start."):
-		logp("\tfb_table.start: %d" % fb_table.start)
-		var bytes:PackedByteArray = fb_table.bytes
+		logp("\tfb_table.start: %d" % fb_table._fb_start)
+		var bytes:PackedByteArray = fb_table._fb_bytes
 		logp("\tfb_table.bytes: %s" % bytes_view(bytes))
 
 	return runcode

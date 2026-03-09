@@ -19,12 +19,12 @@ func _run_test() -> int:
 
 	var item:Item = schema.create_Item(id)
 	logd("item.id: %d" % item.id )
-	logd(["item:", bytes_view(item.bytes)] )
+	logd(["item:", bytes_view(item._fb_bytes)] )
 	logd()
 	TEST_EQ(id, item.id, "struct encoding (id:int)")
 
 	var bag = schema.create_Bag( item, [] )
-	logd(["bag.bytes:", bytes_view(bag.bytes)] )
+	logd(["bag.bytes:", bytes_view(bag._fb_bytes)] )
 #
 	#var fbb = FlatBufferBuilder.new()
 	#var offset = schema.create_RootTable(fbb, bag)

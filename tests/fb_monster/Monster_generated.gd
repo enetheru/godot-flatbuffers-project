@@ -5,9 +5,6 @@
 @warning_ignore_start('unsafe_method_access')
 @warning_ignore_start('unsafe_call_argument')
 
-static func get_root( _bytes: PackedByteArray ) -> Monster:
-	return get_Monster( _bytes, _bytes.decode_u32(0) )
-
 enum Color_ {
 	RED = 0,
 	GREEN = 1,
@@ -18,43 +15,6 @@ enum Equipment {
 	NONE = 0,
 	WEAPON = 1
 }
-
-static func create_Vec3(
-		_x: float,
-		_y: float,
-		_z: float ) -> Vec3 :
-	var val: Vec3 = Vec3.new()
-	val.z = _z;
-	val.y = _y;
-	val.x = _x;
-	return val
-
-class Vec3 extends FlatBuffer:
-	const size: int = 12
-
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		if bytes_.is_empty(): 
-			_fb_bytes = PackedByteArray()
-			_fb_bytes.resize( size )
-		else:
-			assert(start_ + size <= bytes_.size())
-			_fb_bytes = bytes_; _fb_start = start_
-
-	# [================[ x ]================]
-	var x: float :
-		get(): return _fb_bytes.decode_float(_fb_start + 0)
-		set(v): _fb_bytes.encode_float(_fb_start + 0, v)
-
-	# [================[ y ]================]
-	var y: float :
-		get(): return _fb_bytes.decode_float(_fb_start + 4)
-		set(v): _fb_bytes.encode_float(_fb_start + 4, v)
-
-	# [================[ z ]================]
-	var z: float :
-		get(): return _fb_bytes.decode_float(_fb_start + 8)
-		set(v): _fb_bytes.encode_float(_fb_start + 8, v)
-
 
 class Monster extends FlatBuffer:
 	const _Monster_schema = preload( 'Monster_generated.gd' )
@@ -109,10 +69,8 @@ class Monster extends FlatBuffer:
 		return get_field_offset( vtable.VT_PATH )
 
 	# [================[ pos ]================]
-	func pos() -> Vec3:
-		var field_offset: int = get_field_offset( vtable.VT_POS )
-		if not field_offset: return null
-		return _Monster_schema.get_Vec3( _fb_bytes, _fb_start + field_offset )
+	func pos() -> Vector3:
+		return get_Vector3( vtable.VT_POS )
 
 	# [================[ mana ]================]
 	func mana() -> int:
@@ -155,7 +113,8 @@ class Monster extends FlatBuffer:
 	func color() -> Color_:
 		var foffset: int = get_field_offset( vtable.VT_COLOR )
 		if not foffset: return 2 as Color_
-		return _fb_bytes.decode_s8( _fb_start + foffset ) as Color_
+		var decoded: Color_ = _fb_bytes.decode_s8( _fb_start + foffset )
+		return decoded
 
 	# [================[ weapons ]================]
 	func weapons_size() -> int:
@@ -172,28 +131,31 @@ class Monster extends FlatBuffer:
 		if array.resize( array_size ) != OK: return []
 		for i: int in array_size:
 			var p: int = array_start + i * 4
-			array[i] = _Monster_schema.get_Weapon( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+			array[i] = _Monster_schema.Weapon.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
 	func weapons_at( idx: int, into: Weapon = null ) -> Weapon:
 		var field_start: int = get_field_start( vtable.VT_WEAPONS )
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		var array_start: int = field_start + 4
 		assert(field_start, 'Field is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4
 		var relative_offset: int = array_start + idx * 4
 		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
-			into.bytes = _fb_bytes
-			into.start = relative_offset
+			into._fb_bytes = _fb_bytes
+			into._fb_start = relative_offset
 			return into
-		return _Monster_schema.get_Weapon( _fb_bytes, offset )
+		return _Monster_schema.Weapon.new( _fb_bytes, offset )
 
 	# [================[ equipped_type ]================]
 	func equipped_type() -> Equipment:
 		var foffset: int = get_field_offset( vtable.VT_EQUIPPED_TYPE )
 		if not foffset: return 0 as Equipment
-		return _fb_bytes.decode_u8( _fb_start + foffset ) as Equipment
+		var decoded: Equipment = _fb_bytes.decode_u8( _fb_start + foffset )
+		return decoded
 
 	# [================[ equipped ]================]
 	func equipped() -> Variant:
@@ -201,7 +163,7 @@ class Monster extends FlatBuffer:
 		if not field_start: return null
 		match( equipped_type() ):
 			Equipment.WEAPON:
-				return _Monster_schema.get_Weapon( _fb_bytes, field_start )
+				return _Monster_schema.Weapon.new( _fb_bytes, field_start )
 			_: pass
 		return null
 
@@ -211,30 +173,25 @@ class Monster extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
-	func path() -> Array[Vec3]:
-		var array_start: int = get_field_start( vtable.VT_PATH )
-		if not array_start: return []
-		var array_size: int = _fb_bytes.decode_u32( array_start )
-		array_start += 4
-		var array: Array[Vec3]
-		if array.resize( array_size ) != OK: return []
-		for i: int in array_size:
-			array[i] = _Monster_schema.get_Vec3(_fb_bytes, array_start + i * 12 )
-		return array
-
-	func path_at( idx: int, into: Vec3 = null ) -> Vec3:
+	func path() -> PackedVector3Array:
 		var field_start: int = get_field_start( vtable.VT_PATH )
+		if not field_start: return []
+
 		var array_size: int = _fb_bytes.decode_u32( field_start )
-		var array_start: int = field_start + 4
+		var array_start:int = field_start + 4
+		return _fb_bytes.slice(
+				array_start, array_start + array_size * 12 ) \
+				.to_vector3_array()
+
+	func path_at( idx: int ) -> Vector3:
+		var field_start: int = get_field_start( vtable.VT_PATH )
 		assert(field_start, 'Field is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
-		var relative_offset: int = array_start + idx * 4
-		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
-		if into:
-			into.bytes = _fb_bytes
-			into.start = relative_offset
-			return into
-		return _Monster_schema.get_Vec3( _fb_bytes, offset )
+
+		var array_start: int = field_start + 4
+		return decode_Vector3( array_start + idx * 12 )
 
 
 class MonsterBuilder extends RefCounted:
@@ -245,8 +202,8 @@ class MonsterBuilder extends RefCounted:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_pos( pos: Vec3 ) -> void:
-		fbb_.add_bytes( Monster.vtable.VT_POS, pos.bytes ) 
+	func add_pos( pos: Vector3 ) -> void:
+		fbb_.add_Vector3( Monster.vtable.VT_POS, pos )
 
 	func add_mana( mana: int ) -> void:
 		fbb_.add_element_short_default( Monster.vtable.VT_MANA, mana, 150 )
@@ -280,6 +237,30 @@ class MonsterBuilder extends RefCounted:
 		var o: int = end
 		return o;
 
+
+static func create_Monster( _fbb: FlatBufferBuilder,
+		pos: Vector3,
+		mana: int,
+		hp: int,
+		name: int,
+		inventory: int,
+		color: Color_,
+		weapons: int,
+		equipped_type: Equipment,
+		equipped: int,
+		path: int ) -> int :
+	var builder: MonsterBuilder = MonsterBuilder.new( _fbb );
+	builder.add_path( path );
+	builder.add_equipped( equipped );
+	builder.add_weapons( weapons );
+	builder.add_inventory( inventory );
+	builder.add_name( name );
+	builder.add_pos( pos );
+	builder.add_hp( hp );
+	builder.add_mana( mana );
+	builder.add_equipped_type( equipped_type );
+	builder.add_color( color );
+	return builder.finish();
 
 class Weapon extends FlatBuffer:
 	enum vtable{
@@ -330,42 +311,6 @@ class WeaponBuilder extends RefCounted:
 		return o;
 
 
-static func get_Vec3( _bytes: PackedByteArray, _start: int = 0 ) -> Vec3:
-	assert(not _bytes.is_empty())
-	return Vec3.new(_bytes, _start)
-
-static func get_Monster( _bytes: PackedByteArray, _start: int = 0 ) -> Monster:
-	assert(not _bytes.is_empty())
-	return Monster.new(_bytes, _start)
-
-static func create_Monster( _fbb: FlatBufferBuilder,
-		pos: Vec3,
-		mana: int,
-		hp: int,
-		name: int,
-		inventory: int,
-		color: Color_,
-		weapons: int,
-		equipped_type: Equipment,
-		equipped: int,
-		path: int ) -> int :
-	var builder: MonsterBuilder = MonsterBuilder.new( _fbb );
-	builder.add_path( path );
-	builder.add_equipped( equipped );
-	builder.add_weapons( weapons );
-	builder.add_inventory( inventory );
-	builder.add_name( name );
-	builder.add_pos( pos );
-	builder.add_hp( hp );
-	builder.add_mana( mana );
-	builder.add_equipped_type( equipped_type );
-	builder.add_color( color );
-	return builder.finish();
-
-static func get_Weapon( _bytes: PackedByteArray, _start: int = 0 ) -> Weapon:
-	assert(not _bytes.is_empty())
-	return Weapon.new(_bytes, _start)
-
 static func create_Weapon( _fbb: FlatBufferBuilder,
 		name: int,
 		damage: int ) -> int :
@@ -373,4 +318,8 @@ static func create_Weapon( _fbb: FlatBufferBuilder,
 	builder.add_name( name );
 	builder.add_damage( damage );
 	return builder.finish();
+
+static func get_Monster( _bytes: PackedByteArray ) -> Monster:
+	assert(not _bytes.is_empty())
+	return Monster.new(_bytes, _bytes.decode_u32(0))
 

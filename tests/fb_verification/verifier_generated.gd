@@ -5,9 +5,6 @@
 @warning_ignore_start('unsafe_method_access')
 @warning_ignore_start('unsafe_call_argument')
 
-static func get_root( _bytes: PackedByteArray ) -> MyTable:
-	return get_MyTable( _bytes, _bytes.decode_u32(0) )
-
 class MyTable extends FlatBuffer:
 	enum vtable{
 		VT_FIRST_FIELD = 4
@@ -44,12 +41,12 @@ class MyTableBuilder extends RefCounted:
 		return o;
 
 
-static func get_MyTable( _bytes: PackedByteArray, _start: int = 0 ) -> MyTable:
-	assert(not _bytes.is_empty())
-	return MyTable.new(_bytes, _start)
-
 static func create_MyTable( _fbb: FlatBufferBuilder,
 		first_field: int ) -> int :
 	var builder: MyTableBuilder = MyTableBuilder.new( _fbb );
 	builder.add_first_field( first_field );
 	return builder.finish();
+
+static func get_MyTable( _bytes: PackedByteArray ) -> MyTable:
+	assert(not _bytes.is_empty())
+	return MyTable.new(_bytes, _bytes.decode_u32(0))

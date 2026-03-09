@@ -8,10 +8,6 @@
 
 config_version=5
 
-[animation]
-
-compatibility/default_parent_skeleton_in_mesh_instance_3d=true
-
 [application]
 
 config/name="FlatBuffers Extension Project"
@@ -22,7 +18,6 @@ config/icon="uid://cfc5vxnc2fm05"
 
 [debug]
 
-settings/stdout/verbose_stdout=true
 settings/gdscript/always_track_call_stacks=true
 settings/gdscript/always_track_local_variables=true
 gdscript/warnings/directory_rules={
@@ -37,29 +32,46 @@ gdscript/warnings/return_value_discarded=1
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/enetheru.editor-tweaks/plugin.cfg", "res://addons/enetheru.flatbuffers-addon/plugin.cfg", "res://addons/enetheru.test-runner/plugin.cfg", "res://addons/enetheru.utils/plugin.cfg")
+enabled=PackedStringArray("res://addons/enetheru.editor-tweaks/plugin.cfg", "res://addons/enetheru.flatbuffers-addon/plugin.cfg", "res://addons/enetheru.test-runner/plugin.cfg", "res://addons/enetheru.utils/plugin.cfg", "res://addons/zylann.editor_debugger/plugin.cfg")
+
+[editor_tweaks]
+
+debug=true
+experimental=true
+CodeEditor/use_monospace_glyphs=true
+CodeEditor/add_rich_paste=true
+CodeEditor/enable_linespacing_tweaks=true
+CodeEditor/adjust_linespacing_above=-4
+CodeEditor/adjust_linespacing_below=-5
+verbosity=65535
+OutputLog/enable_ligatures=false
+OutputLog/add_rotate_bbcode_effect=false
+OutputLog/enable_output_search_bar=false
+OutputLog/enable_clickable_url_links=true
 
 [flatbuffers]
 
 debug=true
-highlight_error=true
+experimental=true
 EditorLog/=true
-Colours/Syntax/unknown=Color(0.8025, 0.81, 0.8225, 1)
-Colours/Syntax/comment=Color(0.8025, 0.81, 0.8225, 0.5)
+EditorLog/verbosity=5
+highlight_error=true
+Colours/Syntax/unknown=Color(1, 1, 1, 0.75)
+Colours/Syntax/comment=Color(1, 1, 1, 0.5)
+Colours/Syntax/comment_doc=Color(0.6, 0.7, 0.8, 0.8)
 Colours/Syntax/keyword=Color(1, 0.44, 0.52, 1)
 Colours/Syntax/type=Color(0.26, 1, 0.76, 1)
 Colours/Syntax/string=Color(1, 0.93, 0.63, 1)
-Colours/Syntax/punct=Color(0.8025, 0.81, 0.8225, 1)
+Colours/Syntax/punct=Color(1, 1, 1, 0.75)
 Colours/Syntax/ident=Color(0.67, 0.79, 1, 1)
 Colours/Syntax/scalar=Color(0.63, 1, 0.88, 1)
-Colours/Syntax/meta=Color(0.8025, 0.81, 0.8225, 1)
+Colours/Syntax/meta=Color(1, 1, 1, 0.75)
 Colours/Notice/critical=Color(0.77, 0.35, 0.35, 1)
 Colours/Notice/error=Color(0.77, 0.35, 0.35, 1)
 Colours/Notice/warning=Color(0.72, 0.61, 0.48, 1)
-Colours/Notice/notice=Color(0.8025, 0.81, 0.8225, 1)
-Colours/Notice/debug=Color(0.8025, 0.81, 0.8225, 0.5)
-Colours/Notice/trace=Color(0.8025, 0.81, 0.8225, 0.5)
-EditorLog/verbosity=3
+Colours/Notice/notice=Color(0.56, 0.67, 0.51, 1)
+Colours/Notice/debug=Color(0.6, 0.7, 0.8, 0.8)
+Colours/Notice/trace=Color(1, 1, 1, 0.5)
 
 [rendering]
 

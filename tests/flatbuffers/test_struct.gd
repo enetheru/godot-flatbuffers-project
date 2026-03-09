@@ -33,7 +33,7 @@ func _run_test() -> int:
 	# get packed bytes
 	var bytes : PackedByteArray = fbb.to_packed_byte_array()
 
-	var table : RootTable = schema.get_root(bytes)
+	var table : RootTable = schema.get_RootTable(bytes)
 
 	var output_struct : CustomStruct =  table.custom_struct()
 	print( "decode.x: ", output_struct.x )

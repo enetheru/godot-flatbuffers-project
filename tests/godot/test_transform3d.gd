@@ -3,7 +3,7 @@ extends TestBase
 
 const schema = preload("uid://dfcetolx7lu3u")
 
-var test_object = Node3D.new()
+var test_object := Node3D.new()
 
 func _run_test() -> int:
 	# Setup Persistent data
@@ -13,14 +13,14 @@ func _run_test() -> int:
 
 func manual() -> PackedByteArray:
 	# create new builder
-	var builder = FlatBufferBuilder.new()
+	var builder := FlatBufferBuilder.new()
 
 	# create all the composite objects here
-	# var offset : int = schema.Create<Type>( builder, element, ... )
+	# var offset:int = schema.Create<Type>( builder, element, ... )
 	# ...
 
 	# Start the root object builder
-	var root_builder = schema.RootTableBuilder.new( builder )
+	var root_builder := schema.RootTableBuilder.new( builder )
 
 	# Add all the root object items
 	root_builder.add_my_field( test_object.transform )
@@ -28,7 +28,7 @@ func manual() -> PackedByteArray:
 	# ...
 
 	# Finish the root builder
-	var root_offset = root_builder.finish()
+	var root_offset:int = root_builder.finish()
 
 	# Finalise the builder
 	builder.finish( root_offset )
@@ -37,8 +37,8 @@ func manual() -> PackedByteArray:
 	return builder.to_packed_byte_array()
 
 
-func reconstruct( buffer : PackedByteArray ):
-	var root_table : FlatBuffer = schema.get_root( buffer )
+func reconstruct( buffer:PackedByteArray ) -> void:
+	var root_table:schema.RootTable = schema.get_RootTable( buffer )
 
 	# Perform testing on the reconstructed flatbuffer.
 	TEST_EQ( root_table.my_field(), test_object.transform, "my_field == test_object.transform")

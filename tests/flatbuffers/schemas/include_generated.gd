@@ -8,9 +8,6 @@
 const minimum_schema = preload('minimum_generated.gd')
 const Minimum = minimum_schema.Minimum
 
-static func get_root( _bytes : PackedByteArray ) -> RootTable:
-	return get_RootTable( _bytes, _bytes.decode_u32(0) )
-
 class RootTable extends FlatBuffer:
 	const _minimum_schema = preload( 'minimum_generated.gd' )
 
@@ -19,8 +16,8 @@ class RootTable extends FlatBuffer:
 		VT_EXTERNAL_ARRAY = 6
 	}
 
-	func _init( bytes_ : PackedByteArray = [], start_ : int = 0) -> void:
-		bytes = bytes_; start = start_
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
 	func external_is_present() -> bool:
@@ -31,72 +28,74 @@ class RootTable extends FlatBuffer:
 
 	# [================[ external ]================]
 	func external() -> _minimum_schema.Minimum:
-		var field_start : int = get_field_start( vtable.VT_EXTERNAL )
+		var field_start: int = get_field_start( vtable.VT_EXTERNAL )
 		if not field_start: return null
-		return _minimum_schema.get_Minimum( bytes, field_start )
+		return _minimum_schema.Minimum.new( _fb_bytes, field_start )
 
 	# [================[ external_array ]================]
 	func external_array_size() -> int:
-		var array_start : int = get_field_start( vtable.VT_EXTERNAL_ARRAY )
+		var array_start: int = get_field_start( vtable.VT_EXTERNAL_ARRAY )
 		if not array_start: return 0
-		return bytes.decode_u32( array_start )
+		return _fb_bytes.decode_u32( array_start )
 
 	func external_array() -> Array:
-		var array_start : int = get_field_start( vtable.VT_EXTERNAL_ARRAY )
+		var array_start: int = get_field_start( vtable.VT_EXTERNAL_ARRAY )
 		if not array_start: return []
-		var array_size : int = bytes.decode_u32( array_start )
+		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array : Array
+		var array: Array
 		if array.resize( array_size ) != OK: return []
-		for i : int in array_size:
-			var p : int = array_start + i * 4
-			array[i] = _minimum_schema.get_Minimum( bytes, p + bytes.decode_u32( p ) )
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _minimum_schema.Minimum.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func external_array_at( idx : int, into : Minimum = null ) -> Minimum:
-		var field_start : int = get_field_start( vtable.VT_EXTERNAL_ARRAY )
-		var array_size : int = bytes.decode_u32( field_start )
-		var array_start : int = field_start + 4
+	func external_array_at( idx: int, into: Minimum = null ) -> Minimum:
+		var field_start: int = get_field_start( vtable.VT_EXTERNAL_ARRAY )
 		assert(field_start, 'Field is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
-		var relative_offset : int = array_start + idx * 4
-		var offset : int = relative_offset + bytes.decode_u32( relative_offset )
+
+		var array_start: int = field_start + 4
+		var relative_offset: int = array_start + idx * 4
+		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
 		if into:
-			into.bytes = bytes
-			into.start = relative_offset
+			into._fb_bytes = _fb_bytes
+			into._fb_start = relative_offset
 			return into
-		return _minimum_schema.get_Minimum( bytes, offset )
+		return _minimum_schema.Minimum.new( _fb_bytes, offset )
 
 
 class RootTableBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
-	var start_ : int
+	var start_: int
 
-	func _init( _fbb : FlatBufferBuilder ) -> void:
+	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_external( external_offset : int ) -> void:
+	func add_external( external_offset: int ) -> void:
 		fbb_.add_offset( RootTable.vtable.VT_EXTERNAL, external_offset )
 
-	func add_external_array( external_array_offset : int ) -> void:
+	func add_external_array( external_array_offset: int ) -> void:
 		fbb_.add_offset( RootTable.vtable.VT_EXTERNAL_ARRAY, external_array_offset )
 
 	func finish() -> int:
-		var end : int = fbb_.end_table( start_ )
-		var o : int = end
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
 		return o;
 
 
-static func get_RootTable( _bytes : PackedByteArray, _start : int = 0 ) -> RootTable:
-	assert(not _bytes.is_empty())
-	return RootTable.new(_bytes, _start)
-
-static func create_RootTable( _fbb : FlatBufferBuilder,
-		external : int,
-		external_array : int ) -> int :
-	var builder : RootTableBuilder = RootTableBuilder.new( _fbb );
+static func create_RootTable( _fbb: FlatBufferBuilder,
+		external: int,
+		external_array: int ) -> int :
+	var builder: RootTableBuilder = RootTableBuilder.new( _fbb );
 	builder.add_external_array( external_array );
 	builder.add_external( external );
 	return builder.finish();
+
+static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
+	assert(not _bytes.is_empty())
+	return RootTable.new(_bytes, _bytes.decode_u32(0))
 

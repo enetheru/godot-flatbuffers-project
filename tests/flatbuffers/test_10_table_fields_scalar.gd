@@ -28,7 +28,7 @@ func test_neg_one() -> void:
 	var data : PackedByteArray = fbb.to_packed_byte_array()
 
 	# Decode buffer
-	var fbo : schema.RootTable = schema.get_root(data)
+	var fbo : schema.RootTable = schema.get_RootTable(data)
 	TEST_TRUE( fbo.f_bool(), " f_bool()")
 	TEST_EQ(fbo.f_byte(), -1, "f_byte()" )
 	TEST_EQ(fbo.f_ubyte(), 255, "f_ubyte()" )
