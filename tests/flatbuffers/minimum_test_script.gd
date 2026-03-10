@@ -17,10 +17,10 @@ enum {
 	USING
 }
 
-func get_phase_count() -> int:
+func _get_phase_count() -> int:
 	return 4
 
-func get_phase_name(phase:int) -> String:
+func _get_phase_name(phase:int) -> String:
 	assert( phase >= 0 and phase < get_phase_count() )
 	match phase:
 		0: return "Encoding"
@@ -29,7 +29,7 @@ func get_phase_name(phase:int) -> String:
 		3: return "Using"
 	return ""
 
-func get_strategy_count(phase:int) -> int:
+func _get_strategy_count(phase:int) -> int:
 	assert( phase >= 0 and phase < get_phase_count() )
 	match phase:
 		0: return 2
@@ -38,7 +38,7 @@ func get_strategy_count(phase:int) -> int:
 		3: return 1
 	return 0
 
-func get_strategy(phase:int, strategy:int) -> Callable:
+func _get_strategy(phase:int, strategy:int) -> Callable:
 	assert( phase >= 0 and phase < get_phase_count() )
 	assert( strategy >= 0 and strategy < get_strategy_count(phase) )
 	match phase:
@@ -50,7 +50,7 @@ func get_strategy(phase:int, strategy:int) -> Callable:
 	return func()->void: pass
 
 ## A selection is an array of strategies, one for each phase.
-func flow( selection:Array[int] ) -> void:
+func _flow( selection:Array[int] ) -> void:
 	test.logp("[b]== Flow ==[/b]")
 	# encode
 	var encode:Callable = get_strategy(ENCODING, selection[ENCODING])

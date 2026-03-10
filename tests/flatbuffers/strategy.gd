@@ -11,26 +11,61 @@ enum Flags {
 }
 var flags:int = 0
 
+#       █████  ██████  ███████ ████████ ██████   █████   ██████ ████████       #
+#      ██   ██ ██   ██ ██         ██    ██   ██ ██   ██ ██         ██          #
+#      ███████ ██████  ███████    ██    ██████  ███████ ██         ██          #
+#      ██   ██ ██   ██      ██    ██    ██   ██ ██   ██ ██         ██          #
+#      ██   ██ ██████  ███████    ██    ██   ██ ██   ██  ██████    ██          #
+func                        ________ABSTRACT_________              ()->void:pass
 
 @abstract
+func _get_phase_count() -> int
+
+@abstract
+func _get_phase_name(phase:int) -> String
+
+@abstract
+func _get_strategy_count(phase:int) -> int
+
+@abstract
+func _get_strategy(phase:int, strategy:int) -> Callable
+
+@abstract
+func _flow( selection:Array[int] ) -> void
+
+
+#         ███    ███ ███████ ████████ ██   ██  ██████  ██████  ███████         #
+#         ████  ████ ██         ██    ██   ██ ██    ██ ██   ██ ██              #
+#         ██ ████ ██ █████      ██    ███████ ██    ██ ██   ██ ███████         #
+#         ██  ██  ██ ██         ██    ██   ██ ██    ██ ██   ██      ██         #
+#         ██      ██ ███████    ██    ██   ██  ██████  ██████  ███████         #
+func                        _________METHODS_________              ()->void:pass
+
+
 ## Phase count is how many separate sections or phases in the testing sequence.
-func get_phase_count() -> int
+func get_phase_count() -> int:
+	return _get_phase_count()
 
-
-@abstract
 ## Get the name of the phase indicated by [param phase]
-func get_phase_name(phase:int) -> String
+func get_phase_name(phase:int) -> String:
+	return _get_phase_name(phase)
 
-
-@abstract
 ## Return the number of strategies for the given [param phase]
-func get_strategy_count(phase:int) -> int
+func get_strategy_count(phase:int) -> int:
+	return _get_strategy_count(phase)
 
-
-@abstract
 ## return the [Callable] representing the [param strategy] n of [param phase] k
-func get_strategy(phase:int, strategy:int) -> Callable
+func get_strategy(phase:int, strategy:int) -> Callable:
+	return _get_strategy(phase, strategy)
 
-@abstract
 ## run the workfow
-func flow( selection:Array[int] ) -> void
+func flow( selection:Array[int] ) -> void: _flow(selection)
+
+## Can be used in place of a valid strategy for error checking.
+func null_strategy(...args:Array ) -> Variant:
+	if args.is_empty():
+		print("Null strategy called")
+		return null
+	print("Null strategy called with args:")
+	for arg:Variant in args: print("\t", str(arg))
+	return null

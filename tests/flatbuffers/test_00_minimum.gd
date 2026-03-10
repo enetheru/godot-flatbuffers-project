@@ -24,22 +24,25 @@ extends TestBase
 ## - Decoding[br]
 ## - Using[br]
 
-const schema_file = "res://tests/flatbuffers/schemas/minimum.fbs"
-const generated_file = "res://tests/flatbuffers/schemas/minimum_generated.gd"
-var test_script:String = "res://tests/flatbuffers/minimum_test_script.gd"
-
 const Strategy = preload("uid://4kv4xyusnsge")
+
+const schema_file:String = "res://tests/flatbuffers/schemas/minimum.fbs"
+const generated_file:String = "res://tests/flatbuffers/schemas/minimum_generated.gd"
+const test_script:String = "res://tests/flatbuffers/minimum_test_script.gd"
 
 
 func compile_schema() -> void:
+	TEST_TRUE(FileAccess.file_exists(schema_file), "schema file exists" )
 	var run_dict:Dictionary = await FlatBuffersPlugin.generate(schema_file)
-	var run_output:String = run_dict.output
-	TEST_EQ(0, run_dict.retcode, run_output)
+	var stdout:String = run_dict.stdout
+	TEST_EQ(0, run_dict.retcode, stdout)
 
 
 func load_generated_script() -> void:
-	var schema:GDScript = load(generated_file)
-	TEST_TRUE(is_instance_valid(schema), "Loading generated script")
+	if TEST_TRUE_RET(FileAccess.file_exists(generated_file),
+			"does generated file exist: '%s'" % generated_file ):
+		var schema:GDScript = load(generated_file)
+		TEST_TRUE(is_instance_valid(schema), "Loading generated script")
 
 
 func _run_test() -> int:

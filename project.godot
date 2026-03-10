@@ -32,7 +32,7 @@ gdscript/warnings/return_value_discarded=1
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/enetheru.editor-tweaks/plugin.cfg", "res://addons/enetheru.flatbuffers-addon/plugin.cfg", "res://addons/enetheru.test-runner/plugin.cfg", "res://addons/enetheru.utils/plugin.cfg", "res://addons/zylann.editor_debugger/plugin.cfg")
+enabled=PackedStringArray("res://addons/enetheru.editor-tweaks/plugin.cfg", "res://addons/enetheru.flatbuffers-addon/plugin.cfg", "res://addons/enetheru.test-runner/plugin.cfg", "res://addons/enetheru.utils/plugin.cfg")
 
 [editor_tweaks]
 
