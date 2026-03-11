@@ -1,75 +1,58 @@
 @tool
-extends TestBase
+extends "scripts/fb_generic_test.gd"
 
-## │ __  __ _      _            _    [br]
-## │|  \/  (_)_ _ (_)_ __  __ _| |   [br]
-## │| |\/| | | ' \| | '  \/ _` | |   [br]
-## │|_|  |_|_|_||_|_|_|_|_\__,_|_|   [br]
-## ╰──────────────────────────────── [br]
-## Minimal test case.
+
+## │   _  _   _       _ _         _             [br]
+## │  /_\| |_| |_ _ _(_) |__ _  _| |_ ___ ___   [br]
+## │ / _ \  _|  _| '_| | '_ \ || |  _/ -_|_-<   [br]
+## │/_/ \_\__|\__|_| |_|_.__/\_,_|\__\___/__/   [br]
+## ╰─────────────────────────────────────────── [br]
+## Attributes By-Line
 ##
-## The smallest test case I can conceive that makes any sense is a single
-## table with a single integer.[br]
-## [code]simple.fbs[/code][br]
-## [codeblock]table Minimum {
-##   my_field : int;
-## }
-## root_type Minimum;
-## [/codeblock]
-## Steps:
-## - schema parsing - Not relevant right now
-## - code generation
-## - encoding
-## - verification
-## - decoding
-## - using
+## Attributes Description
 
-const schema_file = "res://tests/flatbuffers/schemas/minimum.fbs"
-const Schema = preload("schemas/minimum_generated.gd")
-
+const schema_file:String = "res://tests/flatbuffers/schemas/attribute.fbs"
+const generated_file:String = "res://tests/flatbuffers/schemas/attribute_generated.gd"
+const strategy_file:String = "res://tests/flatbuffers/scripts/attribute_strategy.gd"
 
 func _run_test() -> int:
-	
-	if await generate_gdscript():
-		logp("Failed to generate GDScript from FlatBuffers schema")
-		return runcode
-	
-	var value : int = u32
-	logd("starting value: %X" %value )
+	var efs:EditorFileSystem = EditorInterface.get_resource_filesystem()
 
-	var bytes:PackedByteArray = encode_a(value)
-	if bytes.is_empty():
-		logp("Failed to encode value")
+	logd("== Compiling Schema ==")
+	await compile_schema(schema_file)
+	if not TEST_EQ_RET(RetCode.TEST_OK, runcode, "Schema Compilation"):
 		return runcode
-	
 
-	var rt:Schema.Minimum = Schema.get_Minimum(bytes)
-	print("decoded: %X" %rt.my_field() )
-	TEST_EQ(value, rt.my_field())
+	logd("== Loading Generated GDScript ==")
+	load_generated_script(generated_file)
+	if not TEST_EQ_RET(RetCode.TEST_OK, runcode, "Load Generated Script"):
+		return runcode
+
+	# Wait for scan to complete or receive errors when we reimport.
+	if efs.is_scanning(): await efs.filesystem_changed
+
+	# re-import script files. This outputs an error, but still works.
+	# INTERNAL ERROR: BUG: File queued for import, but can't be imported,
+	#     importer for type '' not found.
+	efs.reimport_files([generated_file, strategy_file])
+
+
+	## Because we cannot pre-load a script that hasnt been generated yet, it
+	## means that we have no access to types. But I can load and run a script
+	## that does pre-load the generated script, because when it is loaded it will
+	## pull in the pre-load but that's after the generated script is created.
+	## It's a bit convoluted yes.
+	var StrategyScript:GDScript = load(strategy_file)
+	var tso:TestStrategy = StrategyScript.new(self)
+	if not TEST_TRUE_RET(is_instance_valid(tso), "StrategyScript.new(self)"):
+		return runcode
+
+	# Iterate Over the combinations of strategies for each phase.
+	var counter:int = 0
+	for combo:Array[int] in tso:
+		counter += 1
+		tso.flow(combo)
+	TEST_EQ(tso.get_max_combos(), counter,
+		"The expected number of combinations and the counter should match")
 
 	return runcode
-
-func generate_gdscript() -> bool:
-	var run_dict:Dictionary = await FlatBuffersPlugin.generate(schema_file)
-	return TEST_EQ_RET(0, run_dict.retcode, str(run_dict.output))
-
-
-func encode_a( value:int ) -> PackedByteArray:
-	var fbb := FlatBufferBuilder.new()
-	var rt_offset:int = Schema.create_Minimum(fbb, value )
-	fbb.finish( rt_offset )
-
-	var bytes:PackedByteArray = fbb.to_packed_byte_array()
-	logd("bytes: %s" % bytes_view(bytes) )
-	return bytes
-
-func encode_b( value:int ) -> PackedByteArray:
-	var fbb := FlatBufferBuilder.new()
-	var mbb := Schema.MinimumBuilder.new(fbb)
-	mbb.add_my_field(value)
-	var ofs:int = mbb.finish()
-	fbb.finish(ofs)
-	
-	var bytes:PackedByteArray = fbb.to_packed_byte_array()
-	logd("bytes: %s" % bytes_view(bytes) )
-	return bytes

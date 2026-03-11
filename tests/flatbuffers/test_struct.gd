@@ -1,45 +1,59 @@
 @tool
-extends TestBase
+extends "scripts/fb_generic_test.gd"
 
-const schema = preload('schemas/struct_generated.gd')
-const CustomStruct = schema.CustomStruct
-const RootTable = schema.RootTable
+## │ ___ _               _     ___ _     _    _       [br]
+## │/ __| |_ _ _ _  _ __| |_  | __(_)___| |__| |___   [br]
+## │\__ \  _| '_| || / _|  _| | _|| / -_) / _` (_-<   [br]
+## │|___/\__|_|  \_,_\__|\__| |_| |_\___|_\__,_/__/   [br]
+## ╰───────────────────────────────────────────────── [br]
+## Struct Fields By-Line
+##
+## Struct Fields Description
 
-var my_array : Array
-var builtin_array : Array
+const schema_file:String = "res://tests/flatbuffers/schemas/struct.fbs"
+const generated_file:String = "res://tests/flatbuffers/schemas/struct_generated.gd"
+const strategy_file:String = "res://tests/flatbuffers/scripts/struct_strategy.gd"
 
 func _run_test() -> int:
-	_verbose = true
-	var x : int = 35;
-	var y : float = 73;
-	var z : int = 102;
-	print("x: ", x)
-	print("y: ", y)
-	print("z: ", z)
+	var efs:EditorFileSystem = EditorInterface.get_resource_filesystem()
 
-	# struct
-	var struct := CustomStruct.new()
-	struct.x = x; struct.y = y
-	print( "encode.x: ", struct.x )
-	print( "encode.y: ", struct.y )
-	TEST_EQ(35, struct.x, "struct.x")
-	TEST_EQ(73, struct.y, "struct.x")
+	logd("== Compiling Schema ==")
+	await compile_schema(schema_file)
+	if not TEST_EQ_RET(RetCode.TEST_OK, runcode, "Schema Compilation"):
+		return runcode
 
-	# construct Table
-	var fbb := FlatBufferBuilder.new()
-	var offset:int = schema.create_RootTable( fbb, struct, z )
-	fbb.finish(offset)
+	logd("== Loading Generated GDScript ==")
+	load_generated_script(generated_file)
+	if not TEST_EQ_RET(RetCode.TEST_OK, runcode, "Load Generated Script"):
+		return runcode
 
-	# get packed bytes
-	var bytes : PackedByteArray = fbb.to_packed_byte_array()
+	# Wait for scan to complete or receive errors when we reimport.
+	if efs.is_scanning(): await efs.filesystem_changed
 
-	var table : RootTable = schema.get_RootTable(bytes)
+	# re-import script files.
+	# NOTE: This outputs the following error, but still works.
+	# INTERNAL ERROR: BUG: File queued for import, but can't be imported,
+	#     importer for type '' not found.
+	efs.reimport_files([generated_file, strategy_file])
 
-	var output_struct : CustomStruct =  table.custom_struct()
-	print( "decode.x: ", output_struct.x )
-	print( "decode.y: ", output_struct.y )
-	print( "decode.z: ", table.z() )
 
-	TEST_EQ( struct.x, output_struct.x )
-	TEST_EQ( struct.y, output_struct.y )
+	## Because we cannot pre-load a script that hasnt been generated yet, it
+	## means that we have no access to types. But I can load and run a script
+	## that does pre-load the generated script, because when it is loaded it will
+	## pull in the pre-load but that's after the generated script is created.
+	## It's a bit convoluted yes.
+	var StrategyScript:GDScript = load(strategy_file)
+	var tso:TestStrategy = StrategyScript.new(self)
+	if not TEST_TRUE_RET(is_instance_valid(tso), "StrategyScript.new(self)"):
+		return runcode
+
+	# Iterate Over the combinations of strategies for each phase.
+	var counter:int = 0
+	for combo:Array[int] in tso:
+		counter += 1
+		tso.flow(combo)
+	TEST_EQ(tso.get_max_combos(), counter,
+		"The expected number of combinations and the counter should match")
+
+
 	return runcode

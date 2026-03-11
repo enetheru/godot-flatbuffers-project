@@ -1,0 +1,6 @@
+// STUB for attribute testing
+
+table Attribute {
+	my_field : int;
+}
+root_type Attribute;

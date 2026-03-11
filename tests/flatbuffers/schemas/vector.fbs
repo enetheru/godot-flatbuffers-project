@@ -2,16 +2,12 @@ include "godot.fbs";
 
 table Item {
 	id:uint64;
-	pos:Vector3;
+	type:uint8;
 }
 
 table Bag {
-	id:int64;
-	item:[uint8]; // Items
+	ids:[int64];
+	items:[Item];
 }
 
-table RootTable {
-	list:[Bag];
-}
-
-root_type RootTable;
+root_type Bag;

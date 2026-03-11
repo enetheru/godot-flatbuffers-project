@@ -1,162 +1,59 @@
 @tool
-extends TestBase
+extends "scripts/fb_generic_test.gd"
 
-const schema = preload('schemas/vector_generated.gd')
-const Item = schema.Item
-const Bag = schema.Bag
-const RootTable = schema.RootTable
+## │__   __      _             ___ _     _    _       [br]
+## │\ \ / /__ __| |_ ___ _ _  | __(_)___| |__| |___   [br]
+## │ \ V / -_) _|  _/ _ \ '_| | _|| / -_) / _` (_-<   [br]
+## │  \_/\___\__|\__\___/_|   |_| |_\___|_\__,_/__/   [br]
+## ╰───────────────────────────────────────────────── [br]
+## Vector Fields By-Line
+##
+## Vector Fields Description
 
-var id : int
-var pos : Vector3
+const schema_file:String = "res://tests/flatbuffers/schemas/vector.fbs"
+const generated_file:String = "res://tests/flatbuffers/schemas/vector_generated.gd"
+const strategy_file:String = "res://tests/flatbuffers/scripts/vector_strategy.gd"
 
 func _run_test() -> int:
-	_verbose = true
-	initial_sanity_check()
-	var item_bytes : PackedByteArray = item_check()
-	bag_check( item_bytes )
-	root_table_check( item_bytes )
+	var efs:EditorFileSystem = EditorInterface.get_resource_filesystem()
+
+	logd("== Compiling Schema ==")
+	await compile_schema(schema_file)
+	if not TEST_EQ_RET(RetCode.TEST_OK, runcode, "Schema Compilation"):
+		return runcode
+
+	logd("== Loading Generated GDScript ==")
+	load_generated_script(generated_file)
+	if not TEST_EQ_RET(RetCode.TEST_OK, runcode, "Load Generated Script"):
+		return runcode
+
+	# Wait for scan to complete or receive errors when we reimport.
+	if efs.is_scanning(): await efs.filesystem_changed
+
+	# re-import script files.
+	# NOTE: This outputs the following error, but still works.
+	# INTERNAL ERROR: BUG: File queued for import, but can't be imported,
+	#     importer for type '' not found.
+	efs.reimport_files([generated_file, strategy_file])
+
+
+	## Because we cannot pre-load a script that hasnt been generated yet, it
+	## means that we have no access to types. But I can load and run a script
+	## that does pre-load the generated script, because when it is loaded it will
+	## pull in the pre-load but that's after the generated script is created.
+	## It's a bit convoluted yes.
+	var StrategyScript:GDScript = load(strategy_file)
+	var tso:TestStrategy = StrategyScript.new(self)
+	if not TEST_TRUE_RET(is_instance_valid(tso), "StrategyScript.new(self)"):
+		return runcode
+
+	# Iterate Over the combinations of strategies for each phase.
+	var counter:int = 0
+	for combo:Array in tso:
+		counter += 1
+		tso.flow(combo)
+	TEST_EQ(tso.get_max_combos(), counter,
+		"The expected number of combinations and the counter should match")
+
+
 	return runcode
-
-
-func initial_sanity_check() -> void:
-	var test_int : int = u64
-	var test_vec : Vector3i = Vector3i(u32,u32,u32)
-	var test_bytes : PackedByteArray
-	@warning_ignore("return_value_discarded")
-	test_bytes.resize(24)
-	test_bytes.encode_u64(0, test_int)
-	test_bytes.encode_s32(8, test_vec.x )
-	test_bytes.encode_s32(12, test_vec.y )
-	test_bytes.encode_s32(16, test_vec.z )
-	logd(["test_bytes:", bytes_view(test_bytes)] )
-	logd()
-
-
-func item_check() -> PackedByteArray:
-	logd( "Item Check" )
-	id = u64_;
-	pos = Vector3(u32_,u32_,u32_)
-	logd("id: %d" % [id] )
-	logd("pos: %s" % [pos] )
-	logd()
-
-	#Serialise an item
-	var fbb := FlatBufferBuilder.create(1)
-	var item_ofs:int = schema.create_Item(fbb,id, pos)
-	fbb.finish(item_ofs)
-
-	var item_bytes : PackedByteArray = fbb.to_packed_byte_array()
-
-	# Item is the root of this buffer.
-	var item : Item = schema.Item.new(item_bytes, item_bytes.decode_u32(0))
-
-	logd("item.id: %d" % item.id() )
-	logd(["item.pos: %s" % item.pos()] )
-	var bytes:PackedByteArray = item._fb_bytes 
-	logd(["item:", bytes_view(bytes)] )
-	logd()
-	TEST_EQ(id, item.id())
-	TEST_EQ(pos, item.pos())
-
-	return item_bytes
-
-func bag_check( item_bytes : PackedByteArray ) -> void:
-	logd( "Bag Check" )
-	# Reset the builder
-	var fbb := FlatBufferBuilder.create(1)
-
-	# put the already packed item into the buffer.
-	var bag_item_ofs : int = fbb.create_vector_uint8( item_bytes )
-
-	var bag_ofs : int = schema.create_Bag(fbb, id, bag_item_ofs )
-
-	fbb.finish( bag_ofs )
-
-	var bag_bytes : PackedByteArray = fbb.to_packed_byte_array()
-
-	# bag is the root of this buffer.
-	var bag : Bag = schema.Bag.new(bag_bytes, bag_bytes.decode_u32(0))
-
-	logd("bag.id: %d" % bag.id() )
-	logd(["bag.item_size: %s" % bag.item_size()] )
-	TEST_EQ(id, bag.id())
-	TEST_EQ(item_bytes.size(), bag.item_size())
-	logd()
-
-	var bag_item_bytes : PackedByteArray = bag.item()
-	var bag_item : Item = schema.Item.new(bag_item_bytes, bag_item_bytes.decode_u32(0) )
-	logd("bag.item.id: %d" % bag_item.id() )
-	logd(["bag.item.pos: %s" % bag_item.pos()] )
-	var _bytes : PackedByteArray = bag_item._fb_bytes
-	logd(["bag.item:", bytes_view(_bytes)] )
-	_bytes = bag._fb_bytes
-	logd(["bag:", bytes_view(_bytes)] )
-	TEST_EQ(id, bag_item.id())
-	TEST_EQ(pos, bag_item.pos())
-	logd()
-	return
-
-
-func root_table_check( item_bytes : PackedByteArray ) -> void:
-	logd( "RootTable Check" )
-	# Reset the builder
-	var fbb := FlatBufferBuilder.create(1)
-
-	# Construct the Bag
-	var bag_item_ofs : int = fbb.create_vector_uint8( item_bytes )
-	var bag_ofs : int = schema.create_Bag(fbb, id, bag_item_ofs )
-
-	# Now add the bag to a list of bags. We can reference the same offset
-	# multiple times
-	var offsets : PackedInt32Array = [bag_ofs, bag_ofs, bag_ofs]
-
-	# Add the offset array into the builder
-	var offsets_ofs : int = fbb.create_vector_offset( offsets )
-	var rt_offset : int = schema.create_RootTable(fbb, offsets_ofs)
-	fbb.finish( rt_offset )
-
-	var root_table_bytes : PackedByteArray = fbb.to_packed_byte_array()
-	fbb.reset()
-
-	# RootTable is the root of this buffer.
-	var root_table : RootTable = schema.get_RootTable(root_table_bytes)
-
-	TEST_TRUE( root_table.list_is_present(), "presence of list" )
-	logd("rt.list.size(): %d" % root_table.list_size() )
-	TEST_EQ(3, root_table.list_size())
-	logd()
-
-	for i in root_table.list_size():
-		var bag : Bag = root_table.list_at(i)
-		logd("bag.id: %d" % bag.id() )
-		logd(["bag.item_size: %s" % bag.item_size()] )
-		TEST_EQ(id, bag.id())
-		TEST_EQ(item_bytes.size(), bag.item_size())
-		logd()
-
-		var bag_item_bytes : PackedByteArray = bag.item()
-		var bag_item : Item = schema.Item.new(bag_item_bytes, bag_item_bytes.decode_u32(0) )
-		logd("bag.item.id: %d" % bag_item.id() )
-		logd(["bag.item.pos: %s" % bag_item.pos()] )
-		TEST_EQ(id, bag_item.id())
-		TEST_EQ(pos, bag_item.pos())
-		logd()
-
-
-	var list : Array = root_table.list()
-	TEST_EQ(3, list.size(), "list.size() from root_table.list()")
-
-	for bag : Bag in list:
-		logd("bag.id: %d" % bag.id() )
-		logd(["bag.item_size: %s" % bag.item_size()] )
-		TEST_EQ(id, bag.id())
-		TEST_EQ(item_bytes.size(), bag.item_size())
-		logd()
-
-		var bag_item_bytes : PackedByteArray = bag.item()
-		var bag_item : Item = schema.Item.new(bag_item_bytes, bag_item_bytes.decode_u32(0) )
-		logd("bag.item.id: %d" % bag_item.id() )
-		logd(["bag.item.pos: %s" % bag_item.pos()] )
-		TEST_EQ(id, bag_item.id())
-		TEST_EQ(pos, bag_item.pos())
-		logd()

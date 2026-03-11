@@ -1,5 +1,5 @@
 @tool
-extends TestBase
+extends "scripts/fb_generic_test.gd"
 
 ## │ ___         _         _        [br]
 ## │|_ _|_ _  __| |_  _ __| |___    [br]
@@ -23,7 +23,7 @@ extends TestBase
 # - Absolute Paths
 #     - [ ] `{c} "/path"`
 #     - [ ] `{c} "C:/path"`
-# - Relative Paths 
+# - Relative Paths
 #     - [ ] `{c} "./relative/path"`
 #     - [ ] `{c} "relative/path"`
 # - Godot Paths
@@ -33,42 +33,62 @@ extends TestBase
 #     - [ ] `{c} "godot.fbs"`
 # - [ ] Path separators `"/"` or `"\"`
 
-
-
 const GEN_OPTS = preload("uid://ck8of5cb3qlar")
 
-const schema_include = "res://tests/flatbuffers/schemas/include.fbs"
-const schema_minimum = "res://tests/flatbuffers/schemas/minimum.fbs"
+const strategy_file:String = "res://tests/flatbuffers/scripts/include_strategy.gd"
 
-# Cant pre-load something that doesnt exist.
-const schema_b = preload('schemas/minimum_generated.gd')
-const schema = preload('schemas/include_generated.gd')
+const schema_files:Array[String] = [
+	"res://tests/flatbuffers/schemas/include.fbs",
+	"res://tests/flatbuffers/schemas/minimum.fbs"
+]
+
+const generated_files:Array[String] = [
+	"res://tests/flatbuffers/schemas/include_generated.gd",
+	"res://tests/flatbuffers/schemas/minimum_generated.gd",
+]
 
 func _run_test() -> int:
-	# Process the schema, should produce no errors.
-	
-	var run_dict:Dictionary = await FlatBuffersPlugin.generate(schema_include, GEN_OPTS)
-	var run_output:String = run_dict.output
-	TEST_EQ(0, run_dict.retcode, run_output)
-	
-	run_dict = await FlatBuffersPlugin.generate(schema_minimum)
-	run_output = run_dict.output
-	TEST_EQ(0, run_dict.retcode, run_output)
-	
-	logp( "" )
-	logd("== Testing Includes ==")
-	logd("\n== Creating Minimum ==")
-	var fbb := FlatBufferBuilder.new()
-	var offset:int = schema_b.create_Minimum(fbb, 42)
-	fbb.finish( offset )
-	logd("finished creating flatbuffer object 'Other'")
-	var other_bytes:PackedByteArray = fbb.to_packed_byte_array()
-	logd(["bytes: %s" % bytes_view( other_bytes ) ])
+	var efs:EditorFileSystem = EditorInterface.get_resource_filesystem()
 
-	logd("\nDecoding flatbuffer object 'Other'")
-	var other:schema_b.Minimum = schema_b.get_Minimum(other_bytes)
-	var other_value:int = other.my_field()
-	logd("decoded other.value: %s" % other_value)
+	logd("== Compiling Schemas ==")
+	for schema_file:String in schema_files:
+		await compile_schema(schema_file, GEN_OPTS)
+		if not TEST_EQ_RET(RetCode.TEST_OK, runcode, "Schema Compilation must succeed"):
+			return runcode
 
-	TEST_EQ(42, other_value)
+	logd("== Loading Generated GDScripts ==")
+	for generated_file:String in generated_files:
+		load_generated_script(generated_file)
+		if not TEST_EQ_RET(RetCode.TEST_OK, runcode, "Load Generated Scripts must succeed"):
+			return runcode
+
+	# Wait for scan to complete or receive errors when we reimport.
+	if efs.is_scanning(): await efs.filesystem_changed
+
+	# re-import script files.
+	# NOTE: This outputs the following error, but still works.
+	# INTERNAL ERROR: BUG: File queued for import, but can't be imported,
+	#     importer for type '' not found.
+	efs.reimport_files( generated_files + [strategy_file])
+
+
+	## Because we cannot pre-load a script that hasnt been generated yet, it
+	## means that we have no access to types. But I can load and run a script
+	## that does pre-load the generated script, because when it is loaded it will
+	## pull in the pre-load but that's after the generated script is created.
+	## It's a bit convoluted yes.
+	var StrategyScript:GDScript = load(strategy_file)
+	var tso:TestStrategy = StrategyScript.new(self)
+	if not TEST_TRUE_RET(is_instance_valid(tso), "StrategyScript.new(self)"):
+		return runcode
+
+
+	# Iterate Over the combinations of strategies for each phase.
+	var counter:int = 0
+	for combo:Array in tso:
+		counter += 1
+		tso.flow(combo)
+	TEST_EQ(tso.get_max_combos(), counter,
+		"The expected number of combinations and the counter should match")
+
 	return runcode

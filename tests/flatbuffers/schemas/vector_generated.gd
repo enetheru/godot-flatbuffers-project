@@ -8,7 +8,7 @@
 class Item extends FlatBuffer:
 	enum vtable{
 		VT_ID = 4,
-		VT_POS = 6
+		VT_TYPE = 6
 	}
 
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
@@ -18,8 +18,8 @@ class Item extends FlatBuffer:
 	func id_is_present() -> bool:
 		return get_field_offset( vtable.VT_ID )
 
-	func pos_is_present() -> bool:
-		return get_field_offset( vtable.VT_POS )
+	func type_is_present() -> bool:
+		return get_field_offset( vtable.VT_TYPE )
 
 	# [================[ id ]================]
 	func id() -> int:
@@ -27,9 +27,11 @@ class Item extends FlatBuffer:
 		if not foffset: return 0
 		return _fb_bytes.decode_u64( _fb_start + foffset )
 
-	# [================[ pos ]================]
-	func pos() -> Vector3:
-		return get_Vector3( vtable.VT_POS )
+	# [================[ type ]================]
+	func type() -> int:
+		var foffset: int = get_field_offset( vtable.VT_TYPE )
+		if not foffset: return 0
+		return _fb_bytes.decode_u8( _fb_start + foffset )
 
 
 class ItemBuilder extends RefCounted:
@@ -43,8 +45,8 @@ class ItemBuilder extends RefCounted:
 	func add_id( id: int ) -> void:
 		fbb_.add_element_ulong_default( Item.vtable.VT_ID, id, 0 )
 
-	func add_pos( pos: Vector3 ) -> void:
-		fbb_.add_Vector3( Item.vtable.VT_POS, pos )
+	func add_type( type: int ) -> void:
+		fbb_.add_element_ubyte_default( Item.vtable.VT_TYPE, type, 0 )
 
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
@@ -54,104 +56,58 @@ class ItemBuilder extends RefCounted:
 
 static func create_Item( _fbb: FlatBufferBuilder,
 		id: int,
-		pos: Vector3 ) -> int :
+		type: int ) -> int :
 	var builder: ItemBuilder = ItemBuilder.new( _fbb );
 	builder.add_id( id );
-	builder.add_pos( pos );
+	builder.add_type( type );
 	return builder.finish();
 
 class Bag extends FlatBuffer:
-	enum vtable{
-		VT_ID = 4,
-		VT_ITEM = 6
-	}
-
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
-
-	# Presence Functions
-	func id_is_present() -> bool:
-		return get_field_offset( vtable.VT_ID )
-
-	func item_is_present() -> bool:
-		return get_field_offset( vtable.VT_ITEM )
-
-	# [================[ id ]================]
-	func id() -> int:
-		var foffset: int = get_field_offset( vtable.VT_ID )
-		if not foffset: return 0
-		return _fb_bytes.decode_s64( _fb_start + foffset )
-
-	# [================[ item ]================]
-	func item_size() -> int:
-		var array_start: int = get_field_start( vtable.VT_ITEM )
-		if not array_start: return 0
-		return _fb_bytes.decode_u32( array_start )
-
-	func item() -> PackedByteArray:
-		var array_start: int = get_field_start( vtable.VT_ITEM )
-		if not array_start: return []
-		var array_size: int = _fb_bytes.decode_u32( array_start )
-		array_start += 4
-		return _fb_bytes.slice( array_start, array_start + array_size )
-
-	func item_at( index: int ) -> int:
-		var array_start: int = get_field_start( vtable.VT_ITEM )
-		if not array_start: return 0
-		array_start += 4
-		return _fb_bytes[array_start + index]
-
-
-class BagBuilder extends RefCounted:
-	var fbb_: FlatBufferBuilder
-	var start_: int
-
-	func _init( _fbb: FlatBufferBuilder ) -> void:
-		fbb_ = _fbb
-		start_ = _fbb.start_table()
-
-	func add_id( id: int ) -> void:
-		fbb_.add_element_long_default( Bag.vtable.VT_ID, id, 0 )
-
-	func add_item( item_offset: int ) -> void:
-		fbb_.add_offset( Bag.vtable.VT_ITEM, item_offset )
-
-	func finish() -> int:
-		var end: int = fbb_.end_table( start_ )
-		var o: int = end
-		return o;
-
-
-static func create_Bag( _fbb: FlatBufferBuilder,
-		id: int,
-		item: int ) -> int :
-	var builder: BagBuilder = BagBuilder.new( _fbb );
-	builder.add_id( id );
-	builder.add_item( item );
-	return builder.finish();
-
-class RootTable extends FlatBuffer:
 	const _vector_schema = preload( 'vector_generated.gd' )
 
 	enum vtable{
-		VT_LIST = 4
+		VT_IDS = 4,
+		VT_ITEMS = 6
 	}
 
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
-	func list_is_present() -> bool:
-		return get_field_offset( vtable.VT_LIST )
+	func ids_is_present() -> bool:
+		return get_field_offset( vtable.VT_IDS )
 
-	# [================[ list ]================]
-	func list_size() -> int:
-		var array_start: int = get_field_start( vtable.VT_LIST )
+	func items_is_present() -> bool:
+		return get_field_offset( vtable.VT_ITEMS )
+
+	# [================[ ids ]================]
+	func ids_size() -> int:
+		var array_start: int = get_field_start( vtable.VT_IDS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
-	func list() -> Array:
-		var array_start: int = get_field_start( vtable.VT_LIST )
+	func ids() -> PackedInt64Array:
+		var array_start: int = get_field_start( vtable.VT_IDS )
+		if not array_start: return []
+		var array_size: int = _fb_bytes.decode_u32( array_start )
+		array_start += 4
+		var array_end: int = array_start + array_size * 8
+		return _fb_bytes.slice( array_start, array_end ).to_int64_array()
+
+	func ids_at( index: int ) -> int:
+		var array_start: int = get_field_start( vtable.VT_IDS )
+		if not array_start: return 0
+		array_start += 4
+		return _fb_bytes.decode_s64( array_start + index * 8)
+
+	# [================[ items ]================]
+	func items_size() -> int:
+		var array_start: int = get_field_start( vtable.VT_ITEMS )
+		if not array_start: return 0
+		return _fb_bytes.decode_u32( array_start )
+
+	func items() -> Array:
+		var array_start: int = get_field_start( vtable.VT_ITEMS )
 		if not array_start: return []
 		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
@@ -159,11 +115,11 @@ class RootTable extends FlatBuffer:
 		if array.resize( array_size ) != OK: return []
 		for i: int in array_size:
 			var p: int = array_start + i * 4
-			array[i] = _vector_schema.Bag.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+			array[i] = _vector_schema.Item.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func list_at( idx: int, into: Bag = null ) -> Bag:
-		var field_start: int = get_field_start( vtable.VT_LIST )
+	func items_at( idx: int, into: Item = null ) -> Item:
+		var field_start: int = get_field_start( vtable.VT_ITEMS )
 		assert(field_start, 'Field is not present in buffer' )
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
@@ -176,10 +132,10 @@ class RootTable extends FlatBuffer:
 			into._fb_bytes = _fb_bytes
 			into._fb_start = relative_offset
 			return into
-		return _vector_schema.Bag.new( _fb_bytes, offset )
+		return _vector_schema.Item.new( _fb_bytes, offset )
 
 
-class RootTableBuilder extends RefCounted:
+class BagBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
@@ -187,8 +143,11 @@ class RootTableBuilder extends RefCounted:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_list( list_offset: int ) -> void:
-		fbb_.add_offset( RootTable.vtable.VT_LIST, list_offset )
+	func add_ids( ids_offset: int ) -> void:
+		fbb_.add_offset( Bag.vtable.VT_IDS, ids_offset )
+
+	func add_items( items_offset: int ) -> void:
+		fbb_.add_offset( Bag.vtable.VT_ITEMS, items_offset )
 
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
@@ -196,13 +155,15 @@ class RootTableBuilder extends RefCounted:
 		return o;
 
 
-static func create_RootTable( _fbb: FlatBufferBuilder,
-		list: int ) -> int :
-	var builder: RootTableBuilder = RootTableBuilder.new( _fbb );
-	builder.add_list( list );
+static func create_Bag( _fbb: FlatBufferBuilder,
+		ids: int,
+		items: int ) -> int :
+	var builder: BagBuilder = BagBuilder.new( _fbb );
+	builder.add_items( items );
+	builder.add_ids( ids );
 	return builder.finish();
 
-static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
+static func get_Bag( _bytes: PackedByteArray ) -> Bag:
 	assert(not _bytes.is_empty())
-	return RootTable.new(_bytes, _bytes.decode_u32(0))
+	return Bag.new(_bytes, _bytes.decode_u32(0))
 

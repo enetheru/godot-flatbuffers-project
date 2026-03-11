@@ -1,5 +1,5 @@
 @tool
-extends TestBase
+extends "scripts/fb_generic_test.gd"
 
 ## │  ___                                  [br]
 ## │ / __|_ _ __ _ _ __  _ __  __ _ _ _    [br]
@@ -15,23 +15,14 @@ const schema_file = "res://tests/flatbuffers/schemas/grammar.fbs"
 const generated_file = "res://tests/flatbuffers/schemas/grammar_generated.gd"
 
 func _run_test() -> int:
-	
-	if await generate_gdscript():
-		logp("Failed to generate GDScript from FlatBuffers schema")
+	logd("== Compiling Schema ==")
+	await compile_schema(schema_file)
+	if not TEST_EQ_RET(RetCode.TEST_OK, runcode, "Schema Compilation"):
 		return runcode
-	
-	var script:GDScript = load( generated_file )
-	if TEST_TRUE_RET( (script is GDScript), "Load script file" ) == RetCode.TEST_OK:
-		var object:Object = script.new()
-		TEST_TRUE( is_instance_valid(object), "instantiate object")
-	
+
+	logd("== Loading Generated GDScript ==")
+	load_generated_script(generated_file)
+	if not TEST_EQ_RET(RetCode.TEST_OK, runcode, "Load Generated Script"):
+		return runcode
+
 	return runcode
-
-
-func generate_gdscript() -> bool:
-	var run_dict:Dictionary = await FlatBuffersPlugin.generate(schema_file)
-	if TEST_EQ_RET(0, run_dict.retcode, str(run_dict.output)) == RetCode.TEST_FAILED:
-		var gen_output:PackedStringArray = run_dict.output
-		logp("[color=salmon]" + '\n'.join(gen_output) + "[/color]")
-		return RetCode.TEST_FAILED
-	return RetCode.TEST_OK

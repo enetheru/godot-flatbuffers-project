@@ -1,11 +1,13 @@
 @tool
-extends "strategy.gd"
+extends TestStrategy
 
-const TB = preload("uid://ldu0vpkadrjd")
+const Print = preload("uid://cbluyr4ifn8g3")
+const Schema = preload("../schemas/include_generated.gd")
 
-
-const schema_file = "schemas/scalar.fbs"
-const Schema = preload("schemas/scalar_generated.gd")
+const u32 = TestBase.u32
+const u32_ = TestBase.u32_
+const u64 = TestBase.u64
+const u64_ = TestBase.u64_
 
 enum {
 	ENCODING = 0,
@@ -17,6 +19,7 @@ enum {
 var phases:Array[Dictionary] = [{
 		&"name":"Encoding",
 		&"strategies":[encode_a]
+		# TODO: I want some way to create dependencies between the strategies
 	},{
 		&"name":"Verifying",
 		&"strategies":[verify_a]
@@ -29,7 +32,7 @@ var phases:Array[Dictionary] = [{
 	}
 ]
 
-var value:int = TB.u32
+var initial_value:int = 42
 
 #      ██████  ██    ██ ███████ ██████  ██████  ██ ██████  ███████ ███████     #
 #     ██    ██ ██    ██ ██      ██   ██ ██   ██ ██ ██   ██ ██      ██          #
@@ -38,9 +41,7 @@ var value:int = TB.u32
 #      ██████    ████   ███████ ██   ██ ██   ██ ██ ██████  ███████ ███████     #
 func                        ________OVERRIDES________              ()->void:pass
 
-func _get_phase_count() -> int:
-	return phases.size()
-
+func _get_phase_count() -> int: return phases.size()
 
 func _get_phase_name(phase_idx:int) -> String:
 	assert( phase_idx >= 0 and phase_idx < get_phase_count() )
@@ -56,11 +57,9 @@ func _get_strategy_count(phase_idx:int) -> int:
 
 
 func _get_strategy(phase_idx:int, strategy_idx:int) -> Callable:
-	assert( phase_idx >= 0 and phase_idx < get_phase_count() )
 	var phase:Dictionary = phases[phase_idx]
 	var strats:Array = phase.get(&'strategies', [])
 	if strats.is_empty(): return null_strategy # defined in the Strategy Base
-	assert( strategy_idx >= 0 and strategy_idx < strats.size() )
 	return strats[strategy_idx]
 
 
@@ -78,7 +77,7 @@ func _flow( selection:Array[int] ) -> void:
 	var encode:Callable = get_strategy(ENCODING, selection[ENCODING])
 	test.logp(" --- %s ---" % encode.get_method().capitalize())
 	var packed:PackedByteArray = encode.call()
-	test.logd("bytes: %s" % TB.bytes_view(packed) )
+	test.logd("bytes: %s" % TestBase.bytes_view(packed) )
 	# validate
 	var verify:Callable = get_strategy(VERIFYING, selection[VERIFYING])
 	test.logp(" --- %s ---" % verify.get_method().capitalize())
@@ -103,22 +102,8 @@ func                        __________PHASES_________              ()->void:pass
 
 func encode_a() -> PackedByteArray:
 	var fbb := FlatBufferBuilder.new()
-
-	# Setting fields to -1
-	var offset:int = Schema.create_RootTable(fbb,
-		true,	# f_bool	== true
-		-1,		# f_byte	== -1
-		-1,		# f_ubyte	== 255
-		-1,		# f_short	== -1
-		-1,		# f_ushort	== 65535
-		-1,		# f_int		== -1
-		-1,		# f_uint	== 4294967295
-		-1,		# f_long	== -1
-		-1,		# f_ulong	== -1 ? This one is confusing to me
-		-1,		# f_float	== -1: we need better tests
-		-1		# f_double	== -1: we need better tests
-		)
-	fbb.finish(offset)
+	var offset:int = Schema.minimum_schema.create_Minimum(fbb, initial_value)
+	fbb.finish( offset )
 	return fbb.to_packed_byte_array()
 
 
@@ -129,32 +114,19 @@ func verify_a( _buf:PackedByteArray ) -> int:
 
 	# TODO requires code generation changes
 	# TEST_TRUE(fb_table.verify(verifier), "verifying fb_table")
-	return TB.RetCode.TEST_OK
+	return TestBase.RetCode.TEST_OK
 
 
-func decode_a(data:PackedByteArray) -> Variant:
-	# Decode buffer
-	var fbo : Schema.RootTable = Schema.get_RootTable(data)
-	test.TEST_TRUE( fbo.f_bool(), " f_bool()")
-	test.TEST_EQ(fbo.f_byte(), -1, "f_byte()" )
-	test.TEST_EQ(fbo.f_ubyte(), 255, "f_ubyte()" )
-	test.TEST_EQ(fbo.f_short(), -1, "f_short()" )
-	test.TEST_EQ(fbo.f_ushort(), 65_535, "f_ushort()" )
-	test.TEST_EQ(fbo.f_int(), -1, "f_int()" )
-	test.TEST_EQ(fbo.f_uint(), 4_294_967_295, "f_uint()" )
-	test.TEST_EQ(fbo.f_long(), -1, "f_long()" )
-	test.TEST_EQ(fbo.f_ulong(), -1, "f_ulong()" )
-	test.TEST_EQ(fbo.f_float(), -1, "f_float()" )
-	test.TEST_EQ(fbo.f_double(), -1, "f_double()" )
-	return fbo
+func decode_a(buf:PackedByteArray) -> Variant:
+	var mininum:Schema.minimum_schema.Minimum = Schema.minimum_schema.get_Minimum(buf)
+	return mininum
 
 
 func use_a( variant:Variant ) -> int:
-	var decoded:Schema.RootTable = variant
-	test.TEST_EQ(-1, decoded.f_double(), "rt.f_double()")
-	test.logd("decoded value: %X" % decoded.f_double() )
-	return TB.RetCode.TEST_OK
-
+	var mininum:Schema.minimum_schema.Minimum = variant
+	test.TEST_EQ(initial_value, mininum.my_field(),
+			"Initial value and decompiled value should be the same")
+	return TestBase.RetCode.TEST_OK
 
 
 func                        __BoilerPlate____________              ()->void:pass

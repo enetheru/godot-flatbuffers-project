@@ -1,5 +1,6 @@
 @tool
-extends TestBase
+extends "scripts/fb_generic_test.gd"
+
 
 ## │ __  __ _      _            _    [br]
 ## │|  \/  (_)_ _ (_)_ __  __ _| |   [br]
@@ -24,37 +25,20 @@ extends TestBase
 ## - Decoding[br]
 ## - Using[br]
 
-const Strategy = preload("uid://4kv4xyusnsge")
-
 const schema_file:String = "res://tests/flatbuffers/schemas/minimum.fbs"
 const generated_file:String = "res://tests/flatbuffers/schemas/minimum_generated.gd"
-const test_script:String = "res://tests/flatbuffers/minimum_test_script.gd"
-
-
-func compile_schema() -> void:
-	TEST_TRUE(FileAccess.file_exists(schema_file), "schema file exists" )
-	var run_dict:Dictionary = await FlatBuffersPlugin.generate(schema_file)
-	var stdout:String = run_dict.stdout
-	TEST_EQ(0, run_dict.retcode, stdout)
-
-
-func load_generated_script() -> void:
-	if TEST_TRUE_RET(FileAccess.file_exists(generated_file),
-			"does generated file exist: '%s'" % generated_file ):
-		var schema:GDScript = load(generated_file)
-		TEST_TRUE(is_instance_valid(schema), "Loading generated script")
-
+const strategy_file:String = "res://tests/flatbuffers/scripts/minimum_strategy.gd"
 
 func _run_test() -> int:
 	var efs:EditorFileSystem = EditorInterface.get_resource_filesystem()
 
 	logd("== Compiling Schema ==")
-	await compile_schema()
+	await compile_schema(schema_file)
 	if not TEST_EQ_RET(RetCode.TEST_OK, runcode, "Schema Compilation"):
 		return runcode
 
 	logd("== Loading Generated GDScript ==")
-	load_generated_script()
+	load_generated_script(generated_file)
 	if not TEST_EQ_RET(RetCode.TEST_OK, runcode, "Load Generated Script"):
 		return runcode
 
@@ -64,7 +48,7 @@ func _run_test() -> int:
 	# re-import script files. This outputs an error, but still works.
 	# INTERNAL ERROR: BUG: File queued for import, but can't be imported,
 	#     importer for type '' not found.
-	efs.reimport_files([generated_file, test_script])
+	efs.reimport_files([generated_file, strategy_file])
 
 
 	## Because we cannot pre-load a script that hasnt been generated yet, it
@@ -72,34 +56,17 @@ func _run_test() -> int:
 	## that does pre-load the generated script, because when it is loaded it will
 	## pull in the pre-load but that's after the generated script is created.
 	## It's a bit convoluted yes.
-	var TestScript:GDScript = load(test_script)
-	var tso:Strategy = TestScript.new(self)
-	TEST_TRUE(is_instance_valid(tso), "creation instance object")
+	var StrategyScript:GDScript = load(strategy_file)
+	var tso:TestStrategy = StrategyScript.new(self)
+	if not TEST_TRUE_RET(is_instance_valid(tso), "StrategyScript.new(self)"):
+		return runcode
 
-	var selection:Array[int]
-	# fill selection with the strategy sizes.
-	TEST_EQ(selection.resize(tso.get_phase_count()), OK, "Resize Failed")
-	var pc:int = tso.get_phase_count()
-	for p:int in pc:
-		for sc:int in tso.get_strategy_count(p):
-			selection[p] = sc
-
-	# count down the selection items till they all reach zero.
-	while selection.any(func(i:int)->bool: return i > 0):
-		tso.flow( selection )
-		var break_on_next:bool = false
-		for p in pc:
-			var sc:int = tso.get_strategy_count(p) -1
-			if sc == 0: continue # skip phases with only one strategy.
-			var cs:int = selection[p] # Current Strategy.
-			if cs == 0:
-				selection[p] = sc # reset the strategy to default.
-				break_on_next = true
-				continue
-			selection[p] = cs - 1 # decrement the strategy index
-			if break_on_next: break
-
-	# Final flow for all zeroes.
-	tso.flow( selection )
+	# Iterate Over the combinations of strategies for each phase.
+	var counter:int = 0
+	for combo:Array[int] in tso:
+		counter += 1
+		tso.flow(combo)
+	TEST_EQ(tso.get_max_combos(), counter,
+		"The expected number of combinations and the counter should match")
 
 	return runcode
