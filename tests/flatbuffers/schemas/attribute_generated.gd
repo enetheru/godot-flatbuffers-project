@@ -7,21 +7,14 @@
 
 class Attribute extends FlatBuffer:
 	enum vtable{
-		VT_MY_FIELD = 4
+
 	}
 
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
 	# Presence Functions
-	func my_field_is_present() -> bool:
-		return get_field_offset( vtable.VT_MY_FIELD )
-
-	# [================[ my_field ]================]
-	func my_field() -> int:
-		var foffset: int = get_field_offset( vtable.VT_MY_FIELD )
-		if not foffset: return 0
-		return _fb_bytes.decode_s32( _fb_start + foffset )
+	# field:'deprecated_field' is deprecated
 
 
 class AttributeBuilder extends RefCounted:
@@ -32,9 +25,6 @@ class AttributeBuilder extends RefCounted:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_my_field( my_field: int ) -> void:
-		fbb_.add_element_int_default( Attribute.vtable.VT_MY_FIELD, my_field, 0 )
-
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
@@ -42,12 +32,10 @@ class AttributeBuilder extends RefCounted:
 
 
 static func create_Attribute( _fbb: FlatBufferBuilder,
-		my_field: int ) -> int :
+		 ) -> int :
 	var builder: AttributeBuilder = AttributeBuilder.new( _fbb );
-	builder.add_my_field( my_field );
 	return builder.finish();
 
 static func get_Attribute( _bytes: PackedByteArray ) -> Attribute:
 	assert(not _bytes.is_empty())
 	return Attribute.new(_bytes, _bytes.decode_u32(0))
-

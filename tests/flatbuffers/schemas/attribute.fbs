@@ -1,6 +1,6 @@
-// STUB for attribute testing
+// for attribute testing
 
 table Attribute {
-	my_field : int;
+	deprecated_field:int (deprecated);
 }
 root_type Attribute;

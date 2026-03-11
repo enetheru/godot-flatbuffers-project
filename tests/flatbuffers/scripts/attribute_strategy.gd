@@ -4,9 +4,6 @@ extends TestStrategy
 
 const Schema = preload("../schemas/attribute_generated.gd")
 
-
-var value:int = TestBase.u32
-
 enum {
 	ENCODING = 0,
 	VERIFYING,
@@ -14,20 +11,27 @@ enum {
 	USING
 }
 
+var simple_tests:Array[Callable] = []
+
 var phases:Array[Dictionary] = [{
 		&"name":"Encoding",
-		&"strategies":[encode_a, encode_b]
+		&"strategies":[]
 	},{
 		&"name":"Verifying",
-		&"strategies":[verify_a]
+		&"strategies":[]
 	},{
 		&"name":"Decoding",
-		&"strategies":[decode_a]
+		&"strategies":[]
 	},{
 		&"name":"Using",
-		&"strategies":[use_a]
+		&"strategies":[]
 	}
 ]
+
+
+var value:int = TestBase.u32
+var want_simple_tests:bool = true
+
 
 #      ██████  ██    ██ ███████ ██████  ██████  ██ ██████  ███████ ███████     #
 #     ██    ██ ██    ██ ██      ██   ██ ██   ██ ██ ██   ██ ██      ██          #
@@ -71,6 +75,10 @@ func                        __________FLOW___________              ()->void:pass
 
 ## A selection is an array of strategies, one for each phase.
 func _flow( selection:Array[int] ) -> void:
+	if want_simple_tests:
+		for simple:Callable in simple_tests:
+			if simple.call(): return
+	want_simple_tests = false
 	test.logp("[b]== Flow ==[/b]")
 	# encode
 	var encode:Callable = get_strategy(ENCODING, selection[ENCODING])
@@ -92,6 +100,20 @@ func _flow( selection:Array[int] ) -> void:
 	if can_use: pass
 
 
+#                ███████ ██ ███    ███ ██████  ██      ███████                 #
+#                ██      ██ ████  ████ ██   ██ ██      ██                      #
+#                ███████ ██ ██ ████ ██ ██████  ██      █████                   #
+#                     ██ ██ ██  ██  ██ ██      ██      ██                      #
+#                ███████ ██ ██      ██ ██      ███████ ███████                 #
+func                        __________SIMPLE_________              ()->void:pass
+
+## simple tests should return true if they want to halt the testing. and false
+## if its OK to continue.
+func deprecated_field() -> bool:
+	var test_object := Schema.Attribute.new()
+	test.TEST_FALSE(test_object.has_method(&"deprecated_field"))
+	return false
+
 #               ██████  ██   ██  █████  ███████ ███████ ███████                #
 #               ██   ██ ██   ██ ██   ██ ██      ██      ██                     #
 #               ██████  ███████ ███████ ███████ █████   ███████                #
@@ -101,28 +123,7 @@ func                        __________PHASES_________              ()->void:pass
 
 ## encoding method a, use the Schema.create_ function
 func encode_a() -> PackedByteArray:
-	test.logd("starting value: %X" % value )
-	var fbb := FlatBufferBuilder.new()
-	var rt_offset:int = Schema.create_Attribute(fbb, value )
-	fbb.finish( rt_offset )
-
-	var bytes:PackedByteArray = fbb.to_packed_byte_array()
-	test.logd("bytes: %s" % TestBase.bytes_view(bytes) )
-	return bytes
-
-
-## encoding method a, use the Schema.*Builder helper class
-func encode_b() -> PackedByteArray:
-	test.logd("starting value: %X" % value )
-	var fbb := FlatBufferBuilder.new()
-	var mbb := Schema.AttributeBuilder.new(fbb)
-	mbb.add_my_field(value)
-	var ofs:int = mbb.finish()
-	fbb.finish(ofs)
-
-	var bytes:PackedByteArray = fbb.to_packed_byte_array()
-	test.logd("bytes: %s" % TestBase.bytes_view(bytes) )
-	return bytes
+	return []
 
 
 func verify_a( _buf:PackedByteArray ) -> int:
@@ -135,15 +136,11 @@ func verify_a( _buf:PackedByteArray ) -> int:
 	return TestBase.RetCode.TEST_OK
 
 
-func decode_a( buf:PackedByteArray ) -> Variant:
-	var decoded:Schema.Attribute = Schema.get_Attribute(buf)
-	return decoded
+func decode_a( _buf:PackedByteArray ) -> Variant:
+	return null
 
 
-func use_a( variant:Variant ) -> int:
-	var decoded:Schema.Attribute = variant
-	test.TEST_EQ(value, decoded.my_field(), "rt.my_field()")
-	test.logd("decoded value: %X" % decoded.my_field() )
+func use_a( _variant:Variant ) -> int:
 	return TestBase.RetCode.TEST_OK
 
 
