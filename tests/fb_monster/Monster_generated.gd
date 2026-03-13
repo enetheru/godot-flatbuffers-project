@@ -19,11 +19,12 @@ enum Equipment {
 class Monster extends FlatBuffer:
 	const _Monster_schema = preload( 'Monster_generated.gd' )
 
-	enum vtable{
+	enum vtable {
 		VT_POS = 4,
 		VT_MANA = 6,
 		VT_HP = 8,
 		VT_NAME = 10,
+		VT_FRIENDLY = 12,
 		VT_INVENTORY = 14,
 		VT_COLOR = 16,
 		VT_WEAPONS = 18,
@@ -32,70 +33,54 @@ class Monster extends FlatBuffer:
 		VT_PATH = 24
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
+	## Return true if pos is present in the buffer, else false
 	func pos_is_present() -> bool:
 		return get_field_offset( vtable.VT_POS )
 
-	func mana_is_present() -> bool:
-		return get_field_offset( vtable.VT_MANA )
-
-	func hp_is_present() -> bool:
-		return get_field_offset( vtable.VT_HP )
-
-	func name_is_present() -> bool:
-		return get_field_offset( vtable.VT_NAME )
-
-	# field:'friendly' is deprecated
-
-	func inventory_is_present() -> bool:
-		return get_field_offset( vtable.VT_INVENTORY )
-
-	func color_is_present() -> bool:
-		return get_field_offset( vtable.VT_COLOR )
-
-	func weapons_is_present() -> bool:
-		return get_field_offset( vtable.VT_WEAPONS )
-
-	func equipped_type_is_present() -> bool:
-		return get_field_offset( vtable.VT_EQUIPPED_TYPE )
-
-	func equipped_is_present() -> bool:
-		return get_field_offset( vtable.VT_EQUIPPED )
-
-	func path_is_present() -> bool:
-		return get_field_offset( vtable.VT_PATH )
-
-	# [================[ pos ]================]
 	func pos() -> Vector3:
 		return get_Vector3( vtable.VT_POS )
 
-	# [================[ mana ]================]
+	## Return true if mana is present in the buffer, else false
+	func mana_is_present() -> bool:
+		return get_field_offset( vtable.VT_MANA )
+
 	func mana() -> int:
 		var foffset: int = get_field_offset( vtable.VT_MANA )
 		if not foffset: return 150
 		return _fb_bytes.decode_s16( _fb_start + foffset )
 
-	# [================[ hp ]================]
+	## Return true if hp is present in the buffer, else false
+	func hp_is_present() -> bool:
+		return get_field_offset( vtable.VT_HP )
+
 	func hp() -> int:
 		var foffset: int = get_field_offset( vtable.VT_HP )
 		if not foffset: return 100
 		return _fb_bytes.decode_s16( _fb_start + foffset )
 
-	# [================[ name ]================]
+	## Return true if name is present in the buffer, else false
+	func name_is_present() -> bool:
+		return get_field_offset( vtable.VT_NAME )
+
 	func name() -> String:
 		var field_start: int = get_field_start( vtable.VT_NAME )
 		if not field_start: return ''
 		return decode_String( field_start )
 
-	# [================[ inventory ]================]
+	## Return true if inventory is present in the buffer, else false
+	func inventory_is_present() -> bool:
+		return get_field_offset( vtable.VT_INVENTORY )
+
 	func inventory_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_INVENTORY )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	##decode and return all elements of inventory as an [PackedByteArray]
 	func inventory() -> PackedByteArray:
 		var array_start: int = get_field_start( vtable.VT_INVENTORY )
 		if not array_start: return []
@@ -103,20 +88,27 @@ class Monster extends FlatBuffer:
 		array_start += 4
 		return _fb_bytes.slice( array_start, array_start + array_size )
 
+	##Access elements of inventory by [param index]
 	func inventory_at( index: int ) -> int:
 		var array_start: int = get_field_start( vtable.VT_INVENTORY )
-		if not array_start: return 0
+		assert(array_start, 'access to invalid vector of enum')
 		array_start += 4
 		return _fb_bytes[array_start + index]
 
-	# [================[ color ]================]
+	## Return true if color is present in the buffer, else false
+	func color_is_present() -> bool:
+		return get_field_offset( vtable.VT_COLOR )
+
 	func color() -> Color_:
 		var foffset: int = get_field_offset( vtable.VT_COLOR )
 		if not foffset: return 2 as Color_
 		var decoded: Color_ = _fb_bytes.decode_s8( _fb_start + foffset )
 		return decoded
 
-	# [================[ weapons ]================]
+	## Return true if weapons is present in the buffer, else false
+	func weapons_is_present() -> bool:
+		return get_field_offset( vtable.VT_WEAPONS )
+
 	func weapons_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_WEAPONS )
 		if not array_start: return 0
@@ -150,14 +142,20 @@ class Monster extends FlatBuffer:
 			return into
 		return _Monster_schema.Weapon.new( _fb_bytes, offset )
 
-	# [================[ equipped_type ]================]
+	## Return true if equipped_type is present in the buffer, else false
+	func equipped_type_is_present() -> bool:
+		return get_field_offset( vtable.VT_EQUIPPED_TYPE )
+
 	func equipped_type() -> Equipment:
 		var foffset: int = get_field_offset( vtable.VT_EQUIPPED_TYPE )
 		if not foffset: return 0 as Equipment
 		var decoded: Equipment = _fb_bytes.decode_u8( _fb_start + foffset )
 		return decoded
 
-	# [================[ equipped ]================]
+	## Return true if equipped is present in the buffer, else false
+	func equipped_is_present() -> bool:
+		return get_field_offset( vtable.VT_EQUIPPED )
+
 	func equipped() -> Variant:
 		var field_start: int = get_field_start( vtable.VT_EQUIPPED )
 		if not field_start: return null
@@ -167,7 +165,10 @@ class Monster extends FlatBuffer:
 			_: pass
 		return null
 
-	# [================[ path ]================]
+	## Return true if path is present in the buffer, else false
+	func path_is_present() -> bool:
+		return get_field_offset( vtable.VT_PATH )
+
 	func path_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_PATH )
 		if not array_start: return 0
@@ -194,50 +195,63 @@ class Monster extends FlatBuffer:
 		return decode_Vector3( array_start + idx * 12 )
 
 
+## TODO: Write a Doc Comment for the builder
 class MonsterBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_pos( pos: Vector3 ) -> void:
 		fbb_.add_Vector3( Monster.vtable.VT_POS, pos )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_mana( mana: int ) -> void:
 		fbb_.add_element_short_default( Monster.vtable.VT_MANA, mana, 150 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_hp( hp: int ) -> void:
 		fbb_.add_element_short_default( Monster.vtable.VT_HP, hp, 100 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( Monster.vtable.VT_NAME, name_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_inventory( inventory_offset: int ) -> void:
 		fbb_.add_offset( Monster.vtable.VT_INVENTORY, inventory_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_color( color: Color_ ) -> void:
 		fbb_.add_element_byte( Monster.vtable.VT_COLOR, color )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_weapons( weapons_offset: int ) -> void:
 		fbb_.add_offset( Monster.vtable.VT_WEAPONS, weapons_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_equipped_type( equipped_type: Equipment ) -> void:
 		fbb_.add_element_ubyte( Monster.vtable.VT_EQUIPPED_TYPE, equipped_type )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_equipped( equipped_offset: int ) -> void:
 		fbb_.add_offset( Monster.vtable.VT_EQUIPPED, equipped_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_path( path_offset: int ) -> void:
 		fbb_.add_offset( Monster.vtable.VT_PATH, path_offset )
 
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-
+## TODO: Write a Doc Comment for the static table create function
 static func create_Monster( _fbb: FlatBufferBuilder,
 		pos: Vector3,
 		mana: int,
@@ -263,54 +277,59 @@ static func create_Monster( _fbb: FlatBufferBuilder,
 	return builder.finish();
 
 class Weapon extends FlatBuffer:
-	enum vtable{
+	enum vtable {
 		VT_NAME = 4,
 		VT_DAMAGE = 6
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
+	## Return true if name is present in the buffer, else false
 	func name_is_present() -> bool:
 		return get_field_offset( vtable.VT_NAME )
 
-	func damage_is_present() -> bool:
-		return get_field_offset( vtable.VT_DAMAGE )
-
-	# [================[ name ]================]
 	func name() -> String:
 		var field_start: int = get_field_start( vtable.VT_NAME )
 		if not field_start: return ''
 		return decode_String( field_start )
 
-	# [================[ damage ]================]
+	## Return true if damage is present in the buffer, else false
+	func damage_is_present() -> bool:
+		return get_field_offset( vtable.VT_DAMAGE )
+
 	func damage() -> int:
 		var foffset: int = get_field_offset( vtable.VT_DAMAGE )
 		if not foffset: return 0
 		return _fb_bytes.decode_s16( _fb_start + foffset )
 
 
+## TODO: Write a Doc Comment for the builder
 class WeaponBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( Weapon.vtable.VT_NAME, name_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_damage( damage: int ) -> void:
 		fbb_.add_element_short_default( Weapon.vtable.VT_DAMAGE, damage, 0 )
 
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-
+## TODO: Write a Doc Comment for the static table create function
 static func create_Weapon( _fbb: FlatBufferBuilder,
 		name: int,
 		damage: int ) -> int :

@@ -24,21 +24,21 @@ enum BaseType {
 	OBJ = 15,
 	UNION = 16,
 	ARRAY_ = 17,
-	MAXBASETYPE = 18
+	MAX_BASE_TYPE = 18
 }
 
-# New schema language features that are not supported by old code generators.
+## New schema language features that are not supported by old code generators.
 enum AdvancedFeatures {
-	ADVANCEDARRAYFEATURES = 1,
-	ADVANCEDUNIONFEATURES = 2,
-	OPTIONALSCALARS = 4,
-	DEFAULTVECTORSANDSTRINGS = 8
+	ADVANCED_ARRAY_FEATURES = 1,
+	ADVANCED_UNION_FEATURES = 2,
+	OPTIONAL_SCALARS = 4,
+	DEFAULT_VECTORS_AND_STRINGS = 8
 }
 
 class Type extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
 
-	enum vtable{
+	enum vtable {
 		VT_BASE_TYPE = 4,
 		VT_ELEMENT = 6,
 		VT_INDEX = 8,
@@ -47,101 +47,110 @@ class Type extends FlatBuffer:
 		VT_ELEMENT_SIZE = 14
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
+	## Return true if base_type is present in the buffer, else false
 	func base_type_is_present() -> bool:
 		return get_field_offset( vtable.VT_BASE_TYPE )
 
-	func element_is_present() -> bool:
-		return get_field_offset( vtable.VT_ELEMENT )
-
-	func index_is_present() -> bool:
-		return get_field_offset( vtable.VT_INDEX )
-
-	func fixed_length_is_present() -> bool:
-		return get_field_offset( vtable.VT_FIXED_LENGTH )
-
-	func base_size_is_present() -> bool:
-		return get_field_offset( vtable.VT_BASE_SIZE )
-
-	func element_size_is_present() -> bool:
-		return get_field_offset( vtable.VT_ELEMENT_SIZE )
-
-	# [================[ base_type ]================]
 	func base_type() -> BaseType:
 		var foffset: int = get_field_offset( vtable.VT_BASE_TYPE )
 		if not foffset: return 0 as BaseType
 		var decoded: BaseType = _fb_bytes.decode_s8( _fb_start + foffset )
 		return decoded
 
-	# [================[ element ]================]
+	## Return true if element is present in the buffer, else false
+	func element_is_present() -> bool:
+		return get_field_offset( vtable.VT_ELEMENT )
+
 	func element() -> BaseType:
 		var foffset: int = get_field_offset( vtable.VT_ELEMENT )
 		if not foffset: return 0 as BaseType
 		var decoded: BaseType = _fb_bytes.decode_s8( _fb_start + foffset )
 		return decoded
 
-	# [================[ index ]================]
+	## Return true if index is present in the buffer, else false
+	func index_is_present() -> bool:
+		return get_field_offset( vtable.VT_INDEX )
+
 	func index() -> int:
 		var foffset: int = get_field_offset( vtable.VT_INDEX )
 		if not foffset: return -1
 		return _fb_bytes.decode_s32( _fb_start + foffset )
 
-	# [================[ fixed_length ]================]
+	## Return true if fixed_length is present in the buffer, else false
+	func fixed_length_is_present() -> bool:
+		return get_field_offset( vtable.VT_FIXED_LENGTH )
+
 	func fixed_length() -> int:
 		var foffset: int = get_field_offset( vtable.VT_FIXED_LENGTH )
 		if not foffset: return 0
 		return _fb_bytes.decode_u16( _fb_start + foffset )
 
-	# [================[ base_size ]================]
-	# The size (octets) of the `base_type` field.
+	## Return true if base_size is present in the buffer, else false
+	func base_size_is_present() -> bool:
+		return get_field_offset( vtable.VT_BASE_SIZE )
+
+	## The size (octets) of the `base_type` field.
 	func base_size() -> int:
 		var foffset: int = get_field_offset( vtable.VT_BASE_SIZE )
 		if not foffset: return 4
 		return _fb_bytes.decode_u32( _fb_start + foffset )
 
-	# [================[ element_size ]================]
-	# The size (octets) of the `element` field, if present.
+	## Return true if element_size is present in the buffer, else false
+	func element_size_is_present() -> bool:
+		return get_field_offset( vtable.VT_ELEMENT_SIZE )
+
+	## The size (octets) of the `element` field, if present.
 	func element_size() -> int:
 		var foffset: int = get_field_offset( vtable.VT_ELEMENT_SIZE )
 		if not foffset: return 0
 		return _fb_bytes.decode_u32( _fb_start + foffset )
 
 
+## TODO: Write a Doc Comment for the builder
 class TypeBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_base_type( base_type: BaseType ) -> void:
 		fbb_.add_element_byte( Type.vtable.VT_BASE_TYPE, base_type )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_element( element: BaseType ) -> void:
 		fbb_.add_element_byte( Type.vtable.VT_ELEMENT, element )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_index( index: int ) -> void:
 		fbb_.add_element_int_default( Type.vtable.VT_INDEX, index, -1 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_fixed_length( fixed_length: int ) -> void:
 		fbb_.add_element_ushort_default( Type.vtable.VT_FIXED_LENGTH, fixed_length, 0 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_base_size( base_size: int ) -> void:
 		fbb_.add_element_uint_default( Type.vtable.VT_BASE_SIZE, base_size, 4 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_element_size( element_size: int ) -> void:
 		fbb_.add_element_uint_default( Type.vtable.VT_ELEMENT_SIZE, element_size, 0 )
 
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-
+## TODO: Write a Doc Comment for the static table create function
 static func create_Type( _fbb: FlatBufferBuilder,
 		base_type: BaseType,
 		element: BaseType,
@@ -159,57 +168,61 @@ static func create_Type( _fbb: FlatBufferBuilder,
 	return builder.finish();
 
 class KeyValue extends FlatBuffer:
-	enum vtable{
+	enum vtable {
 		VT_KEY = 4,
 		VT_VALUE = 6
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
-	# key is required
-
+	## Return true if key is present in the buffer, else false
+	## attribute: required
 	func key_is_present() -> bool:
 		return get_field_offset( vtable.VT_KEY )
 
-	func value_is_present() -> bool:
-		return get_field_offset( vtable.VT_VALUE )
-
-	# [================[ key ]================]
 	func key() -> String:
 		var field_start: int = get_field_start( vtable.VT_KEY )
 		if not field_start: return ''
 		return decode_String( field_start )
 
-	# [================[ value ]================]
+	## Return true if value is present in the buffer, else false
+	func value_is_present() -> bool:
+		return get_field_offset( vtable.VT_VALUE )
+
 	func value() -> String:
 		var field_start: int = get_field_start( vtable.VT_VALUE )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 
+## TODO: Write a Doc Comment for the builder
 class KeyValueBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_key( key_offset: int ) -> void:
 		fbb_.add_offset( KeyValue.vtable.VT_KEY, key_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_value( value_offset: int ) -> void:
 		fbb_.add_offset( KeyValue.vtable.VT_VALUE, value_offset )
 
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		fbb_.Required(o, KeyValue.vtable.VT_KEY);
 		return o;
 
-
+## TODO: Write a Doc Comment for the static table create function
 static func create_KeyValue( _fbb: FlatBufferBuilder,
 		key: int,
 		value: int ) -> int :
@@ -221,56 +234,51 @@ static func create_KeyValue( _fbb: FlatBufferBuilder,
 class EnumVal extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
 
-	enum vtable{
+	enum vtable {
 		VT_NAME = 4,
 		VT_VALUE = 6,
+		VT_OBJECT = 8,
 		VT_UNION_TYPE = 10,
 		VT_DOCUMENTATION = 12,
 		VT_ATTRIBUTES = 14
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
-	# name is required
-
+	## Return true if name is present in the buffer, else false
+	## attribute: required
 	func name_is_present() -> bool:
 		return get_field_offset( vtable.VT_NAME )
 
-	func value_is_present() -> bool:
-		return get_field_offset( vtable.VT_VALUE )
-
-	# field:'object' is deprecated
-
-	func union_type_is_present() -> bool:
-		return get_field_offset( vtable.VT_UNION_TYPE )
-
-	func documentation_is_present() -> bool:
-		return get_field_offset( vtable.VT_DOCUMENTATION )
-
-	func attributes_is_present() -> bool:
-		return get_field_offset( vtable.VT_ATTRIBUTES )
-
-	# [================[ name ]================]
 	func name() -> String:
 		var field_start: int = get_field_start( vtable.VT_NAME )
 		if not field_start: return ''
 		return decode_String( field_start )
 
-	# [================[ value ]================]
+	## Return true if value is present in the buffer, else false
+	func value_is_present() -> bool:
+		return get_field_offset( vtable.VT_VALUE )
+
 	func value() -> int:
 		var foffset: int = get_field_offset( vtable.VT_VALUE )
 		if not foffset: return 0
 		return _fb_bytes.decode_s64( _fb_start + foffset )
 
-	# [================[ union_type ]================]
+	## Return true if union_type is present in the buffer, else false
+	func union_type_is_present() -> bool:
+		return get_field_offset( vtable.VT_UNION_TYPE )
+
 	func union_type() -> _Reflection_schema.Type:
 		var field_start: int = get_field_start( vtable.VT_UNION_TYPE )
 		if not field_start: return null
 		return _Reflection_schema.Type.new( _fb_bytes, field_start )
 
-	# [================[ documentation ]================]
+	## Return true if documentation is present in the buffer, else false
+	func documentation_is_present() -> bool:
+		return get_field_offset( vtable.VT_DOCUMENTATION )
+
 	func documentation_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return 0
@@ -297,7 +305,10 @@ class EnumVal extends FlatBuffer:
 		string_start += _fb_bytes.decode_u32( string_start )
 		return decode_String( string_start )
 
-	# [================[ attributes ]================]
+	## Return true if attributes is present in the buffer, else false
+	func attributes_is_present() -> bool:
+		return get_field_offset( vtable.VT_ATTRIBUTES )
+
 	func attributes_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_ATTRIBUTES )
 		if not array_start: return 0
@@ -332,36 +343,44 @@ class EnumVal extends FlatBuffer:
 		return _Reflection_schema.KeyValue.new( _fb_bytes, offset )
 
 
+## TODO: Write a Doc Comment for the builder
 class EnumValBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( EnumVal.vtable.VT_NAME, name_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_value( value: int ) -> void:
 		fbb_.add_element_long_default( EnumVal.vtable.VT_VALUE, value, 0 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_union_type( union_type_offset: int ) -> void:
 		fbb_.add_offset( EnumVal.vtable.VT_UNION_TYPE, union_type_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_documentation( documentation_offset: int ) -> void:
 		fbb_.add_offset( EnumVal.vtable.VT_DOCUMENTATION, documentation_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_attributes( attributes_offset: int ) -> void:
 		fbb_.add_offset( EnumVal.vtable.VT_ATTRIBUTES, attributes_offset )
 
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		fbb_.Required(o, EnumVal.vtable.VT_NAME);
 		return o;
 
-
+## TODO: Write a Doc Comment for the static table create function
 static func create_EnumVal( _fbb: FlatBufferBuilder,
 		name: int,
 		value: int,
@@ -379,7 +398,7 @@ static func create_EnumVal( _fbb: FlatBufferBuilder,
 class Enum extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
 
-	enum vtable{
+	enum vtable {
 		VT_NAME = 4,
 		VT_VALUES = 6,
 		VT_IS_UNION = 8,
@@ -389,44 +408,25 @@ class Enum extends FlatBuffer:
 		VT_DECLARATION_FILE = 16
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
-	# name is required
-
+	## Return true if name is present in the buffer, else false
+	## attribute: required
 	func name_is_present() -> bool:
 		return get_field_offset( vtable.VT_NAME )
 
-	# values is required
-
-	func values_is_present() -> bool:
-		return get_field_offset( vtable.VT_VALUES )
-
-	func is_union_is_present() -> bool:
-		return get_field_offset( vtable.VT_IS_UNION )
-
-	# underlying_type is required
-
-	func underlying_type_is_present() -> bool:
-		return get_field_offset( vtable.VT_UNDERLYING_TYPE )
-
-	func attributes_is_present() -> bool:
-		return get_field_offset( vtable.VT_ATTRIBUTES )
-
-	func documentation_is_present() -> bool:
-		return get_field_offset( vtable.VT_DOCUMENTATION )
-
-	func declaration_file_is_present() -> bool:
-		return get_field_offset( vtable.VT_DECLARATION_FILE )
-
-	# [================[ name ]================]
 	func name() -> String:
 		var field_start: int = get_field_start( vtable.VT_NAME )
 		if not field_start: return ''
 		return decode_String( field_start )
 
-	# [================[ values ]================]
+	## Return true if values is present in the buffer, else false
+	## attribute: required
+	func values_is_present() -> bool:
+		return get_field_offset( vtable.VT_VALUES )
+
 	func values_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_VALUES )
 		if not array_start: return 0
@@ -460,19 +460,29 @@ class Enum extends FlatBuffer:
 			return into
 		return _Reflection_schema.EnumVal.new( _fb_bytes, offset )
 
-	# [================[ is_union ]================]
+	## Return true if is_union is present in the buffer, else false
+	func is_union_is_present() -> bool:
+		return get_field_offset( vtable.VT_IS_UNION )
+
 	func is_union() -> bool:
 		var foffset: int = get_field_offset( vtable.VT_IS_UNION )
 		if not foffset: return 0
 		return _fb_bytes.decode_u8( _fb_start + foffset )
 
-	# [================[ underlying_type ]================]
+	## Return true if underlying_type is present in the buffer, else false
+	## attribute: required
+	func underlying_type_is_present() -> bool:
+		return get_field_offset( vtable.VT_UNDERLYING_TYPE )
+
 	func underlying_type() -> _Reflection_schema.Type:
 		var field_start: int = get_field_start( vtable.VT_UNDERLYING_TYPE )
 		if not field_start: return null
 		return _Reflection_schema.Type.new( _fb_bytes, field_start )
 
-	# [================[ attributes ]================]
+	## Return true if attributes is present in the buffer, else false
+	func attributes_is_present() -> bool:
+		return get_field_offset( vtable.VT_ATTRIBUTES )
+
 	func attributes_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_ATTRIBUTES )
 		if not array_start: return 0
@@ -506,7 +516,10 @@ class Enum extends FlatBuffer:
 			return into
 		return _Reflection_schema.KeyValue.new( _fb_bytes, offset )
 
-	# [================[ documentation ]================]
+	## Return true if documentation is present in the buffer, else false
+	func documentation_is_present() -> bool:
+		return get_field_offset( vtable.VT_DOCUMENTATION )
+
 	func documentation_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return 0
@@ -533,43 +546,55 @@ class Enum extends FlatBuffer:
 		string_start += _fb_bytes.decode_u32( string_start )
 		return decode_String( string_start )
 
-	# [================[ declaration_file ]================]
-	# File that this Enum is declared in.
+	## Return true if declaration_file is present in the buffer, else false
+	func declaration_file_is_present() -> bool:
+		return get_field_offset( vtable.VT_DECLARATION_FILE )
+
 	func declaration_file() -> String:
 		var field_start: int = get_field_start( vtable.VT_DECLARATION_FILE )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 
+## TODO: Write a Doc Comment for the builder
 class EnumBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( Enum.vtable.VT_NAME, name_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_values( values_offset: int ) -> void:
 		fbb_.add_offset( Enum.vtable.VT_VALUES, values_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_is_union( is_union: bool ) -> void:
 		fbb_.add_element_bool_default( Enum.vtable.VT_IS_UNION, is_union, 0 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_underlying_type( underlying_type_offset: int ) -> void:
 		fbb_.add_offset( Enum.vtable.VT_UNDERLYING_TYPE, underlying_type_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_attributes( attributes_offset: int ) -> void:
 		fbb_.add_offset( Enum.vtable.VT_ATTRIBUTES, attributes_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_documentation( documentation_offset: int ) -> void:
 		fbb_.add_offset( Enum.vtable.VT_DOCUMENTATION, documentation_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_declaration_file( declaration_file_offset: int ) -> void:
 		fbb_.add_offset( Enum.vtable.VT_DECLARATION_FILE, declaration_file_offset )
 
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
@@ -578,7 +603,7 @@ class EnumBuilder extends RefCounted:
 		fbb_.Required(o, Enum.vtable.VT_UNDERLYING_TYPE);
 		return o;
 
-
+## TODO: Write a Doc Comment for the static table create function
 static func create_Enum( _fbb: FlatBufferBuilder,
 		name: int,
 		values: int,
@@ -600,7 +625,7 @@ static func create_Enum( _fbb: FlatBufferBuilder,
 class Field extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
 
-	enum vtable{
+	enum vtable {
 		VT_NAME = 4,
 		VT_TYPE = 6,
 		VT_ID = 8,
@@ -616,108 +641,97 @@ class Field extends FlatBuffer:
 		VT_PADDING = 28
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
-	# name is required
-
+	## Return true if name is present in the buffer, else false
+	## attribute: required
 	func name_is_present() -> bool:
 		return get_field_offset( vtable.VT_NAME )
 
-	# type is required
-
-	func type_is_present() -> bool:
-		return get_field_offset( vtable.VT_TYPE )
-
-	func id_is_present() -> bool:
-		return get_field_offset( vtable.VT_ID )
-
-	func offset_is_present() -> bool:
-		return get_field_offset( vtable.VT_OFFSET )
-
-	func default_integer_is_present() -> bool:
-		return get_field_offset( vtable.VT_DEFAULT_INTEGER )
-
-	func default_real_is_present() -> bool:
-		return get_field_offset( vtable.VT_DEFAULT_REAL )
-
-	func deprecated_is_present() -> bool:
-		return get_field_offset( vtable.VT_DEPRECATED )
-
-	func required_is_present() -> bool:
-		return get_field_offset( vtable.VT_REQUIRED )
-
-	func key_is_present() -> bool:
-		return get_field_offset( vtable.VT_KEY )
-
-	func attributes_is_present() -> bool:
-		return get_field_offset( vtable.VT_ATTRIBUTES )
-
-	func documentation_is_present() -> bool:
-		return get_field_offset( vtable.VT_DOCUMENTATION )
-
-	func optional_is_present() -> bool:
-		return get_field_offset( vtable.VT_OPTIONAL )
-
-	func padding_is_present() -> bool:
-		return get_field_offset( vtable.VT_PADDING )
-
-	# [================[ name ]================]
 	func name() -> String:
 		var field_start: int = get_field_start( vtable.VT_NAME )
 		if not field_start: return ''
 		return decode_String( field_start )
 
-	# [================[ type ]================]
+	## Return true if type is present in the buffer, else false
+	## attribute: required
+	func type_is_present() -> bool:
+		return get_field_offset( vtable.VT_TYPE )
+
 	func type() -> _Reflection_schema.Type:
 		var field_start: int = get_field_start( vtable.VT_TYPE )
 		if not field_start: return null
 		return _Reflection_schema.Type.new( _fb_bytes, field_start )
 
-	# [================[ id ]================]
+	## Return true if id is present in the buffer, else false
+	func id_is_present() -> bool:
+		return get_field_offset( vtable.VT_ID )
+
 	func id() -> int:
 		var foffset: int = get_field_offset( vtable.VT_ID )
 		if not foffset: return 0
 		return _fb_bytes.decode_u16( _fb_start + foffset )
 
-	# [================[ offset ]================]
+	## Return true if offset is present in the buffer, else false
+	func offset_is_present() -> bool:
+		return get_field_offset( vtable.VT_OFFSET )
+
 	func offset() -> int:
 		var foffset: int = get_field_offset( vtable.VT_OFFSET )
 		if not foffset: return 0
 		return _fb_bytes.decode_u16( _fb_start + foffset )
 
-	# [================[ default_integer ]================]
+	## Return true if default_integer is present in the buffer, else false
+	func default_integer_is_present() -> bool:
+		return get_field_offset( vtable.VT_DEFAULT_INTEGER )
+
 	func default_integer() -> int:
 		var foffset: int = get_field_offset( vtable.VT_DEFAULT_INTEGER )
 		if not foffset: return 0
 		return _fb_bytes.decode_s64( _fb_start + foffset )
 
-	# [================[ default_real ]================]
+	## Return true if default_real is present in the buffer, else false
+	func default_real_is_present() -> bool:
+		return get_field_offset( vtable.VT_DEFAULT_REAL )
+
 	func default_real() -> float:
 		var foffset: int = get_field_offset( vtable.VT_DEFAULT_REAL )
 		if not foffset: return 0.0
 		return _fb_bytes.decode_double( _fb_start + foffset )
 
-	# [================[ deprecated ]================]
+	## Return true if deprecated is present in the buffer, else false
+	func deprecated_is_present() -> bool:
+		return get_field_offset( vtable.VT_DEPRECATED )
+
 	func deprecated() -> bool:
 		var foffset: int = get_field_offset( vtable.VT_DEPRECATED )
 		if not foffset: return 0
 		return _fb_bytes.decode_u8( _fb_start + foffset )
 
-	# [================[ required ]================]
+	## Return true if required is present in the buffer, else false
+	func required_is_present() -> bool:
+		return get_field_offset( vtable.VT_REQUIRED )
+
 	func required() -> bool:
 		var foffset: int = get_field_offset( vtable.VT_REQUIRED )
 		if not foffset: return 0
 		return _fb_bytes.decode_u8( _fb_start + foffset )
 
-	# [================[ key ]================]
+	## Return true if key is present in the buffer, else false
+	func key_is_present() -> bool:
+		return get_field_offset( vtable.VT_KEY )
+
 	func key() -> bool:
 		var foffset: int = get_field_offset( vtable.VT_KEY )
 		if not foffset: return 0
 		return _fb_bytes.decode_u8( _fb_start + foffset )
 
-	# [================[ attributes ]================]
+	## Return true if attributes is present in the buffer, else false
+	func attributes_is_present() -> bool:
+		return get_field_offset( vtable.VT_ATTRIBUTES )
+
 	func attributes_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_ATTRIBUTES )
 		if not array_start: return 0
@@ -751,7 +765,10 @@ class Field extends FlatBuffer:
 			return into
 		return _Reflection_schema.KeyValue.new( _fb_bytes, offset )
 
-	# [================[ documentation ]================]
+	## Return true if documentation is present in the buffer, else false
+	func documentation_is_present() -> bool:
+		return get_field_offset( vtable.VT_DOCUMENTATION )
+
 	func documentation_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return 0
@@ -778,67 +795,89 @@ class Field extends FlatBuffer:
 		string_start += _fb_bytes.decode_u32( string_start )
 		return decode_String( string_start )
 
-	# [================[ optional ]================]
+	## Return true if optional is present in the buffer, else false
+	func optional_is_present() -> bool:
+		return get_field_offset( vtable.VT_OPTIONAL )
+
 	func optional() -> bool:
 		var foffset: int = get_field_offset( vtable.VT_OPTIONAL )
 		if not foffset: return 0
 		return _fb_bytes.decode_u8( _fb_start + foffset )
 
-	# [================[ padding ]================]
-	# Number of padding octets to always add after this field. Structs only.
+	## Return true if padding is present in the buffer, else false
+	func padding_is_present() -> bool:
+		return get_field_offset( vtable.VT_PADDING )
+
+	## Number of padding octets to always add after this field. Structs only.
 	func padding() -> int:
 		var foffset: int = get_field_offset( vtable.VT_PADDING )
 		if not foffset: return 0
 		return _fb_bytes.decode_u16( _fb_start + foffset )
 
 
+## TODO: Write a Doc Comment for the builder
 class FieldBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( Field.vtable.VT_NAME, name_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_type( type_offset: int ) -> void:
 		fbb_.add_offset( Field.vtable.VT_TYPE, type_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_id( id: int ) -> void:
 		fbb_.add_element_ushort_default( Field.vtable.VT_ID, id, 0 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_offset( offset: int ) -> void:
 		fbb_.add_element_ushort_default( Field.vtable.VT_OFFSET, offset, 0 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_default_integer( default_integer: int ) -> void:
 		fbb_.add_element_long_default( Field.vtable.VT_DEFAULT_INTEGER, default_integer, 0 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_default_real( default_real: float ) -> void:
 		fbb_.add_element_double_default( Field.vtable.VT_DEFAULT_REAL, default_real, 0.0 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_deprecated( deprecated: bool ) -> void:
 		fbb_.add_element_bool_default( Field.vtable.VT_DEPRECATED, deprecated, 0 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_required( required: bool ) -> void:
 		fbb_.add_element_bool_default( Field.vtable.VT_REQUIRED, required, 0 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_key( key: bool ) -> void:
 		fbb_.add_element_bool_default( Field.vtable.VT_KEY, key, 0 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_attributes( attributes_offset: int ) -> void:
 		fbb_.add_offset( Field.vtable.VT_ATTRIBUTES, attributes_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_documentation( documentation_offset: int ) -> void:
 		fbb_.add_offset( Field.vtable.VT_DOCUMENTATION, documentation_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_optional( optional: bool ) -> void:
 		fbb_.add_element_bool_default( Field.vtable.VT_OPTIONAL, optional, 0 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_padding( padding: int ) -> void:
 		fbb_.add_element_ushort_default( Field.vtable.VT_PADDING, padding, 0 )
 
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
@@ -846,7 +885,7 @@ class FieldBuilder extends RefCounted:
 		fbb_.Required(o, Field.vtable.VT_TYPE);
 		return o;
 
-
+## TODO: Write a Doc Comment for the static table create function
 static func create_Field( _fbb: FlatBufferBuilder,
 		name: int,
 		type: int,
@@ -880,7 +919,7 @@ static func create_Field( _fbb: FlatBufferBuilder,
 class Object_ extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
 
-	enum vtable{
+	enum vtable {
 		VT_NAME = 4,
 		VT_FIELDS = 6,
 		VT_IS_STRUCT = 8,
@@ -891,45 +930,25 @@ class Object_ extends FlatBuffer:
 		VT_DECLARATION_FILE = 18
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
-	# name is required
-
+	## Return true if name is present in the buffer, else false
+	## attribute: required
 	func name_is_present() -> bool:
 		return get_field_offset( vtable.VT_NAME )
 
-	# fields is required
-
-	func fields_is_present() -> bool:
-		return get_field_offset( vtable.VT_FIELDS )
-
-	func is_struct_is_present() -> bool:
-		return get_field_offset( vtable.VT_IS_STRUCT )
-
-	func minalign_is_present() -> bool:
-		return get_field_offset( vtable.VT_MINALIGN )
-
-	func bytesize_is_present() -> bool:
-		return get_field_offset( vtable.VT_BYTESIZE )
-
-	func attributes_is_present() -> bool:
-		return get_field_offset( vtable.VT_ATTRIBUTES )
-
-	func documentation_is_present() -> bool:
-		return get_field_offset( vtable.VT_DOCUMENTATION )
-
-	func declaration_file_is_present() -> bool:
-		return get_field_offset( vtable.VT_DECLARATION_FILE )
-
-	# [================[ name ]================]
 	func name() -> String:
 		var field_start: int = get_field_start( vtable.VT_NAME )
 		if not field_start: return ''
 		return decode_String( field_start )
 
-	# [================[ fields ]================]
+	## Return true if fields is present in the buffer, else false
+	## attribute: required
+	func fields_is_present() -> bool:
+		return get_field_offset( vtable.VT_FIELDS )
+
 	func fields_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_FIELDS )
 		if not array_start: return 0
@@ -963,25 +982,37 @@ class Object_ extends FlatBuffer:
 			return into
 		return _Reflection_schema.Field.new( _fb_bytes, offset )
 
-	# [================[ is_struct ]================]
+	## Return true if is_struct is present in the buffer, else false
+	func is_struct_is_present() -> bool:
+		return get_field_offset( vtable.VT_IS_STRUCT )
+
 	func is_struct() -> bool:
 		var foffset: int = get_field_offset( vtable.VT_IS_STRUCT )
 		if not foffset: return 0
 		return _fb_bytes.decode_u8( _fb_start + foffset )
 
-	# [================[ minalign ]================]
+	## Return true if minalign is present in the buffer, else false
+	func minalign_is_present() -> bool:
+		return get_field_offset( vtable.VT_MINALIGN )
+
 	func minalign() -> int:
 		var foffset: int = get_field_offset( vtable.VT_MINALIGN )
 		if not foffset: return 0
 		return _fb_bytes.decode_s32( _fb_start + foffset )
 
-	# [================[ bytesize ]================]
+	## Return true if bytesize is present in the buffer, else false
+	func bytesize_is_present() -> bool:
+		return get_field_offset( vtable.VT_BYTESIZE )
+
 	func bytesize() -> int:
 		var foffset: int = get_field_offset( vtable.VT_BYTESIZE )
 		if not foffset: return 0
 		return _fb_bytes.decode_s32( _fb_start + foffset )
 
-	# [================[ attributes ]================]
+	## Return true if attributes is present in the buffer, else false
+	func attributes_is_present() -> bool:
+		return get_field_offset( vtable.VT_ATTRIBUTES )
+
 	func attributes_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_ATTRIBUTES )
 		if not array_start: return 0
@@ -1015,7 +1046,10 @@ class Object_ extends FlatBuffer:
 			return into
 		return _Reflection_schema.KeyValue.new( _fb_bytes, offset )
 
-	# [================[ documentation ]================]
+	## Return true if documentation is present in the buffer, else false
+	func documentation_is_present() -> bool:
+		return get_field_offset( vtable.VT_DOCUMENTATION )
+
 	func documentation_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return 0
@@ -1042,46 +1076,59 @@ class Object_ extends FlatBuffer:
 		string_start += _fb_bytes.decode_u32( string_start )
 		return decode_String( string_start )
 
-	# [================[ declaration_file ]================]
-	# File that this Object is declared in.
+	## Return true if declaration_file is present in the buffer, else false
+	func declaration_file_is_present() -> bool:
+		return get_field_offset( vtable.VT_DECLARATION_FILE )
+
 	func declaration_file() -> String:
 		var field_start: int = get_field_start( vtable.VT_DECLARATION_FILE )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 
+## TODO: Write a Doc Comment for the builder
 class Object_Builder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( Object_.vtable.VT_NAME, name_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_fields( fields_offset: int ) -> void:
 		fbb_.add_offset( Object_.vtable.VT_FIELDS, fields_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_is_struct( is_struct: bool ) -> void:
 		fbb_.add_element_bool_default( Object_.vtable.VT_IS_STRUCT, is_struct, 0 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_minalign( minalign: int ) -> void:
 		fbb_.add_element_int_default( Object_.vtable.VT_MINALIGN, minalign, 0 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_bytesize( bytesize: int ) -> void:
 		fbb_.add_element_int_default( Object_.vtable.VT_BYTESIZE, bytesize, 0 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_attributes( attributes_offset: int ) -> void:
 		fbb_.add_offset( Object_.vtable.VT_ATTRIBUTES, attributes_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_documentation( documentation_offset: int ) -> void:
 		fbb_.add_offset( Object_.vtable.VT_DOCUMENTATION, documentation_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_declaration_file( declaration_file_offset: int ) -> void:
 		fbb_.add_offset( Object_.vtable.VT_DECLARATION_FILE, declaration_file_offset )
 
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
@@ -1089,7 +1136,7 @@ class Object_Builder extends RefCounted:
 		fbb_.Required(o, Object_.vtable.VT_FIELDS);
 		return o;
 
-
+## TODO: Write a Doc Comment for the static table create function
 static func create_Object_( _fbb: FlatBufferBuilder,
 		name: int,
 		fields: int,
@@ -1113,7 +1160,7 @@ static func create_Object_( _fbb: FlatBufferBuilder,
 class RPCCall extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
 
-	enum vtable{
+	enum vtable {
 		VT_NAME = 4,
 		VT_REQUEST = 6,
 		VT_RESPONSE = 8,
@@ -1121,50 +1168,44 @@ class RPCCall extends FlatBuffer:
 		VT_DOCUMENTATION = 12
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
-	# name is required
-
+	## Return true if name is present in the buffer, else false
+	## attribute: required
 	func name_is_present() -> bool:
 		return get_field_offset( vtable.VT_NAME )
 
-	# request is required
-
-	func request_is_present() -> bool:
-		return get_field_offset( vtable.VT_REQUEST )
-
-	# response is required
-
-	func response_is_present() -> bool:
-		return get_field_offset( vtable.VT_RESPONSE )
-
-	func attributes_is_present() -> bool:
-		return get_field_offset( vtable.VT_ATTRIBUTES )
-
-	func documentation_is_present() -> bool:
-		return get_field_offset( vtable.VT_DOCUMENTATION )
-
-	# [================[ name ]================]
 	func name() -> String:
 		var field_start: int = get_field_start( vtable.VT_NAME )
 		if not field_start: return ''
 		return decode_String( field_start )
 
-	# [================[ request ]================]
+	## Return true if request is present in the buffer, else false
+	## attribute: required
+	func request_is_present() -> bool:
+		return get_field_offset( vtable.VT_REQUEST )
+
 	func request() -> _Reflection_schema.Object_:
 		var field_start: int = get_field_start( vtable.VT_REQUEST )
 		if not field_start: return null
 		return _Reflection_schema.Object_.new( _fb_bytes, field_start )
 
-	# [================[ response ]================]
+	## Return true if response is present in the buffer, else false
+	## attribute: required
+	func response_is_present() -> bool:
+		return get_field_offset( vtable.VT_RESPONSE )
+
 	func response() -> _Reflection_schema.Object_:
 		var field_start: int = get_field_start( vtable.VT_RESPONSE )
 		if not field_start: return null
 		return _Reflection_schema.Object_.new( _fb_bytes, field_start )
 
-	# [================[ attributes ]================]
+	## Return true if attributes is present in the buffer, else false
+	func attributes_is_present() -> bool:
+		return get_field_offset( vtable.VT_ATTRIBUTES )
+
 	func attributes_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_ATTRIBUTES )
 		if not array_start: return 0
@@ -1198,7 +1239,10 @@ class RPCCall extends FlatBuffer:
 			return into
 		return _Reflection_schema.KeyValue.new( _fb_bytes, offset )
 
-	# [================[ documentation ]================]
+	## Return true if documentation is present in the buffer, else false
+	func documentation_is_present() -> bool:
+		return get_field_offset( vtable.VT_DOCUMENTATION )
+
 	func documentation_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return 0
@@ -1226,29 +1270,37 @@ class RPCCall extends FlatBuffer:
 		return decode_String( string_start )
 
 
+## TODO: Write a Doc Comment for the builder
 class RPCCallBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( RPCCall.vtable.VT_NAME, name_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_request( request_offset: int ) -> void:
 		fbb_.add_offset( RPCCall.vtable.VT_REQUEST, request_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_response( response_offset: int ) -> void:
 		fbb_.add_offset( RPCCall.vtable.VT_RESPONSE, response_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_attributes( attributes_offset: int ) -> void:
 		fbb_.add_offset( RPCCall.vtable.VT_ATTRIBUTES, attributes_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_documentation( documentation_offset: int ) -> void:
 		fbb_.add_offset( RPCCall.vtable.VT_DOCUMENTATION, documentation_offset )
 
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
@@ -1257,7 +1309,7 @@ class RPCCallBuilder extends RefCounted:
 		fbb_.Required(o, RPCCall.vtable.VT_RESPONSE);
 		return o;
 
-
+## TODO: Write a Doc Comment for the static table create function
 static func create_RPCCall( _fbb: FlatBufferBuilder,
 		name: int,
 		request: int,
@@ -1275,7 +1327,7 @@ static func create_RPCCall( _fbb: FlatBufferBuilder,
 class Service extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
 
-	enum vtable{
+	enum vtable {
 		VT_NAME = 4,
 		VT_CALLS = 6,
 		VT_ATTRIBUTES = 8,
@@ -1283,34 +1335,24 @@ class Service extends FlatBuffer:
 		VT_DECLARATION_FILE = 12
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
-	# name is required
-
+	## Return true if name is present in the buffer, else false
+	## attribute: required
 	func name_is_present() -> bool:
 		return get_field_offset( vtable.VT_NAME )
 
-	func calls_is_present() -> bool:
-		return get_field_offset( vtable.VT_CALLS )
-
-	func attributes_is_present() -> bool:
-		return get_field_offset( vtable.VT_ATTRIBUTES )
-
-	func documentation_is_present() -> bool:
-		return get_field_offset( vtable.VT_DOCUMENTATION )
-
-	func declaration_file_is_present() -> bool:
-		return get_field_offset( vtable.VT_DECLARATION_FILE )
-
-	# [================[ name ]================]
 	func name() -> String:
 		var field_start: int = get_field_start( vtable.VT_NAME )
 		if not field_start: return ''
 		return decode_String( field_start )
 
-	# [================[ calls ]================]
+	## Return true if calls is present in the buffer, else false
+	func calls_is_present() -> bool:
+		return get_field_offset( vtable.VT_CALLS )
+
 	func calls_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_CALLS )
 		if not array_start: return 0
@@ -1344,7 +1386,10 @@ class Service extends FlatBuffer:
 			return into
 		return _Reflection_schema.RPCCall.new( _fb_bytes, offset )
 
-	# [================[ attributes ]================]
+	## Return true if attributes is present in the buffer, else false
+	func attributes_is_present() -> bool:
+		return get_field_offset( vtable.VT_ATTRIBUTES )
+
 	func attributes_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_ATTRIBUTES )
 		if not array_start: return 0
@@ -1378,7 +1423,10 @@ class Service extends FlatBuffer:
 			return into
 		return _Reflection_schema.KeyValue.new( _fb_bytes, offset )
 
-	# [================[ documentation ]================]
+	## Return true if documentation is present in the buffer, else false
+	func documentation_is_present() -> bool:
+		return get_field_offset( vtable.VT_DOCUMENTATION )
+
 	func documentation_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_DOCUMENTATION )
 		if not array_start: return 0
@@ -1405,44 +1453,54 @@ class Service extends FlatBuffer:
 		string_start += _fb_bytes.decode_u32( string_start )
 		return decode_String( string_start )
 
-	# [================[ declaration_file ]================]
-	# File that this Service is declared in.
+	## Return true if declaration_file is present in the buffer, else false
+	func declaration_file_is_present() -> bool:
+		return get_field_offset( vtable.VT_DECLARATION_FILE )
+
 	func declaration_file() -> String:
 		var field_start: int = get_field_start( vtable.VT_DECLARATION_FILE )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 
+## TODO: Write a Doc Comment for the builder
 class ServiceBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( Service.vtable.VT_NAME, name_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_calls( calls_offset: int ) -> void:
 		fbb_.add_offset( Service.vtable.VT_CALLS, calls_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_attributes( attributes_offset: int ) -> void:
 		fbb_.add_offset( Service.vtable.VT_ATTRIBUTES, attributes_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_documentation( documentation_offset: int ) -> void:
 		fbb_.add_offset( Service.vtable.VT_DOCUMENTATION, documentation_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_declaration_file( declaration_file_offset: int ) -> void:
 		fbb_.add_offset( Service.vtable.VT_DECLARATION_FILE, declaration_file_offset )
 
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		fbb_.Required(o, Service.vtable.VT_NAME);
 		return o;
 
-
+## TODO: Write a Doc Comment for the static table create function
 static func create_Service( _fbb: FlatBufferBuilder,
 		name: int,
 		calls: int,
@@ -1457,41 +1515,40 @@ static func create_Service( _fbb: FlatBufferBuilder,
 	builder.add_name( name );
 	return builder.finish();
 
-# File specific information.
-# Symbols declared within a file may be recovered by iterating over all
-# symbols and examining the `declaration_file` field.
+## File specific information.
+## Symbols declared within a file may be recovered by iterating over all
+## symbols and examining the `declaration_file` field.
 class SchemaFile extends FlatBuffer:
-	enum vtable{
+	enum vtable {
 		VT_FILENAME = 4,
 		VT_INCLUDED_FILENAMES = 6
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
-	# filename is required
-
+	## Return true if filename is present in the buffer, else false
+	## attribute: required
 	func filename_is_present() -> bool:
 		return get_field_offset( vtable.VT_FILENAME )
 
-	func included_filenames_is_present() -> bool:
-		return get_field_offset( vtable.VT_INCLUDED_FILENAMES )
-
-	# [================[ filename ]================]
-	# Filename, relative to project root.
 	func filename() -> String:
 		var field_start: int = get_field_start( vtable.VT_FILENAME )
 		if not field_start: return ''
 		return decode_String( field_start )
 
-	# [================[ included_filenames ]================]
-	# Names of included files, relative to project root.
+	## Return true if included_filenames is present in the buffer, else false
+	func included_filenames_is_present() -> bool:
+		return get_field_offset( vtable.VT_INCLUDED_FILENAMES )
+
+	## Names of included files, relative to project root.
 	func included_filenames_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_INCLUDED_FILENAMES )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## Names of included files, relative to project root.
 	func included_filenames() -> PackedStringArray:
 		var array_start: int = get_field_start( vtable.VT_INCLUDED_FILENAMES )
 		if not array_start: return []
@@ -1505,6 +1562,7 @@ class SchemaFile extends FlatBuffer:
 			array[i] = decode_String( element_start )
 		return array
 
+	## Names of included files, relative to project root.
 	func included_filenames_at( index: int ) -> String:
 		var array_start: int = get_field_start( vtable.VT_INCLUDED_FILENAMES )
 		if not array_start: return ''
@@ -1514,27 +1572,32 @@ class SchemaFile extends FlatBuffer:
 		return decode_String( string_start )
 
 
+## TODO: Write a Doc Comment for the builder
 class SchemaFileBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_filename( filename_offset: int ) -> void:
 		fbb_.add_offset( SchemaFile.vtable.VT_FILENAME, filename_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_included_filenames( included_filenames_offset: int ) -> void:
 		fbb_.add_offset( SchemaFile.vtable.VT_INCLUDED_FILENAMES, included_filenames_offset )
 
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		fbb_.Required(o, SchemaFile.vtable.VT_FILENAME);
 		return o;
 
-
+## TODO: Write a Doc Comment for the static table create function
 static func create_SchemaFile( _fbb: FlatBufferBuilder,
 		filename: int,
 		included_filenames: int ) -> int :
@@ -1546,7 +1609,7 @@ static func create_SchemaFile( _fbb: FlatBufferBuilder,
 class Schema extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
 
-	enum vtable{
+	enum vtable {
 		VT_OBJECTS = 4,
 		VT_ENUMS = 6,
 		VT_FILE_IDENT = 8,
@@ -1557,39 +1620,15 @@ class Schema extends FlatBuffer:
 		VT_FBS_FILES = 18
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
-	# objects is required
-
+	## Return true if objects is present in the buffer, else false
+	## attribute: required
 	func objects_is_present() -> bool:
 		return get_field_offset( vtable.VT_OBJECTS )
 
-	# enums is required
-
-	func enums_is_present() -> bool:
-		return get_field_offset( vtable.VT_ENUMS )
-
-	func file_ident_is_present() -> bool:
-		return get_field_offset( vtable.VT_FILE_IDENT )
-
-	func file_ext_is_present() -> bool:
-		return get_field_offset( vtable.VT_FILE_EXT )
-
-	func root_table_is_present() -> bool:
-		return get_field_offset( vtable.VT_ROOT_TABLE )
-
-	func services_is_present() -> bool:
-		return get_field_offset( vtable.VT_SERVICES )
-
-	func advanced_features_is_present() -> bool:
-		return get_field_offset( vtable.VT_ADVANCED_FEATURES )
-
-	func fbs_files_is_present() -> bool:
-		return get_field_offset( vtable.VT_FBS_FILES )
-
-	# [================[ objects ]================]
 	func objects_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_OBJECTS )
 		if not array_start: return 0
@@ -1623,7 +1662,11 @@ class Schema extends FlatBuffer:
 			return into
 		return _Reflection_schema.Object_.new( _fb_bytes, offset )
 
-	# [================[ enums ]================]
+	## Return true if enums is present in the buffer, else false
+	## attribute: required
+	func enums_is_present() -> bool:
+		return get_field_offset( vtable.VT_ENUMS )
+
 	func enums_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_ENUMS )
 		if not array_start: return 0
@@ -1657,25 +1700,37 @@ class Schema extends FlatBuffer:
 			return into
 		return _Reflection_schema.Enum.new( _fb_bytes, offset )
 
-	# [================[ file_ident ]================]
+	## Return true if file_ident is present in the buffer, else false
+	func file_ident_is_present() -> bool:
+		return get_field_offset( vtable.VT_FILE_IDENT )
+
 	func file_ident() -> String:
 		var field_start: int = get_field_start( vtable.VT_FILE_IDENT )
 		if not field_start: return ''
 		return decode_String( field_start )
 
-	# [================[ file_ext ]================]
+	## Return true if file_ext is present in the buffer, else false
+	func file_ext_is_present() -> bool:
+		return get_field_offset( vtable.VT_FILE_EXT )
+
 	func file_ext() -> String:
 		var field_start: int = get_field_start( vtable.VT_FILE_EXT )
 		if not field_start: return ''
 		return decode_String( field_start )
 
-	# [================[ root_table ]================]
+	## Return true if root_table is present in the buffer, else false
+	func root_table_is_present() -> bool:
+		return get_field_offset( vtable.VT_ROOT_TABLE )
+
 	func root_table() -> _Reflection_schema.Object_:
 		var field_start: int = get_field_start( vtable.VT_ROOT_TABLE )
 		if not field_start: return null
 		return _Reflection_schema.Object_.new( _fb_bytes, field_start )
 
-	# [================[ services ]================]
+	## Return true if services is present in the buffer, else false
+	func services_is_present() -> bool:
+		return get_field_offset( vtable.VT_SERVICES )
+
 	func services_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_SERVICES )
 		if not array_start: return 0
@@ -1709,21 +1764,29 @@ class Schema extends FlatBuffer:
 			return into
 		return _Reflection_schema.Service.new( _fb_bytes, offset )
 
-	# [================[ advanced_features ]================]
+	## Return true if advanced_features is present in the buffer, else false
+	func advanced_features_is_present() -> bool:
+		return get_field_offset( vtable.VT_ADVANCED_FEATURES )
+
 	func advanced_features() -> AdvancedFeatures:
 		var foffset: int = get_field_offset( vtable.VT_ADVANCED_FEATURES )
 		if not foffset: return 0 as AdvancedFeatures
 		var decoded: AdvancedFeatures = _fb_bytes.decode_u64( _fb_start + foffset )
 		return decoded
 
-	# [================[ fbs_files ]================]
-	# All the files used in this compilation. Files are relative to where
-# flatc was invoked.
+	## Return true if fbs_files is present in the buffer, else false
+	func fbs_files_is_present() -> bool:
+		return get_field_offset( vtable.VT_FBS_FILES )
+
+	## All the files used in this compilation. Files are relative to where
+## flatc was invoked.
 	func fbs_files_size() -> int:
 		var array_start: int = get_field_start( vtable.VT_FBS_FILES )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## All the files used in this compilation. Files are relative to where
+## flatc was invoked.
 	func fbs_files() -> Array:
 		var array_start: int = get_field_start( vtable.VT_FBS_FILES )
 		if not array_start: return []
@@ -1736,6 +1799,8 @@ class Schema extends FlatBuffer:
 			array[i] = _Reflection_schema.SchemaFile.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
+	## All the files used in this compilation. Files are relative to where
+## flatc was invoked.
 	func fbs_files_at( idx: int, into: SchemaFile = null ) -> SchemaFile:
 		var field_start: int = get_field_start( vtable.VT_FBS_FILES )
 		assert(field_start, 'Field is not present in buffer' )
@@ -1753,38 +1818,49 @@ class Schema extends FlatBuffer:
 		return _Reflection_schema.SchemaFile.new( _fb_bytes, offset )
 
 
+## TODO: Write a Doc Comment for the builder
 class SchemaBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_objects( objects_offset: int ) -> void:
 		fbb_.add_offset( Schema.vtable.VT_OBJECTS, objects_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_enums( enums_offset: int ) -> void:
 		fbb_.add_offset( Schema.vtable.VT_ENUMS, enums_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_file_ident( file_ident_offset: int ) -> void:
 		fbb_.add_offset( Schema.vtable.VT_FILE_IDENT, file_ident_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_file_ext( file_ext_offset: int ) -> void:
 		fbb_.add_offset( Schema.vtable.VT_FILE_EXT, file_ext_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_root_table( root_table_offset: int ) -> void:
 		fbb_.add_offset( Schema.vtable.VT_ROOT_TABLE, root_table_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_services( services_offset: int ) -> void:
 		fbb_.add_offset( Schema.vtable.VT_SERVICES, services_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_advanced_features( advanced_features: AdvancedFeatures ) -> void:
 		fbb_.add_element_ulong( Schema.vtable.VT_ADVANCED_FEATURES, advanced_features )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_fbs_files( fbs_files_offset: int ) -> void:
 		fbb_.add_offset( Schema.vtable.VT_FBS_FILES, fbs_files_offset )
 
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
@@ -1792,7 +1868,7 @@ class SchemaBuilder extends RefCounted:
 		fbb_.Required(o, Schema.vtable.VT_ENUMS);
 		return o;
 
-
+## TODO: Write a Doc Comment for the static table create function
 static func create_Schema( _fbb: FlatBufferBuilder,
 		objects: int,
 		enums: int,

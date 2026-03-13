@@ -5,7 +5,7 @@
 @warning_ignore_start('unsafe_method_access')
 @warning_ignore_start('unsafe_call_argument')
 
-# Enum Variations
+## Enum Variations
 enum Enum1 {
 	NONE = 0
 }
@@ -31,55 +31,56 @@ enum Fruit {
 }
 
 class TableDecl extends FlatBuffer:
-	enum vtable{
+	enum {
 		VT_SCALAR_BOOL = 4,
 		VT_SCALAR_INT = 6,
 		VT_SCALAR_FLOAT = 8,
 		VT_IDENT5 = 10
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
+	## Return true if scalar_bool is present in the buffer, else false
 	func scalar_bool_is_present() -> bool:
-		return get_field_offset( vtable.VT_SCALAR_BOOL )
+		return get_field_offset( VT_SCALAR_BOOL )
 
-	func scalar_int_is_present() -> bool:
-		return get_field_offset( vtable.VT_SCALAR_INT )
-
-	func scalar_float_is_present() -> bool:
-		return get_field_offset( vtable.VT_SCALAR_FLOAT )
-
-	func ident5_is_present() -> bool:
-		return get_field_offset( vtable.VT_IDENT5 )
-
-	# [================[ scalar_bool ]================]
 	func scalar_bool() -> bool:
-		var foffset: int = get_field_offset( vtable.VT_SCALAR_BOOL )
+		var foffset: int = get_field_offset( VT_SCALAR_BOOL )
 		if not foffset: return 0
 		return _fb_bytes.decode_u8( _fb_start + foffset )
 
-	# [================[ scalar_int ]================]
+	## Return true if scalar_int is present in the buffer, else false
+	func scalar_int_is_present() -> bool:
+		return get_field_offset( VT_SCALAR_INT )
+
 	func scalar_int() -> int:
-		var foffset: int = get_field_offset( vtable.VT_SCALAR_INT )
+		var foffset: int = get_field_offset( VT_SCALAR_INT )
 		if not foffset: return 32
 		return _fb_bytes.decode_s32( _fb_start + foffset )
 
-	# [================[ scalar_float ]================]
+	## Return true if scalar_float is present in the buffer, else false
+	func scalar_float_is_present() -> bool:
+		return get_field_offset( VT_SCALAR_FLOAT )
+
 	func scalar_float() -> float:
-		var foffset: int = get_field_offset( vtable.VT_SCALAR_FLOAT )
+		var foffset: int = get_field_offset( VT_SCALAR_FLOAT )
 		if not foffset: return 5.3
 		return _fb_bytes.decode_float( _fb_start + foffset )
 
-	# [================[ ident5 ]================]
+	## Return true if ident5 is present in the buffer, else false
+	func ident5_is_present() -> bool:
+		return get_field_offset( VT_IDENT5 )
+
 	func ident5_size() -> int:
-		var array_start: int = get_field_start( vtable.VT_IDENT5 )
+		var array_start: int = get_field_start( VT_IDENT5 )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## Decode and return all elements of ident5 as an [Array]
 	func ident5() -> Array:
-		var array_start: int = get_field_start( vtable.VT_IDENT5 )
+		var array_start: int = get_field_start( VT_IDENT5 )
 		if not array_start: return []
 		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
@@ -90,39 +91,47 @@ class TableDecl extends FlatBuffer:
 		# To return packed array types, the scalar elements have to be of an appropriate type.
 		return array
 
+	## Access elements of ident5 by [param index]
 	func ident5_at( index: int ) -> int:
-		var array_start: int = get_field_start( vtable.VT_IDENT5 )
-		if not array_start: return 0
+		var array_start: int = get_field_start( VT_IDENT5 )
+		assert(array_start, 'access to invalid vector of enum')
 		array_start += 4
 		return _fb_bytes.decode_u32( array_start + index * 4)
 
 
+## TODO: Write a Doc Comment for the builder
 class TableDeclBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_scalar_bool( scalar_bool: bool ) -> void:
-		fbb_.add_element_bool_default( TableDecl.vtable.VT_SCALAR_BOOL, scalar_bool, 0 )
+		fbb_.add_element_bool_default( TableDecl.VT_SCALAR_BOOL, scalar_bool, 0 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_scalar_int( scalar_int: int ) -> void:
-		fbb_.add_element_int_default( TableDecl.vtable.VT_SCALAR_INT, scalar_int, 32 )
+		fbb_.add_element_int_default( TableDecl.VT_SCALAR_INT, scalar_int, 32 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_scalar_float( scalar_float: float ) -> void:
-		fbb_.add_element_float_default( TableDecl.vtable.VT_SCALAR_FLOAT, scalar_float, 5.3 )
+		fbb_.add_element_float_default( TableDecl.VT_SCALAR_FLOAT, scalar_float, 5.3 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_ident5( ident5_offset: int ) -> void:
-		fbb_.add_offset( TableDecl.vtable.VT_IDENT5, ident5_offset )
+		fbb_.add_offset( TableDecl.VT_IDENT5, ident5_offset )
 
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-
+## TODO: Write a Doc Comment for the static table create function
 static func create_TableDecl( _fbb: FlatBufferBuilder,
 		scalar_bool: bool,
 		scalar_int: int,

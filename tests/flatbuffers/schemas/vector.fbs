@@ -1,13 +1,63 @@
-include "godot.fbs";
+// testing the vector field
 
-table Item {
-	id:uint64;
-	type:uint8;
+/// Enum Used for testing
+enum TestEnum:uint8 {
+	/// Zero
+	ZERO,
+	/// One
+	ONE
 }
 
-table Bag {
-	ids:[int64];
-	items:[Item];
+/// Struct Used for testing
+struct TestStruct {
+	/// Field A
+	a:int;
+	/// Field B
+	b:int;
 }
 
-root_type Bag;
+/// Table A Used for testing
+table TestTableA {
+	/// Field A
+	a:int;
+}
+
+/// Table B Used for testing
+table TestTableB {
+	/// Field B
+	b:int;
+}
+
+/// Union of Table A and Table B Used for testing
+union TestUnion {
+	/// First union Memmber
+	TestTableA,
+	/// Second Union Memeber
+	TestTableB
+}
+
+/// Root Table Used for testing
+table RootTable {
+	/// Vector of Scalars
+	scalars:[int];        // vector of scalar
+
+	/// Vector of Enums
+	enums:[TestEnum];     // Vector of enum
+
+	/// Vector of Strings
+	strings:[string];     // vector of strings
+
+	/// Vector of Structs
+	structs:[TestStruct]; // vector of structs
+
+	/// Vector of Tables
+	tables:[TestTableA];  // vector of table
+
+	/// Temporary Union to check the differences between vectors and non vectors
+	single:TestUnion;
+
+	/// Vector of Unions
+	unions:[TestUnion];   // vector of union
+}
+
+root_type RootTable;

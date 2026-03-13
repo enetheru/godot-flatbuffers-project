@@ -5,121 +5,270 @@
 @warning_ignore_start('unsafe_method_access')
 @warning_ignore_start('unsafe_call_argument')
 
-class Item extends FlatBuffer:
-	enum vtable{
-		VT_ID = 4,
-		VT_TYPE = 6
+## Enum Used for testing
+enum TestEnum {
+	## Zero
+	ZERO = 0,
+	## One
+	ONE = 1
+}
+
+## Union of Table A and Table B Used for testing
+enum TestUnion {
+	NONE = 0,
+	## First union Memmber
+	TEST_TABLE_A = 1,
+	## Second Union Memeber
+	TEST_TABLE_B = 2
+}
+
+## Struct Used for testing
+class TestStruct extends FlatBuffer:
+	const _fb_struct_size: int = 8
+
+	## TODO: create a useful doc comment for the init function
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		if bytes_.is_empty():
+			_fb_bytes = PackedByteArray()
+			_fb_bytes.resize( _fb_struct_size )
+		else:
+			assert(start_ + _fb_struct_size <= bytes_.size())
+			_fb_bytes = bytes_; _fb_start = start_
+
+	## Field A
+	var a: int :
+		get(): return _fb_bytes.decode_s32(_fb_start + 0)
+		set(v): _fb_bytes.encode_s32(_fb_start + 0, v)
+
+	## Field B
+	var b: int :
+		get(): return _fb_bytes.decode_s32(_fb_start + 4)
+		set(v): _fb_bytes.encode_s32(_fb_start + 4, v)
+
+
+## TODO: create a useful doc comment for the static creation function
+static func create_TestStruct(
+		_a: int,
+		_b: int ) -> TestStruct :
+	var val: TestStruct = TestStruct.new()
+	val.b = _b;
+	val.a = _a;
+	return val
+
+## Table A Used for testing
+class TestTableA extends FlatBuffer:
+	enum {
+		VT_A = 4
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
-	func id_is_present() -> bool:
-		return get_field_offset( vtable.VT_ID )
+	## Return true if a is present in the buffer, else false
+	func a_is_present() -> bool:
+		return get_field_offset( VT_A )
 
-	func type_is_present() -> bool:
-		return get_field_offset( vtable.VT_TYPE )
-
-	# [================[ id ]================]
-	func id() -> int:
-		var foffset: int = get_field_offset( vtable.VT_ID )
+	## Field A
+	func a() -> int:
+		var foffset: int = get_field_offset( VT_A )
 		if not foffset: return 0
-		return _fb_bytes.decode_u64( _fb_start + foffset )
-
-	# [================[ type ]================]
-	func type() -> int:
-		var foffset: int = get_field_offset( vtable.VT_TYPE )
-		if not foffset: return 0
-		return _fb_bytes.decode_u8( _fb_start + foffset )
+		return _fb_bytes.decode_s32( _fb_start + foffset )
 
 
-class ItemBuilder extends RefCounted:
+## TODO: Write a Doc Comment for the builder
+class TestTableABuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_id( id: int ) -> void:
-		fbb_.add_element_ulong_default( Item.vtable.VT_ID, id, 0 )
+	## TODO: Write a Doc Comment for the builder's add functions
+	func add_a( a: int ) -> void:
+		fbb_.add_element_int_default( TestTableA.VT_A, a, 0 )
 
-	func add_type( type: int ) -> void:
-		fbb_.add_element_ubyte_default( Item.vtable.VT_TYPE, type, 0 )
-
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-
-static func create_Item( _fbb: FlatBufferBuilder,
-		id: int,
-		type: int ) -> int :
-	var builder: ItemBuilder = ItemBuilder.new( _fbb );
-	builder.add_id( id );
-	builder.add_type( type );
+## TODO: Write a Doc Comment for the static table create function
+static func create_TestTableA( _fbb: FlatBufferBuilder,
+		a: int ) -> int :
+	var builder: TestTableABuilder = TestTableABuilder.new( _fbb );
+	builder.add_a( a );
 	return builder.finish();
 
-class Bag extends FlatBuffer:
-	const _vector_schema = preload( 'vector_generated.gd' )
-
-	enum vtable{
-		VT_IDS = 4,
-		VT_ITEMS = 6
+## Table B Used for testing
+class TestTableB extends FlatBuffer:
+	enum {
+		VT_B = 4
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
-	func ids_is_present() -> bool:
-		return get_field_offset( vtable.VT_IDS )
+	## Return true if b is present in the buffer, else false
+	func b_is_present() -> bool:
+		return get_field_offset( VT_B )
 
-	func items_is_present() -> bool:
-		return get_field_offset( vtable.VT_ITEMS )
+	## Field B
+	func b() -> int:
+		var foffset: int = get_field_offset( VT_B )
+		if not foffset: return 0
+		return _fb_bytes.decode_s32( _fb_start + foffset )
 
-	# [================[ ids ]================]
-	func ids_size() -> int:
-		var array_start: int = get_field_start( vtable.VT_IDS )
+
+## TODO: Write a Doc Comment for the builder
+class TestTableBBuilder extends RefCounted:
+	var fbb_: FlatBufferBuilder
+	var start_: int
+
+	## TODO: Write a Doc Comment for the builder's init function
+	func _init( _fbb: FlatBufferBuilder ) -> void:
+		fbb_ = _fbb
+		start_ = _fbb.start_table()
+
+	## TODO: Write a Doc Comment for the builder's add functions
+	func add_b( b: int ) -> void:
+		fbb_.add_element_int_default( TestTableB.VT_B, b, 0 )
+
+	## TODO: Write a Doc Comment for the builder's finish function
+	func finish() -> int:
+		var end: int = fbb_.end_table( start_ )
+		var o: int = end
+		return o;
+
+## TODO: Write a Doc Comment for the static table create function
+static func create_TestTableB( _fbb: FlatBufferBuilder,
+		b: int ) -> int :
+	var builder: TestTableBBuilder = TestTableBBuilder.new( _fbb );
+	builder.add_b( b );
+	return builder.finish();
+
+## Root Table Used for testing
+class RootTable extends FlatBuffer:
+	const _vector_schema = preload( 'vector_generated.gd' )
+
+	enum {
+		VT_SCALARS = 4,
+		VT_ENUMS = 6,
+		VT_STRINGS = 8,
+		VT_STRUCTS = 10,
+		VT_TABLES = 12,
+		VT_SINGLE_TYPE = 14,
+		VT_SINGLE = 16,
+		VT_UNIONS_TYPE = 18,
+		VT_UNIONS = 20
+	}
+
+	## TODO: create a useful doc comment for the init function
+	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
+		_fb_bytes = bytes_; _fb_start = start_
+
+	## Vector of Scalars
+	func scalars_size() -> int:
+		var array_start: int = get_field_start( VT_SCALARS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
-	func ids() -> PackedInt64Array:
-		var array_start: int = get_field_start( vtable.VT_IDS )
+	## Vector of Scalars
+	## Decode and return all elements of scalars as an [PackedInt32Array]
+	func scalars() -> PackedInt32Array:
+		var array_start: int = get_field_start( VT_SCALARS )
 		if not array_start: return []
 		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array_end: int = array_start + array_size * 8
-		return _fb_bytes.slice( array_start, array_end ).to_int64_array()
+		var array_end: int = array_start + array_size * 4
+		return _fb_bytes.slice( array_start, array_end ).to_int32_array()
 
-	func ids_at( index: int ) -> int:
-		var array_start: int = get_field_start( vtable.VT_IDS )
-		if not array_start: return 0
+	## Vector of Scalars
+	## Access elements of scalars by [param index]
+	func scalars_at( index: int ) -> int:
+		var array_start: int = get_field_start( VT_SCALARS )
+		assert(array_start, 'access to invalid vector of enum')
 		array_start += 4
-		return _fb_bytes.decode_s64( array_start + index * 8)
+		return _fb_bytes.decode_s32( array_start + index * 4)
 
-	# [================[ items ]================]
-	func items_size() -> int:
-		var array_start: int = get_field_start( vtable.VT_ITEMS )
+	## Vector of Enums
+	func enums_size() -> int:
+		var array_start: int = get_field_start( VT_ENUMS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
-	func items() -> Array:
-		var array_start: int = get_field_start( vtable.VT_ITEMS )
+	## Vector of Enums
+	## Decode and return all elements of enums as an [PackedByteArray]
+	func enums() -> PackedByteArray:
+		var array_start: int = get_field_start( VT_ENUMS )
 		if not array_start: return []
 		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
-		var array: Array
+		return _fb_bytes.slice( array_start, array_start + array_size )
+
+	## Vector of Enums
+	## Access elements of enums by [param index]
+	func enums_at( index: int ) -> TestEnum:
+		var array_start: int = get_field_start( VT_ENUMS )
+		assert(array_start, 'access to invalid vector of enum')
+		array_start += 4
+		return _fb_bytes[array_start + index]
+
+	## Vector of Strings
+	func strings_size() -> int:
+		var array_start: int = get_field_start( VT_STRINGS )
+		if not array_start: return 0
+		return _fb_bytes.decode_u32( array_start )
+
+	## Vector of Strings
+	func strings() -> PackedStringArray:
+		var array_start: int = get_field_start( VT_STRINGS )
+		if not array_start: return []
+		var array_size: int = _fb_bytes.decode_u32( array_start )
+		array_start += 4
+		var array: PackedStringArray
 		if array.resize( array_size ) != OK: return []
 		for i: int in array_size:
-			var p: int = array_start + i * 4
-			array[i] = _vector_schema.Item.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+			var idx: int = array_start + i * 4
+			var element_start: int = idx + _fb_bytes.decode_u32( idx )
+			array[i] = decode_String( element_start )
 		return array
 
-	func items_at( idx: int, into: Item = null ) -> Item:
-		var field_start: int = get_field_start( vtable.VT_ITEMS )
+	## Vector of Strings
+	func strings_at( index: int ) -> String:
+		var array_start: int = get_field_start( VT_STRINGS )
+		if not array_start: return ''
+		array_start += 4
+		var string_start: int = array_start + index * 4
+		string_start += _fb_bytes.decode_u32( string_start )
+		return decode_String( string_start )
+
+	## Vector of Structs
+	func structs_size() -> int:
+		var array_start: int = get_field_start( VT_STRUCTS )
+		if not array_start: return 0
+		return _fb_bytes.decode_u32( array_start )
+
+	## Vector of Structs
+	func structs() -> Array[TestStruct]:
+		var field_start: int = get_field_start( VT_STRUCTS )
+		if not field_start: return []
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		var array_start:int = field_start + 4
+		var array: Array[TestStruct]
+		if array.resize( array_size ) != OK: return []
+		for i: int in array_size:
+			array[i] = _vector_schema.TestStruct.new(_fb_bytes, array_start + i * 8 )
+		return array
+
+	## Vector of Structs
+	func structs_at( idx: int, into: TestStruct = null ) -> TestStruct:
+		var field_start: int = get_field_start( VT_STRUCTS )
 		assert(field_start, 'Field is not present in buffer' )
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
@@ -132,38 +281,172 @@ class Bag extends FlatBuffer:
 			into._fb_bytes = _fb_bytes
 			into._fb_start = relative_offset
 			return into
-		return _vector_schema.Item.new( _fb_bytes, offset )
+		return _vector_schema.TestStruct.new( _fb_bytes, offset )
+
+	## Vector of Tables
+	func tables_size() -> int:
+		var array_start: int = get_field_start( VT_TABLES )
+		if not array_start: return 0
+		return _fb_bytes.decode_u32( array_start )
+
+	## Vector of Tables
+	func tables() -> Array:
+		var array_start: int = get_field_start( VT_TABLES )
+		if not array_start: return []
+		var array_size: int = _fb_bytes.decode_u32( array_start )
+		array_start += 4
+		var array: Array
+		if array.resize( array_size ) != OK: return []
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _vector_schema.TestTableA.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+		return array
+
+	## Vector of Tables
+	func tables_at( idx: int, into: TestTableA = null ) -> TestTableA:
+		var field_start: int = get_field_start( VT_TABLES )
+		assert(field_start, 'Field is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4
+		var relative_offset: int = array_start + idx * 4
+		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
+		if into:
+			into._fb_bytes = _fb_bytes
+			into._fb_start = relative_offset
+			return into
+		return _vector_schema.TestTableA.new( _fb_bytes, offset )
+
+	## Return true if single is present in the buffer, else false
+	func single_is_present() -> bool:
+		return get_field_offset( VT_SINGLE )
+
+	## TODO: Write a doc comment for the union_type accessor
+	func single_type() -> TestUnion:
+		var foffset: int = get_field_offset( VT_SINGLE_TYPE )
+		if not foffset: return 0 as TestUnion
+		var decoded: TestUnion = _fb_bytes.decode_u8( _fb_start + foffset )
+		return decoded
+
+	## Temporary Union to check the differences between vectors and non vectors
+	func single() -> Variant:
+		var field_start: int = get_field_start( VT_SINGLE )
+		if not field_start: return null
+		match( single_type() ):
+			_vector_schema.TestUnion.TEST_TABLE_A:
+				return _vector_schema.TestTableA.new( _fb_bytes, field_start )
+			_vector_schema.TestUnion.TEST_TABLE_B:
+				return _vector_schema.TestTableB.new( _fb_bytes, field_start )
+		return null
+
+	## Decode and return all elements of unions_type as an [Array]
+	func unions_type() -> Array:
+		var array_start: int = get_field_start( VT_UNIONS_TYPE )
+		if not array_start: return []
+		var array_size: int = _fb_bytes.decode_u32( array_start )
+		array_start += 4
+		return _fb_bytes.slice( array_start, array_start + array_size )
+
+	## Access elements of unions_type by [param index]
+	func unions_type_at( index: int ) -> TestUnion:
+		var array_start: int = get_field_start( VT_UNIONS_TYPE )
+		assert(array_start, 'access to invalid vector of enum')
+		array_start += 4
+		return _fb_bytes[array_start + index]
+
+	## Vector of Unions
+	func unions_size() -> int:
+		var array_start: int = get_field_start( VT_UNIONS )
+		if not array_start: return 0
+		return _fb_bytes.decode_u32( array_start )
+
+	## Vector of Unions
+	# TODO GenFieldVectorUnionGet
+	# unions: Array
+
+	## Vector of Unions
+	# TODO GenFieldVectorUnionAt
+	# unions: Array
 
 
-class BagBuilder extends RefCounted:
+## TODO: Write a Doc Comment for the builder
+class RootTableBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	func add_ids( ids_offset: int ) -> void:
-		fbb_.add_offset( Bag.vtable.VT_IDS, ids_offset )
+	## TODO: Write a Doc Comment for the builder's add functions
+	func add_scalars( scalars_offset: int ) -> void:
+		fbb_.add_offset( RootTable.VT_SCALARS, scalars_offset )
 
-	func add_items( items_offset: int ) -> void:
-		fbb_.add_offset( Bag.vtable.VT_ITEMS, items_offset )
+	## TODO: Write a Doc Comment for the builder's add functions
+	func add_enums( enums_offset: int ) -> void:
+		fbb_.add_offset( RootTable.VT_ENUMS, enums_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
+	func add_strings( strings_offset: int ) -> void:
+		fbb_.add_offset( RootTable.VT_STRINGS, strings_offset )
+
+	## TODO: Write a Doc Comment for the builder's add functions
+	func add_structs( structs_offset: int ) -> void:
+		fbb_.add_offset( RootTable.VT_STRUCTS, structs_offset )
+
+	## TODO: Write a Doc Comment for the builder's add functions
+	func add_tables( tables_offset: int ) -> void:
+		fbb_.add_offset( RootTable.VT_TABLES, tables_offset )
+
+	## TODO: Write a Doc Comment for the builder's add functions
+	func add_single_type( single_type: TestUnion ) -> void:
+		fbb_.add_element_ubyte( RootTable.VT_SINGLE_TYPE, single_type )
+
+	## TODO: Write a Doc Comment for the builder's add functions
+	func add_single( single_offset: int ) -> void:
+		fbb_.add_offset( RootTable.VT_SINGLE, single_offset )
+
+	## TODO: Write a Doc Comment for the builder's add functions
+	func add_unions_type( unions_type_offset: int ) -> void:
+		fbb_.add_offset( RootTable.VT_UNIONS_TYPE, unions_type_offset )
+
+	## TODO: Write a Doc Comment for the builder's add functions
+	func add_unions( unions_offset: int ) -> void:
+		fbb_.add_offset( RootTable.VT_UNIONS, unions_offset )
+
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-
-static func create_Bag( _fbb: FlatBufferBuilder,
-		ids: int,
-		items: int ) -> int :
-	var builder: BagBuilder = BagBuilder.new( _fbb );
-	builder.add_items( items );
-	builder.add_ids( ids );
+## TODO: Write a Doc Comment for the static table create function
+static func create_RootTable( _fbb: FlatBufferBuilder,
+		scalars: int,
+		enums: int,
+		strings: int,
+		structs: int,
+		tables: int,
+		single_type: TestUnion,
+		single: int,
+		unions_type: int,
+		unions: int ) -> int :
+	var builder: RootTableBuilder = RootTableBuilder.new( _fbb );
+	builder.add_unions( unions );
+	builder.add_unions_type( unions_type );
+	builder.add_single( single );
+	builder.add_tables( tables );
+	builder.add_structs( structs );
+	builder.add_strings( strings );
+	builder.add_enums( enums );
+	builder.add_scalars( scalars );
+	builder.add_single_type( single_type );
 	return builder.finish();
 
-static func get_Bag( _bytes: PackedByteArray ) -> Bag:
+## TODO: create a doc comment for the get_RootTable function
+static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
 	assert(not _bytes.is_empty())
-	return Bag.new(_bytes, _bytes.decode_u32(0))
-
+	return RootTable.new(_bytes, _bytes.decode_u32(0))

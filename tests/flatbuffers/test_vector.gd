@@ -36,7 +36,6 @@ func _run_test() -> int:
 	#     importer for type '' not found.
 	efs.reimport_files([generated_file, strategy_file])
 
-
 	## Because we cannot pre-load a script that hasnt been generated yet, it
 	## means that we have no access to types. But I can load and run a script
 	## that does pre-load the generated script, because when it is loaded it will
@@ -54,6 +53,5 @@ func _run_test() -> int:
 		tso.flow(combo)
 	TEST_EQ(tso.get_max_combos(), counter,
 		"The expected number of combinations and the counter should match")
-
 
 	return runcode

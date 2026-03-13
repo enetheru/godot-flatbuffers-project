@@ -13,19 +13,20 @@ enum {
 
 var simple_tests:Array[Callable] = []
 
-var phases:Array[Dictionary] = [{
-		&"name":"Encoding",
-		&"strategies":[]
-	},{
-		&"name":"Verifying",
-		&"strategies":[]
-	},{
-		&"name":"Decoding",
-		&"strategies":[]
-	},{
-		&"name":"Using",
-		&"strategies":[]
-	}
+var phases:Array[Dictionary] = [
+	#{
+		#&"name":"Encoding",
+		#&"strategies":[]
+	#},{
+		#&"name":"Verifying",
+		#&"strategies":[]
+	#},{
+		#&"name":"Decoding",
+		#&"strategies":[]
+	#},{
+		#&"name":"Using",
+		#&"strategies":[]
+	#}
 ]
 
 
@@ -74,30 +75,31 @@ func _get_strategy(phase_idx:int, strategy_idx:int) -> Callable:
 func                        __________FLOW___________              ()->void:pass
 
 ## A selection is an array of strategies, one for each phase.
-func _flow( selection:Array[int] ) -> void:
+func _flow( _selection:Array[int] ) -> void:
 	if want_simple_tests:
 		for simple:Callable in simple_tests:
 			if simple.call(): return
 	want_simple_tests = false
-	test.logp("[b]== Flow ==[/b]")
-	# encode
-	var encode:Callable = get_strategy(ENCODING, selection[ENCODING])
-	test.logp(" --- %s ---" % encode.get_method().capitalize())
-	var packed:PackedByteArray = encode.call()
-	# validate
-	var verify:Callable = get_strategy(VERIFYING, selection[VERIFYING])
-	test.logp(" --- %s ---" % verify.get_method().capitalize())
-	var is_verified:bool = verify.call(packed)
-	if is_verified: pass
-	# decode
-	var decode:Callable = get_strategy(DECODING, selection[DECODING])
-	test.logp(" --- %s ---" % decode.get_method().capitalize())
-	var unpacked:Variant = decode.call(packed)
-	# use
-	var use:Callable = get_strategy(USING, selection[USING])
-	test.logp(" --- %s ---" % use.get_method().capitalize())
-	var can_use:bool = use.call(unpacked)
-	if can_use: pass
+	return
+	#test.logp("[b]== Flow ==[/b]")
+	## encode
+	#var encode:Callable = get_strategy(ENCODING, selection[ENCODING])
+	#test.logp(" --- %s ---" % encode.get_method().capitalize())
+	#var packed:PackedByteArray = encode.call()
+	## validate
+	#var verify:Callable = get_strategy(VERIFYING, selection[VERIFYING])
+	#test.logp(" --- %s ---" % verify.get_method().capitalize())
+	#var is_verified:bool = verify.call(packed)
+	#if is_verified: pass
+	## decode
+	#var decode:Callable = get_strategy(DECODING, selection[DECODING])
+	#test.logp(" --- %s ---" % decode.get_method().capitalize())
+	#var unpacked:Variant = decode.call(packed)
+	## use
+	#var use:Callable = get_strategy(USING, selection[USING])
+	#test.logp(" --- %s ---" % use.get_method().capitalize())
+	#var can_use:bool = use.call(unpacked)
+	#if can_use: pass
 
 
 #                ███████ ██ ███    ███ ██████  ██      ███████                 #

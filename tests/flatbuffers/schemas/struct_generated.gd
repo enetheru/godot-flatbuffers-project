@@ -6,37 +6,35 @@
 @warning_ignore_start('unsafe_call_argument')
 
 class CustomStruct extends FlatBuffer:
-	const size: int = 24
+	const _fb_struct_size: int = 24
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		if bytes_.is_empty(): 
 			_fb_bytes = PackedByteArray()
-			_fb_bytes.resize( size )
+			_fb_bytes.resize( _fb_struct_size )
 		else:
-			assert(start_ + size <= bytes_.size())
+			assert(start_ + _fb_struct_size <= bytes_.size())
 			_fb_bytes = bytes_; _fb_start = start_
 
-	# [================[ is_true ]================]
 	var is_true: bool :
 		get(): return _fb_bytes.decode_u8(_fb_start + 0)
 		set(v): _fb_bytes.encode_u8(_fb_start + 0, v)
 
-	# [================[ x ]================]
 	var x: int :
 		get(): return _fb_bytes.decode_s32(_fb_start + 4)
 		set(v): _fb_bytes.encode_s32(_fb_start + 4, v)
 
-	# [================[ y ]================]
 	var y: float :
 		get(): return _fb_bytes.decode_float(_fb_start + 8)
 		set(v): _fb_bytes.encode_float(_fb_start + 8, v)
 
-	# [================[ w ]================]
 	var w: Vector3 :
 		get(): return decode_Vector3(_fb_start + 12)
 		set(v): encode_Vector3(_fb_start + 12, v)
 
 
+## TODO: create a useful doc comment for the static creation function
 static func create_CustomStruct(
 		_is_true: bool,
 		_x: int,
@@ -52,54 +50,59 @@ static func create_CustomStruct(
 class RootTable extends FlatBuffer:
 	const _struct_schema = preload( 'struct_generated.gd' )
 
-	enum vtable{
+	enum {
 		VT_CUSTOM_STRUCT = 4,
 		VT_Z = 6
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
+	## Return true if custom_struct is present in the buffer, else false
 	func custom_struct_is_present() -> bool:
-		return get_field_offset( vtable.VT_CUSTOM_STRUCT )
+		return get_field_offset( VT_CUSTOM_STRUCT )
 
-	func z_is_present() -> bool:
-		return get_field_offset( vtable.VT_Z )
-
-	# [================[ custom_struct ]================]
 	func custom_struct() -> CustomStruct:
-		var field_offset: int = get_field_offset( vtable.VT_CUSTOM_STRUCT )
+		var field_offset: int = get_field_offset( VT_CUSTOM_STRUCT )
 		if not field_offset: return null
 		return _struct_schema.CustomStruct.new( _fb_bytes, _fb_start + field_offset )
 
-	# [================[ z ]================]
+	## Return true if z is present in the buffer, else false
+	func z_is_present() -> bool:
+		return get_field_offset( VT_Z )
+
 	func z() -> int:
-		var foffset: int = get_field_offset( vtable.VT_Z )
+		var foffset: int = get_field_offset( VT_Z )
 		if not foffset: return 0
 		return _fb_bytes.decode_s32( _fb_start + foffset )
 
 
+## TODO: Write a Doc Comment for the builder
 class RootTableBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_custom_struct( custom_struct: CustomStruct ) -> void:
-		fbb_.add_bytes( RootTable.vtable.VT_CUSTOM_STRUCT, custom_struct._fb_bytes ) 
+		fbb_.add_bytes( RootTable.VT_CUSTOM_STRUCT, custom_struct._fb_bytes ) 
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_z( z: int ) -> void:
-		fbb_.add_element_int_default( RootTable.vtable.VT_Z, z, 0 )
+		fbb_.add_element_int_default( RootTable.VT_Z, z, 0 )
 
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-
+## TODO: Write a Doc Comment for the static table create function
 static func create_RootTable( _fbb: FlatBufferBuilder,
 		custom_struct: CustomStruct,
 		z: int ) -> int :
@@ -108,6 +111,7 @@ static func create_RootTable( _fbb: FlatBufferBuilder,
 	builder.add_custom_struct( custom_struct );
 	return builder.finish();
 
+## TODO: create a doc comment for the get_RootTable function
 static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
 	assert(not _bytes.is_empty())
 	return RootTable.new(_bytes, _bytes.decode_u32(0))

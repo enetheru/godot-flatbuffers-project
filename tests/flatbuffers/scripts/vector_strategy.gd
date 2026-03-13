@@ -4,6 +4,12 @@ extends TestStrategy
 const Print = preload("uid://cbluyr4ifn8g3")
 const Schema = preload("../schemas/vector_generated.gd")
 
+const TestEnum = Schema.TestEnum
+const TestStruct = Schema.TestStruct
+const TestTableA = Schema.TestTableA
+const TestTableB = Schema.TestTableB
+const TestUnion = Schema.TestUnion
+
 const u32 = TestBase.u32
 const u32_ = TestBase.u32_
 const u64 = TestBase.u64
@@ -41,12 +47,33 @@ enum ItemType {
 }
 
 class Initial:
-	static var items:Array[Dictionary] = [
-		{ &'id': 123, &'type':ItemType.DEFAULT},
-		{ &'id': 456, &'type':ItemType.WEAPON},
-		{ &'id': 789, &'type':ItemType.FOOD},
+
+	# Vector of Scalars
+	var scalars:Array = [0,1,2,3,4,5,6,7,8,9]
+
+	# Vector of Enums
+	var enums:Array[TestEnum] = [TestEnum.ZERO, TestEnum.ONE, TestEnum.ZERO ]
+
+	# Vector of Strings
+	var strings:Array[String] = ["An", "Array", "Of", "Strings"]
+
+	# Vector of Structs
+	var structs:Array[TestStruct] = [
+		Schema.create_TestStruct(1,2),
+		Schema.create_TestStruct(3,4),
+		Schema.create_TestStruct(5,6),
 		]
 
+	# Vector of Tables
+	var tables:Array[TestTableA] = []
+
+	# Vector of Unions
+	var unions:Array[TestUnion] = []
+
+static var initial:Initial
+
+func initialise() -> void:
+	initial = Initial.new()
 
 
 
@@ -116,35 +143,40 @@ func _flow( selection:Array[int] ) -> void:
 #               ██      ██   ██ ██   ██ ███████ ███████ ███████                #
 func                        __________PHASES_________              ()->void:pass
 
+
 func encode_a() -> PackedByteArray:
-	test.logd( "RootTable Check" )
 	# Reset the builder
 	var fbb := FlatBufferBuilder.create(1)
 
-	# Use these two arrays to accumulate data
-	var item_ids:PackedInt64Array = []
-	var item_offsets:PackedInt32Array = []
+	#scalars:[int];
+	var scalars_ofs:int = fbb.create_PackedInt32Array(initial.scalars)
 
-	# Resize them to the correct dimensions.
-	if item_ids.resize(Initial.items.size()) != OK:
-		printerr(Print.get_call_site(), "\n\t unable to resize array")
+	#enums:[TestEnum];
+	# FIXME It's not straight forward what data type i need to use when packing
+	# enums. I wonder if I can make the builder a little more friendly to use.
+	var enums_ofs:int = fbb.create_PackedByteArray(initial.enums)
 
-	if item_offsets.resize(Initial.items.size()) != OK:
-		printerr(Print.get_call_site(), "\n\t unable to resize array")
+	#strings:[string];
+	var strings_ofs:int = fbb.create_PackedStringArray(initial.strings)
 
-	# Fill them with the inforamtion
-	for i:int in Initial.items.size():
-		var item:Dictionary = Initial.items[i]
-		item_ids[i] = item.id
-		var type:int = item.type
-		item_offsets[i] = Schema.create_Item(fbb, item_ids[i], type)
+	#structs:[TestStruct];
+	#var structs_ofs:int = fbb.create_PackedByteArray()
 
-	# encode them into the buffer.
-	var item_ids_offset:int = fbb.create_PackedInt64Array(item_ids)
-	var items_offset:int = fbb.create_vector_offset(item_offsets)
+	# Vector of Tables
+	#tables:[TestTableA];
 
-	var bag_ofs:int = Schema.create_Bag(fbb, item_ids_offset, items_offset)
-	fbb.finish(bag_ofs)
+	# Temporary Union to check the differences between vectors and non vectors
+	#single:TestUnion;
+
+	# Vector of Unions
+	#unions:[TestUnion];
+
+	var rtb := Schema.RootTableBuilder.new(fbb)
+	rtb.add_scalars(scalars_ofs)
+	rtb.add_enums(enums_ofs)
+	rtb.add_strings(strings_ofs)
+	var rtb_ofs:int = rtb.finish()
+	fbb.finish(rtb_ofs)
 
 	return fbb.to_packed_byte_array()
 
@@ -160,44 +192,56 @@ func verify_a( _buf:PackedByteArray ) -> int:
 
 
 func decode_a(buf:PackedByteArray) -> Variant:
-	return Schema.get_Bag(buf)
+	return Schema.get_RootTable(buf)
 
 
 func use_a( variant:Variant ) -> int:
-	# bag is the root of this buffer.
-	var bag:Schema.Bag = variant
+	## bag is the root of this buffer.
+	var rtb:Schema.RootTable = variant
 
-	test.TEST_EQ(Initial.items.size(), bag.ids_size(),
-		"size of ids should match the size of the initial items list.")
-	test.TEST_EQ( Initial.items.size(), bag.items_size(),
-		"size of items should match the size of the initial items list.")
+	# vector of scalars
+	#if test.TEST_TRUE_RET(rtb.scalars_is_present()):
+	var rtb_scalars:Array = rtb.scalars() # transform to basic array so we can compare
+	test.TEST_EQ(initial.scalars, rtb_scalars,
+		"contents of initial scalars should match the decoded scalars()")
 
-	var bag_ids:PackedInt64Array = bag.ids()
-	var init_ids:PackedInt64Array = Initial.items.map(
-		func(d:Dictionary)->int:
-			return d.id)
+	# vector of enum
+	var rtb_enums:Array = rtb.enums() # transform to basic array so we can compare
+	test.TEST_EQ(initial.enums, rtb_enums,
+		"contents of initial enums should match the decoded enums()")
 
-	test.TEST_EQ(init_ids, bag_ids, "id's should match")
+	# vector of strings
+	if test.TEST_EQ_RET(initial.strings.size(), rtb.strings_size(),
+			"size of initial strings should match the decoded strings_size()"):
+		for i in initial.strings.size():
+			test.TEST_EQ(initial.strings[i], rtb.strings_at(i),
+					"strings_at(%d) should match initial.strings[%d]" % [i,i])
 
-	for item:Schema.Item in bag.items():
-		test.TEST_TRUE(item.id() in bag_ids,
-			"item id should be in the bag's id list")
-		test.TEST_TRUE(item.id() in init_ids,
-			"item id should be in the initial id list")
-		var item_idx:int = Initial.items.find_custom(
-			func(i:Dictionary)->bool:
-				return i.id == item.id())
-		if test.TEST_OP_RET(item_idx, OP_GREATER_EQUAL, 0,
-			"index is invalid"):
-				continue
-		var initial_item:Dictionary = Initial.items[item_idx]
+	# vector of structs
+	print( rtb.structs_size() )
+	print(initial.structs.size())
+	if test.TEST_EQ_RET(initial.structs.size(), rtb.structs_size(),
+			"size of initial structs should match the decoded structs_size()"):
+				pass
+	#for item:Schema.Item in bag.items():
+		#test.TEST_TRUE(item.id() in bag_ids,
+			#"item id should be in the bag's id list")
+		#test.TEST_TRUE(item.id() in init_ids,
+			#"item id should be in the initial id list")
+		#var item_idx:int = Initial.items.find_custom(
+			#func(i:Dictionary)->bool:
+				#return i.id == item.id())
+		#if test.TEST_OP_RET(item_idx, OP_GREATER_EQUAL, 0,
+			#"index is invalid"):
+				#continue
+		#var initial_item:Dictionary = Initial.items[item_idx]
+#
+		#test.TEST_EQ(initial_item.id, item.id(),
+			#"item id should match intial item")
+		#test.TEST_EQ(initial_item.type, item.type(),
+			#"item type should match initial item")
 
-		test.TEST_EQ(initial_item.id, item.id(),
-			"item id should match intial item")
-		test.TEST_EQ(initial_item.type, item.type(),
-			"item type should match initial item")
-
-	return TestBase.RetCode.TEST_OK
+	return test.runcode
 
 
 func                        __BoilerPlate____________              ()->void:pass
@@ -216,5 +260,6 @@ func                        __BoilerPlate____________              ()->void:pass
 var test:TestBase
 func _init(initiator:TestBase) -> void:
 	test = initiator
+	initialise()
 
 #endregion BoilerPlate

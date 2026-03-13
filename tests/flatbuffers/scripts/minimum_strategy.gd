@@ -16,7 +16,7 @@ enum {
 
 var phases:Array[Dictionary] = [{
 		&"name":"Encoding",
-		&"strategies":[encode_a, encode_b]
+		&"strategies":[encode_function, encode_builder, encode_manual]
 	},{
 		&"name":"Verifying",
 		&"strategies":[verify_a]
@@ -35,6 +35,15 @@ var phases:Array[Dictionary] = [{
 #     ██    ██  ██  ██  ██      ██   ██ ██   ██ ██ ██   ██ ██           ██     #
 #      ██████    ████   ███████ ██   ██ ██   ██ ██ ██████  ███████ ███████     #
 func                        ________OVERRIDES________              ()->void:pass
+
+## Because we cannot pre-load a script that hasnt been generated yet, the test
+## script must load this script after the generated script has been created so
+## that this script can preload and use it properly.
+## It's a bit convoluted yes.
+var test:TestBase
+func _init(initiator:TestBase) -> void:
+	test = initiator
+
 
 func _get_phase_count() -> int:
 	return phases.size()
@@ -99,8 +108,31 @@ func _flow( selection:Array[int] ) -> void:
 #               ██      ██   ██ ██   ██ ███████ ███████ ███████                #
 func                        __________PHASES_________              ()->void:pass
 
+func                        __Encoding_______________              ()->void:pass
+#region Encoding
+#MARK: Encoding
+##                                        [br]
+## │ ___                 _ _              [br]
+## │| __|_ _  __ ___  __| (_)_ _  __ _    [br]
+## │| _|| ' \/ _/ _ \/ _` | | ' \/ _` |   [br]
+## │|___|_||_\__\___/\__,_|_|_||_\__, |   [br]
+## ╰─────────────────────────────|___/─── [br]
+## Encoding By-Line
+##
+## Encoding Description
+
+## Encode the object without the Generated script
+func encode_manual() -> PackedByteArray:
+	var fbb := FlatBufferBuilder.new()
+	var ts:int = fbb.start_table()
+	fbb.add_element_int(4, value)
+	var te:int = fbb.end_table(ts)
+	fbb.finish(te)
+	return fbb.to_packed_byte_array()
+
+
 ## encoding method a, use the Schema.create_ function
-func encode_a() -> PackedByteArray:
+func encode_function() -> PackedByteArray:
 	test.logd("starting value: %X" % value )
 	var fbb := FlatBufferBuilder.new()
 	var rt_offset:int = Schema.create_Minimum(fbb, value )
@@ -112,7 +144,7 @@ func encode_a() -> PackedByteArray:
 
 
 ## encoding method a, use the Schema.*Builder helper class
-func encode_b() -> PackedByteArray:
+func encode_builder() -> PackedByteArray:
 	test.logd("starting value: %X" % value )
 	var fbb := FlatBufferBuilder.new()
 	var mbb := Schema.MinimumBuilder.new(fbb)
@@ -124,6 +156,20 @@ func encode_b() -> PackedByteArray:
 	test.logd("bytes: %s" % TestBase.bytes_view(bytes) )
 	return bytes
 
+#endregion encoding
+
+
+func                        __Verification___________              ()->void:pass
+#region Verification
+#MARK: Verification
+## │__   __       _  __ _         _   _             [br]
+## │\ \ / /__ _ _(_)/ _(_)__ __ _| |_(_)___ _ _     [br]
+## │ \ V / -_) '_| |  _| / _/ _` |  _| / _ \ ' \    [br]
+## │  \_/\___|_| |_|_| |_\__\__,_|\__|_\___/_||_|   [br]
+## ╰─────────────────────────────────────────────── [br]
+## Verification By-Line
+##
+## Verification Description
 
 func verify_a( _buf:PackedByteArray ) -> int:
 	#logp("[b]== Verification ==[/b]")
@@ -134,34 +180,45 @@ func verify_a( _buf:PackedByteArray ) -> int:
 	# TEST_TRUE(fb_table.verify(verifier), "verifying fb_table")
 	return TestBase.RetCode.TEST_OK
 
+#endregion Verification
+
+
+func                        __Decoding_______________              ()->void:pass
+#region Decoding
+#MARK: Decoding
+##                                        [br]
+## │ ___                 _ _              [br]
+## │|   \ ___ __ ___  __| (_)_ _  __ _    [br]
+## │| |) / -_) _/ _ \/ _` | | ' \/ _` |   [br]
+## │|___/\___\__\___/\__,_|_|_||_\__, |   [br]
+## ╰─────────────────────────────|___/─── [br]
+## Decoding By-Line
+##
+## Decoding Description
 
 func decode_a( buf:PackedByteArray ) -> Variant:
 	var decoded:Schema.Minimum = Schema.get_Minimum(buf)
 	return decoded
 
+#endregion Decoding
+
+
+func                        __Usage__________________              ()->void:pass
+#region Usage
+#MARK: Usage
+##                              [br]
+## │ _   _                      [br]
+## │| | | |___ __ _ __ _ ___    [br]
+## │| |_| (_-</ _` / _` / -_)   [br]
+## │ \___//__/\__,_\__, \___|   [br]
+## ╰───────────────|___/─────── [br]
+## Usage By-Line
+##
+## Usage Description
 
 func use_a( variant:Variant ) -> int:
 	var decoded:Schema.Minimum = variant
 	test.TEST_EQ(value, decoded.my_field(), "rt.my_field()")
 	test.logd("decoded value: %X" % decoded.my_field() )
 	return TestBase.RetCode.TEST_OK
-
-
-func                        __BoilerPlate____________              ()->void:pass
-#region BoilerPlate
-#MARK: BoilerPlate
-## │ ___      _ _         ___ _      _          [br]
-## │| _ ) ___(_) |___ _ _| _ \ |__ _| |_ ___    [br]
-## │| _ \/ _ \ | / -_) '_|  _/ / _` |  _/ -_)   [br]
-## │|___/\___/_|_\___|_| |_| |_\__,_|\__\___|   [br]
-## ╰─────────────────────────────────────────── [br]
-## Because we cannot pre-load a script that hasnt been generated yet, the test
-## script must load this script after the generated script has been created so
-## that this script can preload and use it properly.
-## It's a bit convoluted yes.
-
-var test:TestBase
-func _init(initiator:TestBase) -> void:
-	test = initiator
-
-#endregion BoilerPlate
+#endregion Usage
