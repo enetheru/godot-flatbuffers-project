@@ -57,8 +57,15 @@ class Initial:
 	# Vector of Strings
 	var strings:Array[String] = ["An", "Array", "Of", "Strings"]
 
-	# Vector of Structs
-	var structs:Array[TestStruct] = [
+	# Vector of Godot Structs
+	var godot_structs:Array[Vector3] = [
+		Vector3(1,2,3),
+		Vector3(4,5,6),
+		Vector3(7,8,9),
+		]
+
+	# Vector of Custom Structs
+	var custom_structs:Array[TestStruct] = [
 		Schema.create_TestStruct(1,2),
 		Schema.create_TestStruct(3,4),
 		Schema.create_TestStruct(5,6),
@@ -159,8 +166,12 @@ func encode_a() -> PackedByteArray:
 	#strings:[string];
 	var strings_ofs:int = fbb.create_PackedStringArray(initial.strings)
 
-	#structs:[TestStruct];
-	#var structs_ofs:int = fbb.create_PackedByteArray()
+	#godot_structs:[Vector3];
+	var godot_structs_ofs:int = fbb.create_PackedVector3Array(initial.godot_structs)
+
+	#custom_structs:[TestStruct];
+	var custom_structs_ofs:int = fbb.create_vector_of_custom_struct(
+		initial.custom_structs, Schema.TestStruct._fb_struct_size )
 
 	# Vector of Tables
 	#tables:[TestTableA];
@@ -175,6 +186,8 @@ func encode_a() -> PackedByteArray:
 	rtb.add_scalars(scalars_ofs)
 	rtb.add_enums(enums_ofs)
 	rtb.add_strings(strings_ofs)
+	rtb.add_godot_structs(godot_structs_ofs)
+	rtb.add_custom_structs(custom_structs_ofs)
 	var rtb_ofs:int = rtb.finish()
 	fbb.finish(rtb_ofs)
 
@@ -218,28 +231,24 @@ func use_a( variant:Variant ) -> int:
 					"strings_at(%d) should match initial.strings[%d]" % [i,i])
 
 	# vector of structs
-	print( rtb.structs_size() )
-	print(initial.structs.size())
-	if test.TEST_EQ_RET(initial.structs.size(), rtb.structs_size(),
-			"size of initial structs should match the decoded structs_size()"):
-				pass
-	#for item:Schema.Item in bag.items():
-		#test.TEST_TRUE(item.id() in bag_ids,
-			#"item id should be in the bag's id list")
-		#test.TEST_TRUE(item.id() in init_ids,
-			#"item id should be in the initial id list")
-		#var item_idx:int = Initial.items.find_custom(
-			#func(i:Dictionary)->bool:
-				#return i.id == item.id())
-		#if test.TEST_OP_RET(item_idx, OP_GREATER_EQUAL, 0,
-			#"index is invalid"):
-				#continue
-		#var initial_item:Dictionary = Initial.items[item_idx]
-#
-		#test.TEST_EQ(initial_item.id, item.id(),
-			#"item id should match intial item")
-		#test.TEST_EQ(initial_item.type, item.type(),
-			#"item type should match initial item")
+	if test.TEST_EQ_RET(initial.godot_structs.size(), rtb.godot_structs_size(),
+			"size of initial godot_structs should match the decoded godot_structs_size()"):
+		for i in initial.godot_structs.size():
+			test.TEST_EQ(initial.godot_structs[i], rtb.godot_structs_at(i),
+					"godot_structs_at(%d) should match initial.godot_structs[%d]" % [i,i])
+
+	# vector of structs
+	if test.TEST_EQ_RET(initial.custom_structs.size(), rtb.custom_structs_size(),
+			"size of initial custom_structs should match the decoded custom_structs_size()"):
+		pass
+		for i in initial.custom_structs.size():
+			var initial_custom_struct:Schema.TestStruct = initial.custom_structs[i]
+			var decoded_custom_struct:Schema.TestStruct = rtb.custom_structs_at(i)
+			test.TEST_EQ(initial_custom_struct.a, decoded_custom_struct.a,
+					"custom_structs_at(%d).a should match initial.custom_structs[%d].a" % [i,i])
+			test.TEST_EQ(initial_custom_struct.b, decoded_custom_struct.b,
+					"custom_structs_at(%d).b should match initial.custom_structs[%d].b" % [i,i])
+
 
 	return test.runcode
 

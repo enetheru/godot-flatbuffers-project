@@ -28,7 +28,7 @@ class TestStruct extends FlatBuffer:
 
 	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		if bytes_.is_empty():
+		if bytes_.is_empty(): 
 			_fb_bytes = PackedByteArray()
 			_fb_bytes.resize( _fb_struct_size )
 		else:
@@ -159,12 +159,13 @@ class RootTable extends FlatBuffer:
 		VT_SCALARS = 4,
 		VT_ENUMS = 6,
 		VT_STRINGS = 8,
-		VT_STRUCTS = 10,
-		VT_TABLES = 12,
-		VT_SINGLE_TYPE = 14,
-		VT_SINGLE = 16,
-		VT_UNIONS_TYPE = 18,
-		VT_UNIONS = 20
+		VT_GODOT_STRUCTS = 10,
+		VT_CUSTOM_STRUCTS = 12,
+		VT_TABLES = 14,
+		VT_SINGLE_TYPE = 16,
+		VT_SINGLE = 18,
+		VT_UNIONS_TYPE = 20,
+		VT_UNIONS = 22
 	}
 
 	## TODO: create a useful doc comment for the init function
@@ -247,15 +248,44 @@ class RootTable extends FlatBuffer:
 		string_start += _fb_bytes.decode_u32( string_start )
 		return decode_String( string_start )
 
-	## Vector of Structs
-	func structs_size() -> int:
-		var array_start: int = get_field_start( VT_STRUCTS )
+	## Vector of Godot Structs
+	func godot_structs_size() -> int:
+		var array_start: int = get_field_start( VT_GODOT_STRUCTS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
-	## Vector of Structs
-	func structs() -> Array[TestStruct]:
-		var field_start: int = get_field_start( VT_STRUCTS )
+	## Vector of Godot Structs
+	func godot_structs() -> PackedVector3Array:
+		var field_start: int = get_field_start( VT_GODOT_STRUCTS )
+		if not field_start: return []
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		var array_start:int = field_start + 4
+		return _fb_bytes.slice(
+				array_start, array_start + array_size * 12 ) \
+				.to_vector3_array()
+
+	## Vector of Godot Structs
+	func godot_structs_at( idx: int ) -> Vector3:
+		var field_start: int = get_field_start( VT_GODOT_STRUCTS )
+		assert(field_start, 'Field is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4
+		var element_offset: int = array_start + idx * 12
+		return decode_Vector3( element_offset )
+
+	## Vector of Custom Structs
+	func custom_structs_size() -> int:
+		var array_start: int = get_field_start( VT_CUSTOM_STRUCTS )
+		if not array_start: return 0
+		return _fb_bytes.decode_u32( array_start )
+
+	## Vector of Custom Structs
+	func custom_structs() -> Array[TestStruct]:
+		var field_start: int = get_field_start( VT_CUSTOM_STRUCTS )
 		if not field_start: return []
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
@@ -266,22 +296,21 @@ class RootTable extends FlatBuffer:
 			array[i] = _vector_schema.TestStruct.new(_fb_bytes, array_start + i * 8 )
 		return array
 
-	## Vector of Structs
-	func structs_at( idx: int, into: TestStruct = null ) -> TestStruct:
-		var field_start: int = get_field_start( VT_STRUCTS )
+	## Vector of Custom Structs
+	func custom_structs_at( idx: int, into: TestStruct = null ) -> TestStruct:
+		var field_start: int = get_field_start( VT_CUSTOM_STRUCTS )
 		assert(field_start, 'Field is not present in buffer' )
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
 
 		var array_start: int = field_start + 4
-		var relative_offset: int = array_start + idx * 4
-		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
+		var element_offset: int = array_start + idx * 8
 		if into:
 			into._fb_bytes = _fb_bytes
-			into._fb_start = relative_offset
+			into._fb_start = element_offset
 			return into
-		return _vector_schema.TestStruct.new( _fb_bytes, offset )
+		return _vector_schema.TestStruct.new( _fb_bytes, element_offset )
 
 	## Vector of Tables
 	func tables_size() -> int:
@@ -311,13 +340,12 @@ class RootTable extends FlatBuffer:
 		assert( idx < array_size, 'index is out of bounds')
 
 		var array_start: int = field_start + 4
-		var relative_offset: int = array_start + idx * 4
-		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
+		var element_offset: int = array_start + idx * 4
 		if into:
 			into._fb_bytes = _fb_bytes
-			into._fb_start = relative_offset
+			into._fb_start = element_offset
 			return into
-		return _vector_schema.TestTableA.new( _fb_bytes, offset )
+		return _vector_schema.TestTableA.new( _fb_bytes, element_offset )
 
 	## Return true if single is present in the buffer, else false
 	func single_is_present() -> bool:
@@ -363,12 +391,12 @@ class RootTable extends FlatBuffer:
 		return _fb_bytes.decode_u32( array_start )
 
 	## Vector of Unions
-	# TODO GenFieldVectorUnionGet
-	# unions: Array
+	# TODO GenFieldVectorUnionGet 
+	# unions: Array 
 
 	## Vector of Unions
-	# TODO GenFieldVectorUnionAt
-	# unions: Array
+	# TODO GenFieldVectorUnionAt 
+	# unions: Array 
 
 
 ## TODO: Write a Doc Comment for the builder
@@ -394,8 +422,12 @@ class RootTableBuilder extends RefCounted:
 		fbb_.add_offset( RootTable.VT_STRINGS, strings_offset )
 
 	## TODO: Write a Doc Comment for the builder's add functions
-	func add_structs( structs_offset: int ) -> void:
-		fbb_.add_offset( RootTable.VT_STRUCTS, structs_offset )
+	func add_godot_structs( godot_structs_offset: int ) -> void:
+		fbb_.add_offset( RootTable.VT_GODOT_STRUCTS, godot_structs_offset )
+
+	## TODO: Write a Doc Comment for the builder's add functions
+	func add_custom_structs( custom_structs_offset: int ) -> void:
+		fbb_.add_offset( RootTable.VT_CUSTOM_STRUCTS, custom_structs_offset )
 
 	## TODO: Write a Doc Comment for the builder's add functions
 	func add_tables( tables_offset: int ) -> void:
@@ -428,7 +460,8 @@ static func create_RootTable( _fbb: FlatBufferBuilder,
 		scalars: int,
 		enums: int,
 		strings: int,
-		structs: int,
+		godot_structs: int,
+		custom_structs: int,
 		tables: int,
 		single_type: TestUnion,
 		single: int,
@@ -439,7 +472,8 @@ static func create_RootTable( _fbb: FlatBufferBuilder,
 	builder.add_unions_type( unions_type );
 	builder.add_single( single );
 	builder.add_tables( tables );
-	builder.add_structs( structs );
+	builder.add_custom_structs( custom_structs );
+	builder.add_godot_structs( godot_structs );
 	builder.add_strings( strings );
 	builder.add_enums( enums );
 	builder.add_scalars( scalars );
@@ -450,3 +484,4 @@ static func create_RootTable( _fbb: FlatBufferBuilder,
 static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
 	assert(not _bytes.is_empty())
 	return RootTable.new(_bytes, _bytes.decode_u32(0))
+

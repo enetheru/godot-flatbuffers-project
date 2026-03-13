@@ -1,3 +1,4 @@
+include "godot.fbs";
 // testing the vector field
 
 /// Enum Used for testing
@@ -47,8 +48,11 @@ table RootTable {
 	/// Vector of Strings
 	strings:[string];     // vector of strings
 
-	/// Vector of Structs
-	structs:[TestStruct]; // vector of structs
+	/// Vector of Godot Structs
+	godot_structs:[Vector3]; // vector of godot structs
+
+	/// Vector of Custom Structs
+	custom_structs:[TestStruct]; // vector of custom structs
 
 	/// Vector of Tables
 	tables:[TestTableA];  // vector of table

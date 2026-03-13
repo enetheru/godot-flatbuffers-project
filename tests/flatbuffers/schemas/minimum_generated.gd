@@ -55,4 +55,3 @@ static func create_Minimum( _fbb: FlatBufferBuilder,
 static func get_Minimum( _bytes: PackedByteArray ) -> Minimum:
 	assert(not _bytes.is_empty())
 	return Minimum.new(_bytes, _bytes.decode_u32(0))
-

@@ -12,37 +12,35 @@ enum Enum {
 }
 
 class FBFoo extends FlatBuffer:
-	const size: int = 16
+	const _fb_struct_size: int = 16
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		if bytes_.is_empty(): 
+		if bytes_.is_empty():
 			_fb_bytes = PackedByteArray()
-			_fb_bytes.resize( size )
+			_fb_bytes.resize( _fb_struct_size )
 		else:
-			assert(start_ + size <= bytes_.size())
+			assert(start_ + _fb_struct_size <= bytes_.size())
 			_fb_bytes = bytes_; _fb_start = start_
 
-	# [================[ id ]================]
 	var id: int :
 		get(): return _fb_bytes.decode_u64(_fb_start + 0)
 		set(v): _fb_bytes.encode_u64(_fb_start + 0, v)
 
-	# [================[ count ]================]
 	var count: int :
 		get(): return _fb_bytes.decode_s16(_fb_start + 8)
 		set(v): _fb_bytes.encode_s16(_fb_start + 8, v)
 
-	# [================[ prefix ]================]
 	var prefix: int :
 		get(): return _fb_bytes.decode_s8(_fb_start + 10)
 		set(v): _fb_bytes.encode_s8(_fb_start + 10, v)
 
-	# [================[ length ]================]
 	var length: int :
 		get(): return _fb_bytes.decode_u32(_fb_start + 12)
 		set(v): _fb_bytes.encode_u32(_fb_start + 12, v)
 
 
+## TODO: create a useful doc comment for the static creation function
 static func create_FBFoo(
 		_id: int,
 		_count: int,
@@ -58,37 +56,37 @@ static func create_FBFoo(
 class FBBar extends FlatBuffer:
 	const _bench_schema = preload( 'bench_generated.gd' )
 
-	const size: int = 32
+	const _fb_struct_size: int = 32
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		if bytes_.is_empty(): 
+		if bytes_.is_empty():
 			_fb_bytes = PackedByteArray()
-			_fb_bytes.resize( size )
+			_fb_bytes.resize( _fb_struct_size )
 		else:
-			assert(start_ + size <= bytes_.size())
+			assert(start_ + _fb_struct_size <= bytes_.size())
 			_fb_bytes = bytes_; _fb_start = start_
 
-	# [================[ parent ]================]
 	var parent: FBFoo :
 		get(): return _bench_schema.FBFoo.new(_fb_bytes, _fb_start + 0)
-		set(v): overwrite_fb_bytes(v._fb_bytes, v._fb_start, _fb_start + 0, v.size)
+		set(v):
+			if overwrite_bytes(v._fb_bytes, v._fb_start, _fb_start + 0, v._fb_struct_size) != OK:
+				printerr("Failed to overwrite bytes.")
 
-	# [================[ time ]================]
 	var time: int :
 		get(): return _fb_bytes.decode_s32(_fb_start + 16)
 		set(v): _fb_bytes.encode_s32(_fb_start + 16, v)
 
-	# [================[ ratio ]================]
 	var ratio: float :
 		get(): return _fb_bytes.decode_float(_fb_start + 20)
 		set(v): _fb_bytes.encode_float(_fb_start + 20, v)
 
-	# [================[ ssize ]================]
 	var ssize: int :
 		get(): return _fb_bytes.decode_u16(_fb_start + 24)
 		set(v): _fb_bytes.encode_u16(_fb_start + 24, v)
 
 
+## TODO: create a useful doc comment for the static creation function
 static func create_FBBar(
 		_parent: FBFoo,
 		_time: int,
@@ -104,80 +102,87 @@ static func create_FBBar(
 class FBFooBar extends FlatBuffer:
 	const _bench_schema = preload( 'bench_generated.gd' )
 
-	enum vtable{
+	enum {
 		VT_SIBLING = 4,
 		VT_NAME = 6,
 		VT_RATING = 8,
 		VT_POSTFIX = 10
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
+	## Return true if sibling is present in the buffer, else false
 	func sibling_is_present() -> bool:
-		return get_field_offset( vtable.VT_SIBLING )
+		return get_field_offset( VT_SIBLING )
 
-	func name_is_present() -> bool:
-		return get_field_offset( vtable.VT_NAME )
-
-	func rating_is_present() -> bool:
-		return get_field_offset( vtable.VT_RATING )
-
-	func postfix_is_present() -> bool:
-		return get_field_offset( vtable.VT_POSTFIX )
-
-	# [================[ sibling ]================]
 	func sibling() -> FBBar:
-		var field_offset: int = get_field_offset( vtable.VT_SIBLING )
+		var field_offset: int = get_field_offset( VT_SIBLING )
 		if not field_offset: return null
 		return _bench_schema.FBBar.new( _fb_bytes, _fb_start + field_offset )
 
-	# [================[ name ]================]
+	## Return true if name is present in the buffer, else false
+	func name_is_present() -> bool:
+		return get_field_offset( VT_NAME )
+
 	func name() -> String:
-		var field_start: int = get_field_start( vtable.VT_NAME )
+		var field_start: int = get_field_start( VT_NAME )
 		if not field_start: return ''
 		return decode_String( field_start )
 
-	# [================[ rating ]================]
+	## Return true if rating is present in the buffer, else false
+	func rating_is_present() -> bool:
+		return get_field_offset( VT_RATING )
+
 	func rating() -> float:
-		var foffset: int = get_field_offset( vtable.VT_RATING )
+		var foffset: int = get_field_offset( VT_RATING )
 		if not foffset: return 0.0
 		return _fb_bytes.decode_double( _fb_start + foffset )
 
-	# [================[ postfix ]================]
+	## Return true if postfix is present in the buffer, else false
+	func postfix_is_present() -> bool:
+		return get_field_offset( VT_POSTFIX )
+
 	func postfix() -> int:
-		var foffset: int = get_field_offset( vtable.VT_POSTFIX )
+		var foffset: int = get_field_offset( VT_POSTFIX )
 		if not foffset: return 0
 		return _fb_bytes.decode_u8( _fb_start + foffset )
 
 
+## TODO: Write a Doc Comment for the builder
 class FBFooBarBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_sibling( sibling: FBBar ) -> void:
-		fbb_.add_bytes( FBFooBar.vtable.VT_SIBLING, sibling._fb_bytes ) 
+		fbb_.add_bytes( FBFooBar.VT_SIBLING, sibling._fb_bytes )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_name( name_offset: int ) -> void:
-		fbb_.add_offset( FBFooBar.vtable.VT_NAME, name_offset )
+		fbb_.add_offset( FBFooBar.VT_NAME, name_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_rating( rating: float ) -> void:
-		fbb_.add_element_double_default( FBFooBar.vtable.VT_RATING, rating, 0.0 )
+		fbb_.add_element_double_default( FBFooBar.VT_RATING, rating, 0.0 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_postfix( postfix: int ) -> void:
-		fbb_.add_element_ubyte_default( FBFooBar.vtable.VT_POSTFIX, postfix, 0 )
+		fbb_.add_element_ubyte_default( FBFooBar.VT_POSTFIX, postfix, 0 )
 
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-
+## TODO: Write a Doc Comment for the static table create function
 static func create_FBFooBar( _fbb: FlatBufferBuilder,
 		sibling: FBBar,
 		name: int,
@@ -193,37 +198,24 @@ static func create_FBFooBar( _fbb: FlatBufferBuilder,
 class FBFooBarContainer extends FlatBuffer:
 	const _bench_schema = preload( 'bench_generated.gd' )
 
-	enum vtable{
+	enum {
 		VT_LIST = 4,
 		VT_INITIALIZED = 6,
 		VT_FRUIT = 8,
 		VT_LOCATION = 10
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
-	func list_is_present() -> bool:
-		return get_field_offset( vtable.VT_LIST )
-
-	func initialized_is_present() -> bool:
-		return get_field_offset( vtable.VT_INITIALIZED )
-
-	func fruit_is_present() -> bool:
-		return get_field_offset( vtable.VT_FRUIT )
-
-	func location_is_present() -> bool:
-		return get_field_offset( vtable.VT_LOCATION )
-
-	# [================[ list ]================]
 	func list_size() -> int:
-		var array_start: int = get_field_start( vtable.VT_LIST )
+		var array_start: int = get_field_start( VT_LIST )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
 	func list() -> Array:
-		var array_start: int = get_field_start( vtable.VT_LIST )
+		var array_start: int = get_field_start( VT_LIST )
 		if not array_start: return []
 		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
@@ -235,7 +227,7 @@ class FBFooBarContainer extends FlatBuffer:
 		return array
 
 	func list_at( idx: int, into: FBFooBar = null ) -> FBFooBar:
-		var field_start: int = get_field_start( vtable.VT_LIST )
+		var field_start: int = get_field_start( VT_LIST )
 		assert(field_start, 'Field is not present in buffer' )
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
@@ -250,52 +242,68 @@ class FBFooBarContainer extends FlatBuffer:
 			return into
 		return _bench_schema.FBFooBar.new( _fb_bytes, offset )
 
-	# [================[ initialized ]================]
+	## Return true if initialized is present in the buffer, else false
+	func initialized_is_present() -> bool:
+		return get_field_offset( VT_INITIALIZED )
+
 	func initialized() -> bool:
-		var foffset: int = get_field_offset( vtable.VT_INITIALIZED )
+		var foffset: int = get_field_offset( VT_INITIALIZED )
 		if not foffset: return 0
 		return _fb_bytes.decode_u8( _fb_start + foffset )
 
-	# [================[ fruit ]================]
+	## Return true if fruit is present in the buffer, else false
+	func fruit_is_present() -> bool:
+		return get_field_offset( VT_FRUIT )
+
 	func fruit() -> Enum:
-		var foffset: int = get_field_offset( vtable.VT_FRUIT )
+		var foffset: int = get_field_offset( VT_FRUIT )
 		if not foffset: return 0 as Enum
 		var decoded: Enum = _fb_bytes.decode_s16( _fb_start + foffset )
 		return decoded
 
-	# [================[ location ]================]
+	## Return true if location is present in the buffer, else false
+	func location_is_present() -> bool:
+		return get_field_offset( VT_LOCATION )
+
 	func location() -> String:
-		var field_start: int = get_field_start( vtable.VT_LOCATION )
+		var field_start: int = get_field_start( VT_LOCATION )
 		if not field_start: return ''
 		return decode_String( field_start )
 
 
+## TODO: Write a Doc Comment for the builder
 class FBFooBarContainerBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_list( list_offset: int ) -> void:
-		fbb_.add_offset( FBFooBarContainer.vtable.VT_LIST, list_offset )
+		fbb_.add_offset( FBFooBarContainer.VT_LIST, list_offset )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_initialized( initialized: bool ) -> void:
-		fbb_.add_element_bool_default( FBFooBarContainer.vtable.VT_INITIALIZED, initialized, 0 )
+		fbb_.add_element_bool_default( FBFooBarContainer.VT_INITIALIZED, initialized, 0 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_fruit( fruit: Enum ) -> void:
-		fbb_.add_element_short( FBFooBarContainer.vtable.VT_FRUIT, fruit )
+		fbb_.add_element_short( FBFooBarContainer.VT_FRUIT, fruit )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_location( location_offset: int ) -> void:
-		fbb_.add_offset( FBFooBarContainer.vtable.VT_LOCATION, location_offset )
+		fbb_.add_offset( FBFooBarContainer.VT_LOCATION, location_offset )
 
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-
+## TODO: Write a Doc Comment for the static table create function
 static func create_FBFooBarContainer( _fbb: FlatBufferBuilder,
 		list: int,
 		initialized: bool,
@@ -308,6 +316,7 @@ static func create_FBFooBarContainer( _fbb: FlatBufferBuilder,
 	builder.add_initialized( initialized );
 	return builder.finish();
 
+## TODO: create a doc comment for the get_FBFooBarContainer function
 static func get_FBFooBarContainer( _bytes: PackedByteArray ) -> FBFooBarContainer:
 	assert(not _bytes.is_empty())
 	return FBFooBarContainer.new(_bytes, _bytes.decode_u32(0))
