@@ -16,7 +16,7 @@ class FBFoo extends FlatBuffer:
 
 	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		if bytes_.is_empty():
+		if bytes_.is_empty(): 
 			_fb_bytes = PackedByteArray()
 			_fb_bytes.resize( _fb_struct_size )
 		else:
@@ -60,7 +60,7 @@ class FBBar extends FlatBuffer:
 
 	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		if bytes_.is_empty():
+		if bytes_.is_empty(): 
 			_fb_bytes = PackedByteArray()
 			_fb_bytes.resize( _fb_struct_size )
 		else:
@@ -69,9 +69,7 @@ class FBBar extends FlatBuffer:
 
 	var parent: FBFoo :
 		get(): return _bench_schema.FBFoo.new(_fb_bytes, _fb_start + 0)
-		set(v):
-			if overwrite_bytes(v._fb_bytes, v._fb_start, _fb_start + 0, v._fb_struct_size) != OK:
-				printerr("Failed to overwrite bytes.")
+		set(v): overwrite_bytes(v._fb_bytes, v._fb_start, _fb_start + 0, v._fb_struct_size)
 
 	var time: int :
 		get(): return _fb_bytes.decode_s32(_fb_start + 16)
@@ -118,36 +116,36 @@ class FBFooBar extends FlatBuffer:
 		return get_field_offset( VT_SIBLING )
 
 	func sibling() -> FBBar:
-		var field_offset: int = get_field_offset( VT_SIBLING )
-		if not field_offset: return null
-		return _bench_schema.FBBar.new( _fb_bytes, _fb_start + field_offset )
+		var field_start: int = get_inline_field_start( VT_SIBLING )
+		if not field_start: return null
+		return _bench_schema.FBBar.new( _fb_bytes, field_start )
 
 	## Return true if name is present in the buffer, else false
 	func name_is_present() -> bool:
 		return get_field_offset( VT_NAME )
 
 	func name() -> String:
-		var field_start: int = get_field_start( VT_NAME )
+		var field_start: int = get_offset_field_start( VT_NAME )
 		if not field_start: return ''
-		return decode_String( field_start )
+		return decode_variant( field_start, TYPE_STRING )
 
 	## Return true if rating is present in the buffer, else false
 	func rating_is_present() -> bool:
 		return get_field_offset( VT_RATING )
 
 	func rating() -> float:
-		var foffset: int = get_field_offset( VT_RATING )
-		if not foffset: return 0.0
-		return _fb_bytes.decode_double( _fb_start + foffset )
+		var field_start: int = get_inline_field_start( VT_RATING )
+		if not field_start: return 0.0
+		return _fb_bytes.decode_double( field_start )
 
 	## Return true if postfix is present in the buffer, else false
 	func postfix_is_present() -> bool:
 		return get_field_offset( VT_POSTFIX )
 
 	func postfix() -> int:
-		var foffset: int = get_field_offset( VT_POSTFIX )
-		if not foffset: return 0
-		return _fb_bytes.decode_u8( _fb_start + foffset )
+		var field_start: int = get_inline_field_start( VT_POSTFIX )
+		if not field_start: return 0
+		return _fb_bytes.decode_u8( field_start )
 
 
 ## TODO: Write a Doc Comment for the builder
@@ -162,7 +160,7 @@ class FBFooBarBuilder extends RefCounted:
 
 	## TODO: Write a Doc Comment for the builder's add functions
 	func add_sibling( sibling: FBBar ) -> void:
-		fbb_.add_bytes( FBFooBar.VT_SIBLING, sibling._fb_bytes )
+		fbb_.add_bytes( FBFooBar.VT_SIBLING, sibling._fb_bytes ) 
 
 	## TODO: Write a Doc Comment for the builder's add functions
 	func add_name( name_offset: int ) -> void:
@@ -210,12 +208,12 @@ class FBFooBarContainer extends FlatBuffer:
 		_fb_bytes = bytes_; _fb_start = start_
 
 	func list_size() -> int:
-		var array_start: int = get_field_start( VT_LIST )
+		var array_start: int = get_offset_field_start( VT_LIST )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
 	func list() -> Array:
-		var array_start: int = get_field_start( VT_LIST )
+		var array_start: int = get_offset_field_start( VT_LIST )
 		if not array_start: return []
 		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
@@ -227,38 +225,41 @@ class FBFooBarContainer extends FlatBuffer:
 		return array
 
 	func list_at( idx: int, into: FBFooBar = null ) -> FBFooBar:
-		var field_start: int = get_field_start( VT_LIST )
+		var field_start: int = get_offset_field_start( VT_LIST )
 		assert(field_start, 'Field is not present in buffer' )
+
+		# The field is a vector of table, so the inline data is a vector of
+		# offsets to the element location.
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
 
 		var array_start: int = field_start + 4
-		var relative_offset: int = array_start + idx * 4
-		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
+		var element_pos: int = array_start + idx * 4
+		var element_offset: int = _fb_bytes.decode_u32(element_pos)
 		if into:
 			into._fb_bytes = _fb_bytes
-			into._fb_start = relative_offset
+			into._fb_start = element_pos + element_offset
 			return into
-		return _bench_schema.FBFooBar.new( _fb_bytes, offset )
+		return _bench_schema.FBFooBar.new( _fb_bytes, element_pos + element_offset )
 
 	## Return true if initialized is present in the buffer, else false
 	func initialized_is_present() -> bool:
 		return get_field_offset( VT_INITIALIZED )
 
 	func initialized() -> bool:
-		var foffset: int = get_field_offset( VT_INITIALIZED )
-		if not foffset: return 0
-		return _fb_bytes.decode_u8( _fb_start + foffset )
+		var field_start: int = get_inline_field_start( VT_INITIALIZED )
+		if not field_start: return 0
+		return _fb_bytes.decode_u8( field_start )
 
 	## Return true if fruit is present in the buffer, else false
 	func fruit_is_present() -> bool:
 		return get_field_offset( VT_FRUIT )
 
 	func fruit() -> Enum:
-		var foffset: int = get_field_offset( VT_FRUIT )
-		if not foffset: return 0 as Enum
-		var decoded: Enum = _fb_bytes.decode_s16( _fb_start + foffset )
+		var field_start: int = get_inline_field_start( VT_FRUIT )
+		if not field_start: return 0 as Enum
+		var decoded: Enum = _fb_bytes.decode_s16( field_start )
 		return decoded
 
 	## Return true if location is present in the buffer, else false
@@ -266,9 +267,9 @@ class FBFooBarContainer extends FlatBuffer:
 		return get_field_offset( VT_LOCATION )
 
 	func location() -> String:
-		var field_start: int = get_field_start( VT_LOCATION )
+		var field_start: int = get_offset_field_start( VT_LOCATION )
 		if not field_start: return ''
-		return decode_String( field_start )
+		return decode_variant( field_start, TYPE_STRING )
 
 
 ## TODO: Write a Doc Comment for the builder
@@ -320,3 +321,4 @@ static func create_FBFooBarContainer( _fbb: FlatBufferBuilder,
 static func get_FBFooBarContainer( _bytes: PackedByteArray ) -> FBFooBarContainer:
 	assert(not _bytes.is_empty())
 	return FBFooBarContainer.new(_bytes, _bytes.decode_u32(0))
+

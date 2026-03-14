@@ -29,7 +29,7 @@ var reading_script:String = "res://tests/fb_monster/monster_reading.gd"
 func compile_schema() -> void:
 	logd("== Compiling Monster Schema ==")
 	var run_dict:Dictionary = await FlatBuffersPlugin.generate(schema_file)
-	var run_output:String = run_dict.output
+	var run_output:String = run_dict.stdout
 	TEST_EQ(0, run_dict.retcode, run_output)
 
 

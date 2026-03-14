@@ -6,45 +6,51 @@
 @warning_ignore_start('unsafe_call_argument')
 
 class RootTable extends FlatBuffer:
-	enum vtable{
+	enum {
 		VT_MY_FIELD = 4
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
+	## Return true if my_field is present in the buffer, else false
 	func my_field_is_present() -> bool:
-		return get_field_offset( vtable.VT_MY_FIELD )
+		return get_field_offset( VT_MY_FIELD )
 
-	# [================[ my_field ]================]
 	func my_field() -> Transform3D:
-		return get_Transform3D( vtable.VT_MY_FIELD )
+		return get_variant( VT_MY_FIELD, TYPE_TRANSFORM3D )
 
 
+## TODO: Write a Doc Comment for the builder
 class RootTableBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_my_field( my_field: Transform3D ) -> void:
-		fbb_.add_Transform3D( RootTable.vtable.VT_MY_FIELD, my_field )
+		fbb_.add_variant( RootTable.VT_MY_FIELD, my_field, TYPE_TRANSFORM3D )
 
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-
+## TODO: Write a Doc Comment for the static table create function
 static func create_RootTable( _fbb: FlatBufferBuilder,
 		my_field: Transform3D ) -> int :
 	var builder: RootTableBuilder = RootTableBuilder.new( _fbb );
 	builder.add_my_field( my_field );
 	return builder.finish();
 
+## TODO: create a doc comment for the get_RootTable function
 static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
 	assert(not _bytes.is_empty())
 	return RootTable.new(_bytes, _bytes.decode_u32(0))
+

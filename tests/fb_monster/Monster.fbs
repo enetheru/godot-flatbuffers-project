@@ -5,7 +5,7 @@ namespace MyGame.Sample;
 
 enum Color:byte { Red = 0, Green, Blue = 2 }
 
-union Equipment { Weapon } // Optionally add more tables. 
+union Equipment { Weapon } // Optionally add more tables.
 
 // Replaced with Godot's Vector3
 //struct Vec3 {

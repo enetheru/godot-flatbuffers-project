@@ -6,27 +6,27 @@
 @warning_ignore_start('unsafe_call_argument')
 
 class CustomStruct extends FlatBuffer:
-	const size: int = 8
+	const _fb_struct_size: int = 8
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		if bytes_.is_empty(): 
 			_fb_bytes = PackedByteArray()
-			_fb_bytes.resize( size )
+			_fb_bytes.resize( _fb_struct_size )
 		else:
-			assert(start_ + size <= bytes_.size())
+			assert(start_ + _fb_struct_size <= bytes_.size())
 			_fb_bytes = bytes_; _fb_start = start_
 
-	# [================[ x ]================]
 	var x: int :
 		get(): return _fb_bytes.decode_s32(_fb_start + 0)
 		set(v): _fb_bytes.encode_s32(_fb_start + 0, v)
 
-	# [================[ y ]================]
 	var y: float :
 		get(): return _fb_bytes.decode_float(_fb_start + 4)
 		set(v): _fb_bytes.encode_float(_fb_start + 4, v)
 
 
+## TODO: create a useful doc comment for the static creation function
 static func create_CustomStruct(
 		_x: int,
 		_y: float ) -> CustomStruct :
@@ -36,7 +36,7 @@ static func create_CustomStruct(
 	return val
 
 class RootTable extends FlatBuffer:
-	enum vtable{
+	enum {
 		VT_FAABB = 4,
 		VT_FBASIS = 6,
 		VT_FCOLOR = 8,
@@ -55,185 +55,204 @@ class RootTable extends FlatBuffer:
 		VT_VECTOR4I = 34
 	}
 
+	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
 		_fb_bytes = bytes_; _fb_start = start_
 
-	# Presence Functions
+	## Return true if faabb is present in the buffer, else false
 	func faabb_is_present() -> bool:
-		return get_field_offset( vtable.VT_FAABB )
+		return get_field_offset( VT_FAABB )
 
-	func fbasis_is_present() -> bool:
-		return get_field_offset( vtable.VT_FBASIS )
-
-	func fcolor_is_present() -> bool:
-		return get_field_offset( vtable.VT_FCOLOR )
-
-	func fplane_is_present() -> bool:
-		return get_field_offset( vtable.VT_FPLANE )
-
-	func fprojection_is_present() -> bool:
-		return get_field_offset( vtable.VT_FPROJECTION )
-
-	func fquaternion_is_present() -> bool:
-		return get_field_offset( vtable.VT_FQUATERNION )
-
-	func frect2_is_present() -> bool:
-		return get_field_offset( vtable.VT_FRECT2 )
-
-	func frect2i_is_present() -> bool:
-		return get_field_offset( vtable.VT_FRECT2I )
-
-	func ftransform2d_is_present() -> bool:
-		return get_field_offset( vtable.VT_FTRANSFORM2D )
-
-	func ftransform3d_is_present() -> bool:
-		return get_field_offset( vtable.VT_FTRANSFORM3D )
-
-	func fvector2_is_present() -> bool:
-		return get_field_offset( vtable.VT_FVECTOR2 )
-
-	func fvector2i_is_present() -> bool:
-		return get_field_offset( vtable.VT_FVECTOR2I )
-
-	func fvector3_is_present() -> bool:
-		return get_field_offset( vtable.VT_FVECTOR3 )
-
-	func fvector3i_is_present() -> bool:
-		return get_field_offset( vtable.VT_FVECTOR3I )
-
-	func fvector4_is_present() -> bool:
-		return get_field_offset( vtable.VT_FVECTOR4 )
-
-	func vector4i_is_present() -> bool:
-		return get_field_offset( vtable.VT_VECTOR4I )
-
-	# [================[ faabb ]================]
 	func faabb() -> AABB:
-		return get_AABB( vtable.VT_FAABB )
+		return get_variant( VT_FAABB, TYPE_AABB )
 
-	# [================[ fbasis ]================]
+	## Return true if fbasis is present in the buffer, else false
+	func fbasis_is_present() -> bool:
+		return get_field_offset( VT_FBASIS )
+
 	func fbasis() -> Basis:
-		return get_Basis( vtable.VT_FBASIS )
+		return get_variant( VT_FBASIS, TYPE_BASIS )
 
-	# [================[ fcolor ]================]
+	## Return true if fcolor is present in the buffer, else false
+	func fcolor_is_present() -> bool:
+		return get_field_offset( VT_FCOLOR )
+
 	func fcolor() -> Color:
-		return get_Color( vtable.VT_FCOLOR )
+		return get_variant( VT_FCOLOR, TYPE_COLOR )
 
-	# [================[ fplane ]================]
+	## Return true if fplane is present in the buffer, else false
+	func fplane_is_present() -> bool:
+		return get_field_offset( VT_FPLANE )
+
 	func fplane() -> Plane:
-		return get_Plane( vtable.VT_FPLANE )
+		return get_variant( VT_FPLANE, TYPE_PLANE )
 
-	# [================[ fprojection ]================]
+	## Return true if fprojection is present in the buffer, else false
+	func fprojection_is_present() -> bool:
+		return get_field_offset( VT_FPROJECTION )
+
 	func fprojection() -> Projection:
-		return get_Projection( vtable.VT_FPROJECTION )
+		return get_variant( VT_FPROJECTION, TYPE_PROJECTION )
 
-	# [================[ fquaternion ]================]
+	## Return true if fquaternion is present in the buffer, else false
+	func fquaternion_is_present() -> bool:
+		return get_field_offset( VT_FQUATERNION )
+
 	func fquaternion() -> Quaternion:
-		return get_Quaternion( vtable.VT_FQUATERNION )
+		return get_variant( VT_FQUATERNION, TYPE_QUATERNION )
 
-	# [================[ frect2 ]================]
+	## Return true if frect2 is present in the buffer, else false
+	func frect2_is_present() -> bool:
+		return get_field_offset( VT_FRECT2 )
+
 	func frect2() -> Rect2:
-		return get_Rect2( vtable.VT_FRECT2 )
+		return get_variant( VT_FRECT2, TYPE_RECT2 )
 
-	# [================[ frect2i ]================]
+	## Return true if frect2i is present in the buffer, else false
+	func frect2i_is_present() -> bool:
+		return get_field_offset( VT_FRECT2I )
+
 	func frect2i() -> Rect2i:
-		return get_Rect2i( vtable.VT_FRECT2I )
+		return get_variant( VT_FRECT2I, TYPE_RECT2I )
 
-	# [================[ ftransform2d ]================]
+	## Return true if ftransform2d is present in the buffer, else false
+	func ftransform2d_is_present() -> bool:
+		return get_field_offset( VT_FTRANSFORM2D )
+
 	func ftransform2d() -> Transform2D:
-		return get_Transform2D( vtable.VT_FTRANSFORM2D )
+		return get_variant( VT_FTRANSFORM2D, TYPE_TRANSFORM2D )
 
-	# [================[ ftransform3d ]================]
+	## Return true if ftransform3d is present in the buffer, else false
+	func ftransform3d_is_present() -> bool:
+		return get_field_offset( VT_FTRANSFORM3D )
+
 	func ftransform3d() -> Transform3D:
-		return get_Transform3D( vtable.VT_FTRANSFORM3D )
+		return get_variant( VT_FTRANSFORM3D, TYPE_TRANSFORM3D )
 
-	# [================[ fvector2 ]================]
+	## Return true if fvector2 is present in the buffer, else false
+	func fvector2_is_present() -> bool:
+		return get_field_offset( VT_FVECTOR2 )
+
 	func fvector2() -> Vector2:
-		return get_Vector2( vtable.VT_FVECTOR2 )
+		return get_variant( VT_FVECTOR2, TYPE_VECTOR2 )
 
-	# [================[ fvector2i ]================]
+	## Return true if fvector2i is present in the buffer, else false
+	func fvector2i_is_present() -> bool:
+		return get_field_offset( VT_FVECTOR2I )
+
 	func fvector2i() -> Vector2i:
-		return get_Vector2i( vtable.VT_FVECTOR2I )
+		return get_variant( VT_FVECTOR2I, TYPE_VECTOR2I )
 
-	# [================[ fvector3 ]================]
+	## Return true if fvector3 is present in the buffer, else false
+	func fvector3_is_present() -> bool:
+		return get_field_offset( VT_FVECTOR3 )
+
 	func fvector3() -> Vector3:
-		return get_Vector3( vtable.VT_FVECTOR3 )
+		return get_variant( VT_FVECTOR3, TYPE_VECTOR3 )
 
-	# [================[ fvector3i ]================]
+	## Return true if fvector3i is present in the buffer, else false
+	func fvector3i_is_present() -> bool:
+		return get_field_offset( VT_FVECTOR3I )
+
 	func fvector3i() -> Vector3i:
-		return get_Vector3i( vtable.VT_FVECTOR3I )
+		return get_variant( VT_FVECTOR3I, TYPE_VECTOR3I )
 
-	# [================[ fvector4 ]================]
+	## Return true if fvector4 is present in the buffer, else false
+	func fvector4_is_present() -> bool:
+		return get_field_offset( VT_FVECTOR4 )
+
 	func fvector4() -> Vector4:
-		return get_Vector4( vtable.VT_FVECTOR4 )
+		return get_variant( VT_FVECTOR4, TYPE_VECTOR4 )
 
-	# [================[ vector4i ]================]
+	## Return true if vector4i is present in the buffer, else false
+	func vector4i_is_present() -> bool:
+		return get_field_offset( VT_VECTOR4I )
+
 	func vector4i() -> Vector4i:
-		return get_Vector4i( vtable.VT_VECTOR4I )
+		return get_variant( VT_VECTOR4I, TYPE_VECTOR4I )
 
 
+## TODO: Write a Doc Comment for the builder
 class RootTableBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
+	## TODO: Write a Doc Comment for the builder's init function
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_faabb( faabb: AABB ) -> void:
-		fbb_.add_AABB( RootTable.vtable.VT_FAABB, faabb )
+		fbb_.add_variant( RootTable.VT_FAABB, faabb, TYPE_AABB )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_fbasis( fbasis: Basis ) -> void:
-		fbb_.add_Basis( RootTable.vtable.VT_FBASIS, fbasis )
+		fbb_.add_variant( RootTable.VT_FBASIS, fbasis, TYPE_BASIS )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_fcolor( fcolor: Color ) -> void:
-		fbb_.add_Color( RootTable.vtable.VT_FCOLOR, fcolor )
+		fbb_.add_variant( RootTable.VT_FCOLOR, fcolor, TYPE_COLOR )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_fplane( fplane: Plane ) -> void:
-		fbb_.add_Plane( RootTable.vtable.VT_FPLANE, fplane )
+		fbb_.add_variant( RootTable.VT_FPLANE, fplane, TYPE_PLANE )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_fprojection( fprojection: Projection ) -> void:
-		fbb_.add_Projection( RootTable.vtable.VT_FPROJECTION, fprojection )
+		fbb_.add_variant( RootTable.VT_FPROJECTION, fprojection, TYPE_PROJECTION )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_fquaternion( fquaternion: Quaternion ) -> void:
-		fbb_.add_Quaternion( RootTable.vtable.VT_FQUATERNION, fquaternion )
+		fbb_.add_variant( RootTable.VT_FQUATERNION, fquaternion, TYPE_QUATERNION )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_frect2( frect2: Rect2 ) -> void:
-		fbb_.add_Rect2( RootTable.vtable.VT_FRECT2, frect2 )
+		fbb_.add_variant( RootTable.VT_FRECT2, frect2, TYPE_RECT2 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_frect2i( frect2i: Rect2i ) -> void:
-		fbb_.add_Rect2i( RootTable.vtable.VT_FRECT2I, frect2i )
+		fbb_.add_variant( RootTable.VT_FRECT2I, frect2i, TYPE_RECT2I )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_ftransform2d( ftransform2d: Transform2D ) -> void:
-		fbb_.add_Transform2D( RootTable.vtable.VT_FTRANSFORM2D, ftransform2d )
+		fbb_.add_variant( RootTable.VT_FTRANSFORM2D, ftransform2d, TYPE_TRANSFORM2D )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_ftransform3d( ftransform3d: Transform3D ) -> void:
-		fbb_.add_Transform3D( RootTable.vtable.VT_FTRANSFORM3D, ftransform3d )
+		fbb_.add_variant( RootTable.VT_FTRANSFORM3D, ftransform3d, TYPE_TRANSFORM3D )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_fvector2( fvector2: Vector2 ) -> void:
-		fbb_.add_Vector2( RootTable.vtable.VT_FVECTOR2, fvector2 )
+		fbb_.add_variant( RootTable.VT_FVECTOR2, fvector2, TYPE_VECTOR2 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_fvector2i( fvector2i: Vector2i ) -> void:
-		fbb_.add_Vector2i( RootTable.vtable.VT_FVECTOR2I, fvector2i )
+		fbb_.add_variant( RootTable.VT_FVECTOR2I, fvector2i, TYPE_VECTOR2I )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_fvector3( fvector3: Vector3 ) -> void:
-		fbb_.add_Vector3( RootTable.vtable.VT_FVECTOR3, fvector3 )
+		fbb_.add_variant( RootTable.VT_FVECTOR3, fvector3, TYPE_VECTOR3 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_fvector3i( fvector3i: Vector3i ) -> void:
-		fbb_.add_Vector3i( RootTable.vtable.VT_FVECTOR3I, fvector3i )
+		fbb_.add_variant( RootTable.VT_FVECTOR3I, fvector3i, TYPE_VECTOR3I )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_fvector4( fvector4: Vector4 ) -> void:
-		fbb_.add_Vector4( RootTable.vtable.VT_FVECTOR4, fvector4 )
+		fbb_.add_variant( RootTable.VT_FVECTOR4, fvector4, TYPE_VECTOR4 )
 
+	## TODO: Write a Doc Comment for the builder's add functions
 	func add_vector4i( vector4i: Vector4i ) -> void:
-		fbb_.add_Vector4i( RootTable.vtable.VT_VECTOR4I, vector4i )
+		fbb_.add_variant( RootTable.VT_VECTOR4I, vector4i, TYPE_VECTOR4I )
 
+	## TODO: Write a Doc Comment for the builder's finish function
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-
+## TODO: Write a Doc Comment for the static table create function
 static func create_RootTable( _fbb: FlatBufferBuilder,
 		faabb: AABB,
 		fbasis: Basis,
@@ -270,6 +289,8 @@ static func create_RootTable( _fbb: FlatBufferBuilder,
 	builder.add_faabb( faabb );
 	return builder.finish();
 
+## TODO: create a doc comment for the get_RootTable function
 static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
 	assert(not _bytes.is_empty())
 	return RootTable.new(_bytes, _bytes.decode_u32(0))
+

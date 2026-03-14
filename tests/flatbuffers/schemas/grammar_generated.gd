@@ -47,40 +47,36 @@ class TableDecl extends FlatBuffer:
 		return get_field_offset( VT_SCALAR_BOOL )
 
 	func scalar_bool() -> bool:
-		var foffset: int = get_field_offset( VT_SCALAR_BOOL )
-		if not foffset: return 0
-		return _fb_bytes.decode_u8( _fb_start + foffset )
+		var field_start: int = get_inline_field_start( VT_SCALAR_BOOL )
+		if not field_start: return 0
+		return _fb_bytes.decode_u8( field_start )
 
 	## Return true if scalar_int is present in the buffer, else false
 	func scalar_int_is_present() -> bool:
 		return get_field_offset( VT_SCALAR_INT )
 
 	func scalar_int() -> int:
-		var foffset: int = get_field_offset( VT_SCALAR_INT )
-		if not foffset: return 32
-		return _fb_bytes.decode_s32( _fb_start + foffset )
+		var field_start: int = get_inline_field_start( VT_SCALAR_INT )
+		if not field_start: return 32
+		return _fb_bytes.decode_s32( field_start )
 
 	## Return true if scalar_float is present in the buffer, else false
 	func scalar_float_is_present() -> bool:
 		return get_field_offset( VT_SCALAR_FLOAT )
 
 	func scalar_float() -> float:
-		var foffset: int = get_field_offset( VT_SCALAR_FLOAT )
-		if not foffset: return 5.3
-		return _fb_bytes.decode_float( _fb_start + foffset )
-
-	## Return true if ident5 is present in the buffer, else false
-	func ident5_is_present() -> bool:
-		return get_field_offset( VT_IDENT5 )
+		var field_start: int = get_inline_field_start( VT_SCALAR_FLOAT )
+		if not field_start: return 5.3
+		return _fb_bytes.decode_float( field_start )
 
 	func ident5_size() -> int:
-		var array_start: int = get_field_start( VT_IDENT5 )
+		var array_start: int = get_offset_field_start( VT_IDENT5 )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
 	## Decode and return all elements of ident5 as an [Array]
 	func ident5() -> Array:
-		var array_start: int = get_field_start( VT_IDENT5 )
+		var array_start: int = get_offset_field_start( VT_IDENT5 )
 		if not array_start: return []
 		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
@@ -93,7 +89,7 @@ class TableDecl extends FlatBuffer:
 
 	## Access elements of ident5 by [param index]
 	func ident5_at( index: int ) -> int:
-		var array_start: int = get_field_start( VT_IDENT5 )
+		var array_start: int = get_offset_field_start( VT_IDENT5 )
 		assert(array_start, 'access to invalid vector of enum')
 		array_start += 4
 		return _fb_bytes.decode_u32( array_start + index * 4)

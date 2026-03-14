@@ -24,7 +24,7 @@ enum {
 
 var phases:Array[Dictionary] = [{
 		&"name":"Encoding",
-		&"strategies":[encode_a]
+		&"strategies":[encode_builder]
 		# TODO: I want some way to create dependencies between the strategies
 	},{
 		&"name":"Verifying",
@@ -151,23 +151,24 @@ func _flow( selection:Array[int] ) -> void:
 func                        __________PHASES_________              ()->void:pass
 
 
-func encode_a() -> PackedByteArray:
+func encode_builder() -> PackedByteArray:
 	# Reset the builder
 	var fbb := FlatBufferBuilder.create(1)
 
 	#scalars:[int];
-	var scalars_ofs:int = fbb.create_PackedInt32Array(initial.scalars)
+	var temp:PackedInt32Array = initial.scalars
+	var scalars_ofs:int = fbb.create_variant(temp, TYPE_PACKED_INT32_ARRAY)
 
 	#enums:[TestEnum];
 	# FIXME It's not straight forward what data type i need to use when packing
 	# enums. I wonder if I can make the builder a little more friendly to use.
-	var enums_ofs:int = fbb.create_PackedByteArray(initial.enums)
+	var enums_ofs:int = fbb.create_variant(initial.enums, TYPE_PACKED_BYTE_ARRAY)
 
 	#strings:[string];
-	var strings_ofs:int = fbb.create_PackedStringArray(initial.strings)
+	var strings_ofs:int = fbb.create_variant(initial.strings, TYPE_PACKED_STRING_ARRAY)
 
 	#godot_structs:[Vector3];
-	var godot_structs_ofs:int = fbb.create_PackedVector3Array(initial.godot_structs)
+	var godot_structs_ofs:int = fbb.create_variant(initial.godot_structs, TYPE_PACKED_VECTOR3_ARRAY)
 
 	#custom_structs:[TestStruct];
 	var custom_structs_ofs:int = fbb.create_vector_of_custom_struct(

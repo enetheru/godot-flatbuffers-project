@@ -81,7 +81,7 @@ func _flow( selection:Array[int] ) -> void:
 	var verify:Callable = get_strategy(VERIFYING, selection[VERIFYING])
 	test.logp(" --- %s ---" % verify.get_method().capitalize())
 	var is_verified:bool = verify.call(packed)
-	if is_verified: pass
+	if not is_verified: return
 	# decode
 	var decode:Callable = get_strategy(DECODING, selection[DECODING])
 	test.logp(" --- %s ---" % decode.get_method().capitalize())
@@ -112,12 +112,14 @@ func encode_a() -> PackedByteArray:
 func verify_a( buf:PackedByteArray ) -> int:
 	test.logp("[b]== Verification ==[/b]")
 	test.TEST_FALSE(buf.is_empty(), "buffer should have data")
+	print( buf.is_empty() )
+	print( buf )
 	#var verifier := FlatBufferVerifier.new()
 	#verifier.set_buffer(bytes)
 
 	# TODO requires code generation changes
 	# TEST_TRUE(fb_table.verify(verifier), "verifying fb_table")
-	return TestBase.RetCode.TEST_OK
+	return test.runcode
 
 
 func decode_a(buf:PackedByteArray) -> Variant:

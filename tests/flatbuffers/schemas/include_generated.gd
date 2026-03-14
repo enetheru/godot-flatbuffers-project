@@ -25,21 +25,17 @@ class RootTable extends FlatBuffer:
 		return get_field_offset( VT_EXTERNAL )
 
 	func external() -> _minimum_schema.Minimum:
-		var field_start: int = get_field_start( VT_EXTERNAL )
+		var field_start: int = get_offset_field_start( VT_EXTERNAL )
 		if not field_start: return null
 		return _minimum_schema.Minimum.new( _fb_bytes, field_start )
 
-	## Return true if external_array is present in the buffer, else false
-	func external_array_is_present() -> bool:
-		return get_field_offset( VT_EXTERNAL_ARRAY )
-
 	func external_array_size() -> int:
-		var array_start: int = get_field_start( VT_EXTERNAL_ARRAY )
+		var array_start: int = get_offset_field_start( VT_EXTERNAL_ARRAY )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
 	func external_array() -> Array:
-		var array_start: int = get_field_start( VT_EXTERNAL_ARRAY )
+		var array_start: int = get_offset_field_start( VT_EXTERNAL_ARRAY )
 		if not array_start: return []
 		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
@@ -51,20 +47,23 @@ class RootTable extends FlatBuffer:
 		return array
 
 	func external_array_at( idx: int, into: Minimum = null ) -> Minimum:
-		var field_start: int = get_field_start( VT_EXTERNAL_ARRAY )
+		var field_start: int = get_offset_field_start( VT_EXTERNAL_ARRAY )
 		assert(field_start, 'Field is not present in buffer' )
+
+		# The field is a vector of table, so the inline data is a vector of
+		# offsets to the element location.
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
 
 		var array_start: int = field_start + 4
-		var relative_offset: int = array_start + idx * 4
-		var offset: int = relative_offset + _fb_bytes.decode_u32( relative_offset )
+		var element_pos: int = array_start + idx * 4
+		var element_offset: int = _fb_bytes.decode_u32(element_pos)
 		if into:
 			into._fb_bytes = _fb_bytes
-			into._fb_start = relative_offset
+			into._fb_start = element_pos + element_offset
 			return into
-		return _minimum_schema.Minimum.new( _fb_bytes, offset )
+		return _minimum_schema.Minimum.new( _fb_bytes, element_pos + element_offset )
 
 
 ## TODO: Write a Doc Comment for the builder

@@ -30,8 +30,8 @@ class CustomStruct extends FlatBuffer:
 		set(v): _fb_bytes.encode_float(_fb_start + 8, v)
 
 	var w: Vector3 :
-		get(): return decode_Vector3(_fb_start + 12)
-		set(v): encode_Vector3(_fb_start + 12, v)
+		get(): return decode_variant(_fb_start + 12, TYPE_VECTOR3)
+		set(v): encode_variant(_fb_start + 12, v, TYPE_VECTOR3)
 
 
 ## TODO: create a useful doc comment for the static creation function
@@ -64,18 +64,18 @@ class RootTable extends FlatBuffer:
 		return get_field_offset( VT_CUSTOM_STRUCT )
 
 	func custom_struct() -> CustomStruct:
-		var field_offset: int = get_field_offset( VT_CUSTOM_STRUCT )
-		if not field_offset: return null
-		return _struct_schema.CustomStruct.new( _fb_bytes, _fb_start + field_offset )
+		var field_start: int = get_inline_field_start( VT_CUSTOM_STRUCT )
+		if not field_start: return null
+		return _struct_schema.CustomStruct.new( _fb_bytes, field_start )
 
 	## Return true if z is present in the buffer, else false
 	func z_is_present() -> bool:
 		return get_field_offset( VT_Z )
 
 	func z() -> int:
-		var foffset: int = get_field_offset( VT_Z )
-		if not foffset: return 0
-		return _fb_bytes.decode_s32( _fb_start + foffset )
+		var field_start: int = get_inline_field_start( VT_Z )
+		if not field_start: return 0
+		return _fb_bytes.decode_s32( field_start )
 
 
 ## TODO: Write a Doc Comment for the builder

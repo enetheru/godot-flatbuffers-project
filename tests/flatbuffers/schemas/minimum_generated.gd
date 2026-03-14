@@ -19,9 +19,9 @@ class Minimum extends FlatBuffer:
 		return get_field_offset( VT_MY_FIELD )
 
 	func my_field() -> int:
-		var foffset: int = get_field_offset( VT_MY_FIELD )
-		if not foffset: return 0
-		return _fb_bytes.decode_s32( _fb_start + foffset )
+		var field_start: int = get_inline_field_start( VT_MY_FIELD )
+		if not field_start: return 0
+		return _fb_bytes.decode_s32( field_start )
 
 
 ## TODO: Write a Doc Comment for the builder
@@ -55,3 +55,4 @@ static func create_Minimum( _fbb: FlatBufferBuilder,
 static func get_Minimum( _bytes: PackedByteArray ) -> Minimum:
 	assert(not _bytes.is_empty())
 	return Minimum.new(_bytes, _bytes.decode_u32(0))
+

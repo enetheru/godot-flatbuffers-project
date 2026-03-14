@@ -46,7 +46,7 @@ static func Use( state:int, bench:BenchBase, buffer:PackedByteArray, check_sum:i
 	var sum:int = 0
 	for i:int in state:
 		sum = bench.Use(decoded)
-	
+
 	if sum != check_sum:
 		push_error("Checksum did not match")
 

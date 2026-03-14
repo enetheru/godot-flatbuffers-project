@@ -19,27 +19,27 @@ func create_orc_flatbuffer() -> PackedByteArray:
 	# 1024 bytes), which will grow automatically if needed: Create a
 	# `FlatBufferBuilder`, which will be used to create our monsters'
 	# FlatBuffers.
-	
+
 	# flatbuffers::FlatBufferBuilder builder(1024);
 	var builder := FlatBufferBuilder.create(1024)
 
 	# After creating the builder, we can start serializing our data. Before we
 	# make our orc Monster, let's create some Weapons: a Sword and an Axe.
-	
+
 	# auto weapon_one_name = builder.CreateString("Sword");
-	var weapon_one_name:int = builder.create_String( "Sword" )
-	
+	var weapon_one_name:int = builder.create_variant( "Sword" )
+
 	# short weapon_one_damage = 3;
 	var weapon_one_damage:int = 3
 
 	# auto weapon_two_name = builder.CreateString("Axe");
-	var weapon_two_name:int = builder.create_String( "Axe" )
-	
+	var weapon_two_name:int = builder.create_variant( "Axe" )
+
 	# short weapon_two_damage = 5;
 	var weapon_two_damage:int = 5
 
 	# Use the `CreateWeapon` shortcut to create Weapons with all the fields set.
-	
+
 	# auto sword = CreateWeapon(builder, weapon_one_name, weapon_one_damage);
 	var sword:int = schema.create_Weapon( builder, weapon_one_name, weapon_one_damage )
 
@@ -58,16 +58,16 @@ func create_orc_flatbuffer() -> PackedByteArray:
 	# that are contained therein, i.e. we serialize the data tree using
 	# depth-first, pre-order traversal. This is generally easy to do on any
 	# tree structures. Serialize a name for our monster, called "Orc".
-	
+
 	# auto name = builder.CreateString("Orc");
-	var name:int = builder.create_String("Orc")
+	var name:int = builder.create_variant("Orc")
 
 	# Create a `vector` representing the inventory of the Orc. Each number
 	# could correspond to an item that can be claimed after he is slain.
-	
+
 	# unsigned char treasure[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 	var treasure:PackedByteArray = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-	
+
 	# auto inventory = builder.CreateVector(treasure, 10);
 	var inventory:int = builder.create_vector_uint8( treasure )
 
@@ -89,14 +89,14 @@ func create_orc_flatbuffer() -> PackedByteArray:
 	# store in memory. Therefore we can create a FlatBuffer vector to contain
 	# these offsets. Place the weapons into a `std::vector`, then convert that
 	# into a FlatBuffer `vector`.
-	
+
 	# std::vector<flatbuffers::Offset<Weapon>> weapons_vector;
 	var weapons_vector:PackedInt32Array
-	
+
 	# weapons_vector.push_back(sword);
 	@warning_ignore("return_value_discarded")
 	weapons_vector.push_back(sword)
-	
+
 	# weapons_vector.push_back(axe);
 	@warning_ignore("return_value_discarded")
 	weapons_vector.push_back(axe)
@@ -115,7 +115,7 @@ func create_orc_flatbuffer() -> PackedByteArray:
 	# Note that vectors of structs are serialized differently from tables,
 	# since structs are stored in-line in the vector. For example, to create a
 	# vector for the path field above:
-	
+
 	# Vec3 points[] = { Vec3(1.0f, 2.0f, 3.0f), Vec3(4.0f, 5.0f, 6.0f) };
 	var _points:PackedVector3Array = [
 		Vector3(1,2,3),
@@ -125,8 +125,8 @@ func create_orc_flatbuffer() -> PackedByteArray:
 	# array types, I have to think about how I can create into an existing
 	# buffer. I feel like a new type that can ingest a callable constructor, a
 	# size, etc. that can act as a go-between for a packedbyte array.
-	var points_ofs:int = builder.create_PackedVector3Array(_points)
-	
+	var points_ofs:int = builder.create_variant(_points)
+
 	# FIXME: For builtin godot types, some PackedArray's are available. But for
 	# custom structs, I have to figure out a method. Perhaps first packing them
 	# into a byte buffer, and then concatenating them. Could I fudge it under
@@ -138,18 +138,18 @@ func create_orc_flatbuffer() -> PackedByteArray:
 
 	# We have now serialized the non-scalar components of the orc, so we can
 	# serialize the monster itself:
-	
+
 	# Create the position struct
 	# auto position = Vec3(1.0f, 2.0f, 3.0f);
 	var position := Vector3(1.0, 2.0, 3.0)
-	
+
 	# NOTE: I have replaced the default Vec3 with the equivalent for Godot
 	# to test and demonstrate that it is a stand-in for a struct.
 
 	# Set his hit points to 300 and his mana to 150.
 	# int hp = 300;
 	var hp:int = 300
-	
+
 	# int mana = 150;
 	var mana:int = 150
 
@@ -162,7 +162,7 @@ func create_orc_flatbuffer() -> PackedByteArray:
 		builder, position, mana, hp, name, inventory, schema.Color_.RED,
 		weapons, schema.Equipment.WEAPON, axe, points_ofs )
 	#test.TEST_TRUE(false, "#TODO: still have to figure out how to create struct arrays.")
-	
+
 	# Note how we create Vec3 struct in-line in the table. Unlike tables,
 	# structs are simple combinations of scalars that are always stored inline,
 	# just like scalars themselves.
@@ -188,7 +188,7 @@ func create_orc_flatbuffer() -> PackedByteArray:
 		# equivalent to the above code, but provides a bit more flexibility.
 		# You can use this code instead of `CreateMonster()`, to create our orc
 		# manually.
-	
+
 		# MonsterBuilder monster_builder(builder);
 		var monster_builder := schema.MonsterBuilder.new( builder )
 		# monster_builder.add_pos(&position);
@@ -207,7 +207,7 @@ func create_orc_flatbuffer() -> PackedByteArray:
 		monster_builder.add_equipped_type(schema.Equipment.WEAPON)
 		# monster_builder.add_equipped(axe.Union());
 		monster_builder.add_equipped(axe)
-		
+
 		#monster_builder.add_path( )
 		# auto orc = monster_builder.Finish();
 		var _orc_manual:int = monster_builder.finish()
@@ -235,7 +235,7 @@ func create_orc_flatbuffer() -> PackedByteArray:
 	# Call `Finish()` to instruct the builder that this monster is complete.
 	# Note: Regardless of how you created the `orc`, you still need to call
 	# `Finish()` on the `FlatBufferBuilder`.
-	
+
 	# builder.Finish(orc);
 	builder.finish( orc )
 
@@ -250,7 +250,7 @@ func create_orc_flatbuffer() -> PackedByteArray:
 	# This must be called after `Finish()`.
 	# uint8_t *buf = builder.GetBufferPointer();
 	var buf:PackedByteArray = builder.to_packed_byte_array()
-	
+
 	# int size = builder.GetSize(); // Returns the size of the buffer that
 	#                               // `GetBufferPointer()` points to.
 	var size:int = builder.get_size()

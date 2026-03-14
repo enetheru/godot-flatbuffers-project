@@ -52,11 +52,8 @@ func read_orc_flatbuffer( bytes:PackedByteArray ) -> void:
 	var name:String = monster.name()
 
 	# These should hold 300, 150, and "Orc" respectively.
-	@warning_ignore("return_value_discarded")
 	test.TEST_EQ( 300, hp,  "monster.hp()" )
-	@warning_ignore("return_value_discarded")
 	test.TEST_EQ( 150, mana,  "monster.mana()" )
-	@warning_ignore("return_value_discarded")
 	test.TEST_EQ( "Orc", name , "monster.name()" )
 
 	# Note: The default value 150 wasn't stored in mana, but we are still able
@@ -73,11 +70,8 @@ func read_orc_flatbuffer( bytes:PackedByteArray ) -> void:
 	var z:float = pos.z
 
 	# x, y, and z will contain 1.0, 2.0, and 3.0, respectively.
-	@warning_ignore("return_value_discarded")
 	test.TEST_EQ( x, 1.0, "monster.pos.x()" )
-	@warning_ignore("return_value_discarded")
 	test.TEST_EQ( y, 2.0, "monster.pos.y()" )
-	@warning_ignore("return_value_discarded")
 	test.TEST_EQ( z, 3.0, "monster.pos.z()" )
 
 	# Note: Had we not set pos during serialization, it would be a null-value.
@@ -95,13 +89,9 @@ func read_orc_flatbuffer( bytes:PackedByteArray ) -> void:
 
 	# NOTE: monster.inventory() can, depending on type, decode and returns the
 	# the whole array. I have provided *_size(), and *_at(idx) to help.
-	@warning_ignore("return_value_discarded")
 	test.TEST_EQ(10, inv_len, "monster.inventory().size()")
-	@warning_ignore("return_value_discarded")
 	test.TEST_EQ(2, third_item, "monster.inventory().size()")
-	@warning_ignore("return_value_discarded")
 	test.TEST_EQ(10, monster.inventory_size(), "monster.inventory_size()")
-	@warning_ignore("return_value_discarded")
 	test.TEST_EQ(2, monster.inventory_at(2), "monster.inventory_at(2)")
 
 	# For vectors of tables, you can access the elements like any other vector,
@@ -110,34 +100,27 @@ func read_orc_flatbuffer( bytes:PackedByteArray ) -> void:
 	var weapons:Array = monster.weapons()
 	# auto weapon_len = weapons->size();
 	var weapon_len:int = weapons.size()
+	test.TEST_EQ(2, weapon_len, "weapons.size()")
 	var weapon_len_:int = monster.weapons_size()
+	test.TEST_EQ(2, weapon_len_, "monster.weapons_size()")
 
 	# NOTE: [] operator does not return a typed object.
 	var second_weapon:schema.Weapon = weapons[1]
 
 	# auto second_weapon_name = weapons->Get(1)->name()->str();
 	var second_weapon_name:String = second_weapon.name()
+	test.TEST_EQ("Axe", second_weapon_name, "second_weapon.name()")
+
 	# the _at function can return a typed object
 	var second_weapon_name_:String = monster.weapons_at(1).name()
+	test.TEST_EQ("Axe", second_weapon_name_, "monster.weapons_at(1).name()")
 
 	# auto second_weapon_damage = weapons->Get(1)->damage()
 	var second_weapon_damage:int = second_weapon.damage()
+	test.TEST_EQ(5, second_weapon_damage, "second_weapon.damage()")
+
 	var second_weapon_damage_:int = monster.weapons_at(1).damage()
-
-	@warning_ignore("return_value_discarded")
-	test.TEST_EQ(2, weapon_len, "weapons.size()")
-	@warning_ignore("return_value_discarded")
-	test.TEST_EQ(2, weapon_len_, "monster.weapons_size()")
-
-	@warning_ignore("return_value_discarded")
-	test.TEST_EQ("Axe", second_weapon_name, "weapons.size()")
-	@warning_ignore("return_value_discarded")
-	test.TEST_EQ("Axe", second_weapon_name_, "monster.weapons_size()")
-
-	@warning_ignore("return_value_discarded")
-	test.TEST_EQ(5, second_weapon_damage, "weapons.size()")
-	@warning_ignore("return_value_discarded")
-	test.TEST_EQ(5, second_weapon_damage_, "monster.weapons_size()")
+	test.TEST_EQ(5, second_weapon_damage_, "monster.weapons_at(1).damage()")
 
 	# Last, we can access our Equipped FlatBuffer union. Just like when we
 	# created the union, we need to get both parts of the union: the type and
@@ -147,7 +130,6 @@ func read_orc_flatbuffer( bytes:PackedByteArray ) -> void:
 	# union only stores a FlatBuffer table).
 	# auto union_type = monster.equipped_type();
 	var union_type:schema.Equipment = monster.equipped_type()
-	@warning_ignore("return_value_discarded")
 	test.TEST_EQ( schema.Equipment.WEAPON, union_type, "monster.equipped_type()" )
 
 	# if (union_type == Equipment_Weapon) {
@@ -161,12 +143,8 @@ func read_orc_flatbuffer( bytes:PackedByteArray ) -> void:
 			var weapon:schema.Weapon = monster.equipped()
 			var weapon_name:String = weapon.name()
 			var weapon_damage:int = weapon.damage()
-			@warning_ignore("return_value_discarded")
-			test.TEST_EQ( weapon_name, "Axe", "weapon_name" )
-			@warning_ignore("return_value_discarded")
-			test.TEST_EQ( weapon_damage, 5, "weapon_damage" )
-
-
+			test.TEST_EQ( weapon_name, "Axe", "weapon.name()" )
+			test.TEST_EQ( weapon_damage, 5, "weapon.damage()" )
 
 
 ## Because we cannot pre-load a script that hasnt been generated yet, the test

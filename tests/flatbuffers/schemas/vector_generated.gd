@@ -71,9 +71,9 @@ class TestTableA extends FlatBuffer:
 
 	## Field A
 	func a() -> int:
-		var foffset: int = get_field_offset( VT_A )
-		if not foffset: return 0
-		return _fb_bytes.decode_s32( _fb_start + foffset )
+		var field_start: int = get_inline_field_start( VT_A )
+		if not field_start: return 0
+		return _fb_bytes.decode_s32( field_start )
 
 
 ## TODO: Write a Doc Comment for the builder
@@ -119,9 +119,9 @@ class TestTableB extends FlatBuffer:
 
 	## Field B
 	func b() -> int:
-		var foffset: int = get_field_offset( VT_B )
-		if not foffset: return 0
-		return _fb_bytes.decode_s32( _fb_start + foffset )
+		var field_start: int = get_inline_field_start( VT_B )
+		if not field_start: return 0
+		return _fb_bytes.decode_s32( field_start )
 
 
 ## TODO: Write a Doc Comment for the builder
@@ -174,14 +174,14 @@ class RootTable extends FlatBuffer:
 
 	## Vector of Scalars
 	func scalars_size() -> int:
-		var array_start: int = get_field_start( VT_SCALARS )
+		var array_start: int = get_offset_field_start( VT_SCALARS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
 	## Vector of Scalars
 	## Decode and return all elements of scalars as an [PackedInt32Array]
 	func scalars() -> PackedInt32Array:
-		var array_start: int = get_field_start( VT_SCALARS )
+		var array_start: int = get_offset_field_start( VT_SCALARS )
 		if not array_start: return []
 		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
@@ -191,21 +191,21 @@ class RootTable extends FlatBuffer:
 	## Vector of Scalars
 	## Access elements of scalars by [param index]
 	func scalars_at( index: int ) -> int:
-		var array_start: int = get_field_start( VT_SCALARS )
+		var array_start: int = get_offset_field_start( VT_SCALARS )
 		assert(array_start, 'access to invalid vector of enum')
 		array_start += 4
 		return _fb_bytes.decode_s32( array_start + index * 4)
 
 	## Vector of Enums
 	func enums_size() -> int:
-		var array_start: int = get_field_start( VT_ENUMS )
+		var array_start: int = get_offset_field_start( VT_ENUMS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
 	## Vector of Enums
 	## Decode and return all elements of enums as an [PackedByteArray]
 	func enums() -> PackedByteArray:
-		var array_start: int = get_field_start( VT_ENUMS )
+		var array_start: int = get_offset_field_start( VT_ENUMS )
 		if not array_start: return []
 		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
@@ -214,20 +214,20 @@ class RootTable extends FlatBuffer:
 	## Vector of Enums
 	## Access elements of enums by [param index]
 	func enums_at( index: int ) -> TestEnum:
-		var array_start: int = get_field_start( VT_ENUMS )
+		var array_start: int = get_offset_field_start( VT_ENUMS )
 		assert(array_start, 'access to invalid vector of enum')
 		array_start += 4
 		return _fb_bytes[array_start + index]
 
 	## Vector of Strings
 	func strings_size() -> int:
-		var array_start: int = get_field_start( VT_STRINGS )
+		var array_start: int = get_offset_field_start( VT_STRINGS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
 	## Vector of Strings
 	func strings() -> PackedStringArray:
-		var array_start: int = get_field_start( VT_STRINGS )
+		var array_start: int = get_offset_field_start( VT_STRINGS )
 		if not array_start: return []
 		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
@@ -236,27 +236,27 @@ class RootTable extends FlatBuffer:
 		for i: int in array_size:
 			var idx: int = array_start + i * 4
 			var element_start: int = idx + _fb_bytes.decode_u32( idx )
-			array[i] = decode_String( element_start )
+			array[i] = decode_variant( element_start, TYPE_STRING )
 		return array
 
 	## Vector of Strings
 	func strings_at( index: int ) -> String:
-		var array_start: int = get_field_start( VT_STRINGS )
+		var array_start: int = get_offset_field_start( VT_STRINGS )
 		if not array_start: return ''
 		array_start += 4
 		var string_start: int = array_start + index * 4
 		string_start += _fb_bytes.decode_u32( string_start )
-		return decode_String( string_start )
+		return decode_variant( string_start, TYPE_STRING )
 
 	## Vector of Godot Structs
 	func godot_structs_size() -> int:
-		var array_start: int = get_field_start( VT_GODOT_STRUCTS )
+		var array_start: int = get_offset_field_start( VT_GODOT_STRUCTS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
 	## Vector of Godot Structs
 	func godot_structs() -> PackedVector3Array:
-		var field_start: int = get_field_start( VT_GODOT_STRUCTS )
+		var field_start: int = get_offset_field_start( VT_GODOT_STRUCTS )
 		if not field_start: return []
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
@@ -267,7 +267,7 @@ class RootTable extends FlatBuffer:
 
 	## Vector of Godot Structs
 	func godot_structs_at( idx: int ) -> Vector3:
-		var field_start: int = get_field_start( VT_GODOT_STRUCTS )
+		var field_start: int = get_offset_field_start( VT_GODOT_STRUCTS )
 		assert(field_start, 'Field is not present in buffer' )
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
@@ -275,17 +275,17 @@ class RootTable extends FlatBuffer:
 
 		var array_start: int = field_start + 4
 		var element_offset: int = array_start + idx * 12
-		return decode_Vector3( element_offset )
+		return decode_variant( element_offset, TYPE_VECTOR3 )
 
 	## Vector of Custom Structs
 	func custom_structs_size() -> int:
-		var array_start: int = get_field_start( VT_CUSTOM_STRUCTS )
+		var array_start: int = get_offset_field_start( VT_CUSTOM_STRUCTS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
 	## Vector of Custom Structs
 	func custom_structs() -> Array[TestStruct]:
-		var field_start: int = get_field_start( VT_CUSTOM_STRUCTS )
+		var field_start: int = get_offset_field_start( VT_CUSTOM_STRUCTS )
 		if not field_start: return []
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
@@ -298,7 +298,7 @@ class RootTable extends FlatBuffer:
 
 	## Vector of Custom Structs
 	func custom_structs_at( idx: int, into: TestStruct = null ) -> TestStruct:
-		var field_start: int = get_field_start( VT_CUSTOM_STRUCTS )
+		var field_start: int = get_offset_field_start( VT_CUSTOM_STRUCTS )
 		assert(field_start, 'Field is not present in buffer' )
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
@@ -314,13 +314,13 @@ class RootTable extends FlatBuffer:
 
 	## Vector of Tables
 	func tables_size() -> int:
-		var array_start: int = get_field_start( VT_TABLES )
+		var array_start: int = get_offset_field_start( VT_TABLES )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
 	## Vector of Tables
 	func tables() -> Array:
-		var array_start: int = get_field_start( VT_TABLES )
+		var array_start: int = get_offset_field_start( VT_TABLES )
 		if not array_start: return []
 		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
@@ -333,19 +333,23 @@ class RootTable extends FlatBuffer:
 
 	## Vector of Tables
 	func tables_at( idx: int, into: TestTableA = null ) -> TestTableA:
-		var field_start: int = get_field_start( VT_TABLES )
+		var field_start: int = get_offset_field_start( VT_TABLES )
 		assert(field_start, 'Field is not present in buffer' )
+
+		# The field is a vector of table, so the inline data is a vector of
+		# offsets to the element location.
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
 
 		var array_start: int = field_start + 4
-		var element_offset: int = array_start + idx * 4
+		var element_pos: int = array_start + idx * 4
+		var element_offset: int = _fb_bytes.decode_u32(element_pos)
 		if into:
 			into._fb_bytes = _fb_bytes
-			into._fb_start = element_offset
+			into._fb_start = element_pos + element_offset
 			return into
-		return _vector_schema.TestTableA.new( _fb_bytes, element_offset )
+		return _vector_schema.TestTableA.new( _fb_bytes, element_pos + element_offset )
 
 	## Return true if single is present in the buffer, else false
 	func single_is_present() -> bool:
@@ -353,14 +357,14 @@ class RootTable extends FlatBuffer:
 
 	## TODO: Write a doc comment for the union_type accessor
 	func single_type() -> TestUnion:
-		var foffset: int = get_field_offset( VT_SINGLE_TYPE )
-		if not foffset: return 0 as TestUnion
-		var decoded: TestUnion = _fb_bytes.decode_u8( _fb_start + foffset )
+		var field_start: int = get_inline_field_start( VT_SINGLE_TYPE )
+		if not field_start: return 0 as TestUnion
+		var decoded: TestUnion = _fb_bytes.decode_u8( field_start )
 		return decoded
 
 	## Temporary Union to check the differences between vectors and non vectors
 	func single() -> Variant:
-		var field_start: int = get_field_start( VT_SINGLE )
+		var field_start: int = get_offset_field_start( VT_SINGLE )
 		if not field_start: return null
 		match( single_type() ):
 			_vector_schema.TestUnion.TEST_TABLE_A:
@@ -371,7 +375,7 @@ class RootTable extends FlatBuffer:
 
 	## Decode and return all elements of unions_type as an [Array]
 	func unions_type() -> Array:
-		var array_start: int = get_field_start( VT_UNIONS_TYPE )
+		var array_start: int = get_offset_field_start( VT_UNIONS_TYPE )
 		if not array_start: return []
 		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
@@ -379,14 +383,14 @@ class RootTable extends FlatBuffer:
 
 	## Access elements of unions_type by [param index]
 	func unions_type_at( index: int ) -> TestUnion:
-		var array_start: int = get_field_start( VT_UNIONS_TYPE )
+		var array_start: int = get_offset_field_start( VT_UNIONS_TYPE )
 		assert(array_start, 'access to invalid vector of enum')
 		array_start += 4
 		return _fb_bytes[array_start + index]
 
 	## Vector of Unions
 	func unions_size() -> int:
-		var array_start: int = get_field_start( VT_UNIONS )
+		var array_start: int = get_offset_field_start( VT_UNIONS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 

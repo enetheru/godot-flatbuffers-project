@@ -5,24 +5,16 @@ const Schema = preload("../schemas/string_generated.gd")
 
 enum {
 	ENCODING = 0,
-	VERIFYING,
 	DECODING,
-	USING
 }
 
 var phases:Array[Dictionary] = [{
 		&"name":"Encoding",
-		&"strategies":[encode_a, encode_b]
+		&"strategies":[encode_function, encode_builder, encode_manual]
 		# TODO: I want some way to create dependencies between the strategies
 	},{
-		&"name":"Verifying",
-		&"strategies":[verify_a]
-	},{
 		&"name":"Decoding",
-		&"strategies":[decode_a]
-	},{
-		&"name":"Using",
-		&"strategies":[use_a]
+		&"strategies":[decode_function, decode_manual]
 	}
 ]
 
@@ -35,6 +27,16 @@ var test_string : String = "This is a string that I am adding to te flatbuffer"
 #     ██    ██  ██  ██  ██      ██   ██ ██   ██ ██ ██   ██ ██           ██     #
 #      ██████    ████   ███████ ██   ██ ██   ██ ██ ██████  ███████ ███████     #
 func                        ________OVERRIDES________              ()->void:pass
+
+## Because we cannot pre-load a script that hasnt been generated yet, the test
+## script must load this script after the generated script has been created so
+## that this script can preload and use it properly.
+## It's a bit convoluted yes.
+
+var test:TestBase
+func _init(initiator:TestBase) -> void:
+	test = initiator
+
 
 func _get_phase_count() -> int:
 	return phases.size()
@@ -77,20 +79,17 @@ func _flow( selection:Array[int] ) -> void:
 	test.logp(" --- %s ---" % encode.get_method().capitalize())
 	var packed:PackedByteArray = encode.call()
 	test.logd("bytes: %s" % TestBase.bytes_view(packed) )
+
 	# validate
-	var verify:Callable = get_strategy(VERIFYING, selection[VERIFYING])
-	test.logp(" --- %s ---" % verify.get_method().capitalize())
-	var is_verified:bool = verify.call(packed)
-	if is_verified: pass
+	#var verifier := FlatBufferVerifier.new()
+	#verifier.set_buffer(bytes)
+	# TODO requires code generation changes
+	# TEST_TRUE(fb_table.verify(verifier), "verifying fb_table")
+
 	# decode
 	var decode:Callable = get_strategy(DECODING, selection[DECODING])
 	test.logp(" --- %s ---" % decode.get_method().capitalize())
-	var unpacked:Variant = decode.call(packed)
-	# use
-	var use:Callable = get_strategy(USING, selection[USING])
-	test.logp(" --- %s ---" % use.get_method().capitalize())
-	var can_use:bool = use.call(unpacked)
-	if can_use: pass
+	decode.call(packed)
 
 #               ██████  ██   ██  █████  ███████ ███████ ███████                #
 #               ██   ██ ██   ██ ██   ██ ██      ██      ██                     #
@@ -98,22 +97,33 @@ func _flow( selection:Array[int] ) -> void:
 #               ██      ██   ██ ██   ██      ██ ██           ██                #
 #               ██      ██   ██ ██   ██ ███████ ███████ ███████                #
 func                        __________PHASES_________              ()->void:pass
+func                        __Encode_________________              ()->void:pass
+#region Encode
+#MARK: Encode
+## │ ___                 _        [br]
+## │| __|_ _  __ ___  __| |___    [br]
+## │| _|| ' \/ _/ _ \/ _` / -_)   [br]
+## │|___|_||_\__\___/\__,_\___|   [br]
+## ╰───────────────────────────── [br]
+## Encode By-Line
+##
+## Encode Description
 
-func encode_a() -> PackedByteArray:
+func encode_function() -> PackedByteArray:
 	var fbb := FlatBufferBuilder.new()
 
-	var string_ofs:int = fbb.create_String( test_string )
+	var string_ofs:int = fbb.create_variant( test_string )
 
 	var offset:int = Schema.create_RootTable(fbb, string_ofs)
 	fbb.finish(offset)
 	return fbb.to_packed_byte_array()
 
 
-func encode_b() -> PackedByteArray:
+func encode_builder() -> PackedByteArray:
 	var fbb := FlatBufferBuilder.new()
 
 	# Encode the string first to get the offset.
-	var string_offset:int = fbb.create_String( test_string )
+	var string_offset:int = fbb.create_variant( test_string )
 
 	# Construct the builder and add the items.
 	var root_builder := Schema.RootTableBuilder.new( fbb )
@@ -124,44 +134,76 @@ func encode_b() -> PackedByteArray:
 	return fbb.to_packed_byte_array()
 
 
-func verify_a( _buf:PackedByteArray ) -> int:
-	#logp("[b]== Verification ==[/b]")
-	#var verifier := FlatBufferVerifier.new()
-	#verifier.set_buffer(bytes)
+func encode_manual() -> PackedByteArray:
+	var fbb := FlatBufferBuilder.new()
+	var string_ofs:int = fbb.create_variant(test_string)
+	var sto:int = fbb.start_table()
+	fbb.add_offset(4, string_ofs )
+	var eto:int = fbb.end_table(sto)
+	# Finish the buffer and get the bytes
+	fbb.finish( eto )
+	return fbb.to_packed_byte_array()
 
-	# TODO requires code generation changes
-	# TEST_TRUE(fb_table.verify(verifier), "verifying fb_table")
-	return TestBase.RetCode.TEST_OK
+#endregion Encode
 
 
-func decode_a(buf:PackedByteArray) -> Variant:
-	# Decode buffer
+func                        __Decode_________________              ()->void:pass
+#region Decode
+#MARK: Decode
+## │ ___                 _        [br]
+## │|   \ ___ __ ___  __| |___    [br]
+## │| |) / -_) _/ _ \/ _` / -_)   [br]
+## │|___/\___\__\___/\__,_\___|   [br]
+## ╰───────────────────────────── [br]
+## Decode By-Line
+##
+## Decode Description
+
+func decode_manual(buf:PackedByteArray) -> void:
+	var rtl:int = buf.decode_u32(0)
+	test.logd("root_table_pos: %d" % rtl)
+	var vtl:int = rtl - buf.decode_s32(rtl)
+	test.logd("vtable_pos: %d" % rtl)
+	var vts:int = buf.decode_s16(vtl)
+	test.logd("vtable_size: %d" % vts)
+	var rts:int = buf.decode_s16(vtl+2)
+	test.logd("root_table_size: %d" % rts)
+
+	var f0o:int = buf.decode_s16(vtl+4)
+	test.logd("field0_offset: %d" % f0o)
+
+	# I am going offset from table. but it might be offset from current location.
+	# I will only be able to tell on a multi-field object.
+	var f0l:int = rtl + f0o
+	test.logd("field0_location: %d" % f0l)
+
+	# field0 is a string, so the value at the location is an offset.
+	var f0v:int = buf.decode_u32(f0l)
+	test.logd("field0_value: %d" % f0v)
+
+	# the location of the string is the field location + the decoded offset.
+	var sl:int = f0l + f0v
+	test.logd("string_location: %d" % sl)
+
+	# Now we know where the string is, does it look like a flatbuffers string?
+	var ss:int = buf.decode_u32(sl)
+	test.logd("string_size: %d" % ss)
+	# string length in godot does not count the null termination, but getting the size
+	# from the flatbuffer is the size in bytes, which includes a null termination.
+	test.TEST_EQ(test_string.length() +1, ss, "decoded size, and original size should be the same")
+
+	# get the string directly from the buffer using slice.
+	var decoded_string:String = buf.slice(sl+4, sl+4+ss).get_string_from_utf8()
+	test.TEST_EQ(test_string, decoded_string, "decoded string, and original string should be the same")
+
+	# This is to pass onto the use function which isnt really necessary for my
+	# testing. pehraps I should remove it.
 	var fbo : Schema.RootTable = Schema.get_RootTable(buf)
 	test.TEST_EQ( fbo.my_string(), test_string, "my_string()" )
-	return fbo
 
 
-func use_a( variant:Variant ) -> int:
-	var decoded:Schema.RootTable = variant
-	test.TEST_EQ( decoded.my_string(), test_string, "my_string()" )
-	return TestBase.RetCode.TEST_OK
+func decode_function(buf:PackedByteArray) -> void:
+	var fbo : Schema.RootTable = Schema.get_RootTable(buf)
+	test.TEST_EQ( fbo.my_string(), test_string, "my_string()" )
 
-
-func                        __BoilerPlate____________              ()->void:pass
-#region BoilerPlate
-#MARK: BoilerPlate
-## │ ___      _ _         ___ _      _          [br]
-## │| _ ) ___(_) |___ _ _| _ \ |__ _| |_ ___    [br]
-## │| _ \/ _ \ | / -_) '_|  _/ / _` |  _/ -_)   [br]
-## │|___/\___/_|_\___|_| |_| |_\__,_|\__\___|   [br]
-## ╰─────────────────────────────────────────── [br]
-## Because we cannot pre-load a script that hasnt been generated yet, the test
-## script must load this script after the generated script has been created so
-## that this script can preload and use it properly.
-## It's a bit convoluted yes.
-
-var test:TestBase
-func _init(initiator:TestBase) -> void:
-	test = initiator
-
-#endregion BoilerPlate
+#endregion Decode
