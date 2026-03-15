@@ -320,7 +320,7 @@ class EnumVal extends FlatBuffer:
 
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
 		var field_start: int = get_offset_field_start( VT_ATTRIBUTES )
-		assert(field_start, 'Field is not present in buffer' )
+		assert(field_start, 'Field "attributes" is not present in buffer' )
 
 		# The field is a vector of table, so the inline data is a vector of
 		# offsets to the element location.
@@ -436,7 +436,7 @@ class Enum extends FlatBuffer:
 
 	func values_at( idx: int, into: EnumVal = null ) -> EnumVal:
 		var field_start: int = get_offset_field_start( VT_VALUES )
-		assert(field_start, 'Field is not present in buffer' )
+		assert(field_start, 'Field "values" is not present in buffer' )
 
 		# The field is a vector of table, so the inline data is a vector of
 		# offsets to the element location.
@@ -491,7 +491,7 @@ class Enum extends FlatBuffer:
 
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
 		var field_start: int = get_offset_field_start( VT_ATTRIBUTES )
-		assert(field_start, 'Field is not present in buffer' )
+		assert(field_start, 'Field "attributes" is not present in buffer' )
 
 		# The field is a vector of table, so the inline data is a vector of
 		# offsets to the element location.
@@ -735,7 +735,7 @@ class Field extends FlatBuffer:
 
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
 		var field_start: int = get_offset_field_start( VT_ATTRIBUTES )
-		assert(field_start, 'Field is not present in buffer' )
+		assert(field_start, 'Field "attributes" is not present in buffer' )
 
 		# The field is a vector of table, so the inline data is a vector of
 		# offsets to the element location.
@@ -946,7 +946,7 @@ class Object_ extends FlatBuffer:
 
 	func fields_at( idx: int, into: Field = null ) -> Field:
 		var field_start: int = get_offset_field_start( VT_FIELDS )
-		assert(field_start, 'Field is not present in buffer' )
+		assert(field_start, 'Field "fields" is not present in buffer' )
 
 		# The field is a vector of table, so the inline data is a vector of
 		# offsets to the element location.
@@ -1009,7 +1009,7 @@ class Object_ extends FlatBuffer:
 
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
 		var field_start: int = get_offset_field_start( VT_ATTRIBUTES )
-		assert(field_start, 'Field is not present in buffer' )
+		assert(field_start, 'Field "attributes" is not present in buffer' )
 
 		# The field is a vector of table, so the inline data is a vector of
 		# offsets to the element location.
@@ -1197,7 +1197,7 @@ class RPCCall extends FlatBuffer:
 
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
 		var field_start: int = get_offset_field_start( VT_ATTRIBUTES )
-		assert(field_start, 'Field is not present in buffer' )
+		assert(field_start, 'Field "attributes" is not present in buffer' )
 
 		# The field is a vector of table, so the inline data is a vector of
 		# offsets to the element location.
@@ -1339,7 +1339,7 @@ class Service extends FlatBuffer:
 
 	func calls_at( idx: int, into: RPCCall = null ) -> RPCCall:
 		var field_start: int = get_offset_field_start( VT_CALLS )
-		assert(field_start, 'Field is not present in buffer' )
+		assert(field_start, 'Field "calls" is not present in buffer' )
 
 		# The field is a vector of table, so the inline data is a vector of
 		# offsets to the element location.
@@ -1375,7 +1375,7 @@ class Service extends FlatBuffer:
 
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
 		var field_start: int = get_offset_field_start( VT_ATTRIBUTES )
-		assert(field_start, 'Field is not present in buffer' )
+		assert(field_start, 'Field "attributes" is not present in buffer' )
 
 		# The field is a vector of table, so the inline data is a vector of
 		# offsets to the element location.
@@ -1604,7 +1604,7 @@ class Schema extends FlatBuffer:
 
 	func objects_at( idx: int, into: Object_ = null ) -> Object_:
 		var field_start: int = get_offset_field_start( VT_OBJECTS )
-		assert(field_start, 'Field is not present in buffer' )
+		assert(field_start, 'Field "objects" is not present in buffer' )
 
 		# The field is a vector of table, so the inline data is a vector of
 		# offsets to the element location.
@@ -1640,7 +1640,7 @@ class Schema extends FlatBuffer:
 
 	func enums_at( idx: int, into: Enum = null ) -> Enum:
 		var field_start: int = get_offset_field_start( VT_ENUMS )
-		assert(field_start, 'Field is not present in buffer' )
+		assert(field_start, 'Field "enums" is not present in buffer' )
 
 		# The field is a vector of table, so the inline data is a vector of
 		# offsets to the element location.
@@ -1703,7 +1703,7 @@ class Schema extends FlatBuffer:
 
 	func services_at( idx: int, into: Service = null ) -> Service:
 		var field_start: int = get_offset_field_start( VT_SERVICES )
-		assert(field_start, 'Field is not present in buffer' )
+		assert(field_start, 'Field "services" is not present in buffer' )
 
 		# The field is a vector of table, so the inline data is a vector of
 		# offsets to the element location.
@@ -1755,7 +1755,7 @@ class Schema extends FlatBuffer:
 ## flatc was invoked.
 	func fbs_files_at( idx: int, into: SchemaFile = null ) -> SchemaFile:
 		var field_start: int = get_offset_field_start( VT_FBS_FILES )
-		assert(field_start, 'Field is not present in buffer' )
+		assert(field_start, 'Field "fbs_files" is not present in buffer' )
 
 		# The field is a vector of table, so the inline data is a vector of
 		# offsets to the element location.

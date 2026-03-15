@@ -48,7 +48,7 @@ class RootTable extends FlatBuffer:
 
 	func external_array_at( idx: int, into: Minimum = null ) -> Minimum:
 		var field_start: int = get_offset_field_start( VT_EXTERNAL_ARRAY )
-		assert(field_start, 'Field is not present in buffer' )
+		assert(field_start, 'Field "external_array" is not present in buffer' )
 
 		# The field is a vector of table, so the inline data is a vector of
 		# offsets to the element location.

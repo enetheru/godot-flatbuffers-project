@@ -121,7 +121,7 @@ class Monster extends FlatBuffer:
 
 	func weapons_at( idx: int, into: Weapon = null ) -> Weapon:
 		var field_start: int = get_offset_field_start( VT_WEAPONS )
-		assert(field_start, 'Field is not present in buffer' )
+		assert(field_start, 'Field "weapons" is not present in buffer' )
 
 		# The field is a vector of table, so the inline data is a vector of
 		# offsets to the element location.
@@ -174,7 +174,7 @@ class Monster extends FlatBuffer:
 
 	func path_at( idx: int ) -> Vector3:
 		var field_start: int = get_offset_field_start( VT_PATH )
-		assert(field_start, 'Field is not present in buffer' )
+		assert(field_start, 'Field "path" is not present in buffer' )
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')

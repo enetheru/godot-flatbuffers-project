@@ -28,7 +28,7 @@ class TestStruct extends FlatBuffer:
 
 	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		if bytes_.is_empty():
+		if bytes_.is_empty(): 
 			_fb_bytes = PackedByteArray()
 			_fb_bytes.resize( _fb_struct_size )
 		else:
@@ -72,8 +72,6 @@ class TestTableA extends FlatBuffer:
 	## Field A
 	func a() -> int:
 		var field_start: int = get_inline_field_start( VT_A )
-		print("a().field_start: ", field_start)
-		print("buffer_size: ", _fb_bytes.size() )
 		if not field_start: return 0
 		return _fb_bytes.decode_s32( field_start )
 
@@ -164,10 +162,8 @@ class RootTable extends FlatBuffer:
 		VT_GODOT_STRUCTS = 10,
 		VT_CUSTOM_STRUCTS = 12,
 		VT_TABLES = 14,
-		VT_SINGLE_TYPE = 16,
-		VT_SINGLE = 18,
-		VT_UNIONS_TYPE = 20,
-		VT_UNIONS = 22
+		VT_UNIONS_TYPE = 16,
+		VT_UNIONS = 18
 	}
 
 	## TODO: create a useful doc comment for the init function
@@ -270,7 +266,7 @@ class RootTable extends FlatBuffer:
 	## Vector of Godot Structs
 	func godot_structs_at( idx: int ) -> Vector3:
 		var field_start: int = get_offset_field_start( VT_GODOT_STRUCTS )
-		assert(field_start, 'Field is not present in buffer' )
+		assert(field_start, 'Field "godot_structs" is not present in buffer' )
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
@@ -301,7 +297,7 @@ class RootTable extends FlatBuffer:
 	## Vector of Custom Structs
 	func custom_structs_at( idx: int, into: TestStruct = null ) -> TestStruct:
 		var field_start: int = get_offset_field_start( VT_CUSTOM_STRUCTS )
-		assert(field_start, 'Field is not present in buffer' )
+		assert(field_start, 'Field "custom_structs" is not present in buffer' )
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
@@ -336,50 +332,22 @@ class RootTable extends FlatBuffer:
 	## Vector of Tables
 	func tables_at( idx: int, into: TestTableA = null ) -> TestTableA:
 		var field_start: int = get_offset_field_start( VT_TABLES )
-		assert(field_start, 'Field is not present in buffer' )
+		assert(field_start, 'Field "tables" is not present in buffer' )
 
 		# The field is a vector of table, so the inline data is a vector of
 		# offsets to the element location.
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
-		print("Array size: ", array_size)
-		print("into: ", into)
-		print("buffer_size: ", _fb_bytes.size())
 
 		var array_start: int = field_start + 4
-		print("Array start: ", array_start)
 		var element_pos: int = array_start + idx * 4
-		print("element_pos: ", element_pos)
 		var element_offset: int = _fb_bytes.decode_u32(element_pos)
-		print("element_offset: ", element_offset)
 		if into:
 			into._fb_bytes = _fb_bytes
-			into._fb_start = field_start + element_offset
+			into._fb_start = element_pos + element_offset
 			return into
 		return _vector_schema.TestTableA.new( _fb_bytes, element_pos + element_offset )
-
-	## Return true if single is present in the buffer, else false
-	func single_is_present() -> bool:
-		return get_field_offset( VT_SINGLE )
-
-	## TODO: Write a doc comment for the union_type accessor
-	func single_type() -> TestUnion:
-		var field_start: int = get_inline_field_start( VT_SINGLE_TYPE )
-		if not field_start: return 0 as TestUnion
-		var decoded: TestUnion = _fb_bytes.decode_u8( field_start )
-		return decoded
-
-	## Temporary Union to check the differences between vectors and non vectors
-	func single() -> Variant:
-		var field_start: int = get_offset_field_start( VT_SINGLE )
-		if not field_start: return null
-		match( single_type() ):
-			_vector_schema.TestUnion.TEST_TABLE_A:
-				return _vector_schema.TestTableA.new( _fb_bytes, field_start )
-			_vector_schema.TestUnion.TEST_TABLE_B:
-				return _vector_schema.TestTableB.new( _fb_bytes, field_start )
-		return null
 
 	## Decode and return all elements of unions_type as an [Array]
 	func unions_type() -> Array:
@@ -403,12 +371,62 @@ class RootTable extends FlatBuffer:
 		return _fb_bytes.decode_u32( array_start )
 
 	## Vector of Unions
-	# TODO GenFieldVectorUnionGet
-	# unions: Array
+	func unions() -> Array:
+		var field_start: int = get_offset_field_start( VT_UNIONS )
+		assert(field_start, 'Field "unions" is not present in buffer' )
+
+		# The field is a vector of union, to decode the
+		# content, we need to use the paired union_type vector
+		var types:PackedByteArray = unions_type()
+		assert(not types.is_empty(), 'unions_types is empty' )
+
+		# The inline data is a vector of offsets to the element location.
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		var array_start: int = field_start + 4 # sizeof(uint32_t)
+
+		var result:Array = []
+		if result.resize(array_size):
+			assert(false, 'Failure to resize result array.')
+
+		for i in array_size:
+			var type:TestUnion = types[i] as TestUnion
+			var element_pos: int = array_start + i * 4
+			var element_offset: int = _fb_bytes.decode_u32(element_pos)
+			match type:
+				TestUnion.TEST_TABLE_A:
+					result[i] = TestTableA.new( _fb_bytes, element_pos + element_offset )
+				TestUnion.TEST_TABLE_B:
+					result[i] = TestTableB.new( _fb_bytes, element_pos + element_offset )
+		return result
 
 	## Vector of Unions
-	# TODO GenFieldVectorUnionAt
-	# unions: Array
+	func unions_at( idx: int, into: Variant = null ) -> Variant:
+		var field_start: int = get_offset_field_start( VT_UNIONS )
+		assert(field_start, 'Field "unions" is not present in buffer' )
+
+		# The field is a vector of union, to decode the
+		# content, we need to use the paired *_type vector
+		var type:TestUnion = unions_type_at(idx)
+		assert(type, 'unions_type is null' )
+
+		# The inline data is a vector of offsets to the element location.
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4 # (siseof uint32_t)
+		var element_pos: int = array_start + idx * 4
+		var element_offset: int = _fb_bytes.decode_u32(element_pos)
+		if into:
+			into._fb_bytes = _fb_bytes
+			into._fb_start = element_pos + element_offset
+			return into
+
+		match type:
+			TestUnion.TEST_TABLE_A:
+				return TestTableA.new( _fb_bytes, element_pos + element_offset )
+			TestUnion.TEST_TABLE_B:
+				return TestTableB.new( _fb_bytes, element_pos + element_offset )
+		return null
 
 
 ## TODO: Write a Doc Comment for the builder
@@ -446,14 +464,6 @@ class RootTableBuilder extends RefCounted:
 		fbb_.add_offset( RootTable.VT_TABLES, tables_offset )
 
 	## TODO: Write a Doc Comment for the builder's add functions
-	func add_single_type( single_type: TestUnion ) -> void:
-		fbb_.add_element_ubyte( RootTable.VT_SINGLE_TYPE, single_type )
-
-	## TODO: Write a Doc Comment for the builder's add functions
-	func add_single( single_offset: int ) -> void:
-		fbb_.add_offset( RootTable.VT_SINGLE, single_offset )
-
-	## TODO: Write a Doc Comment for the builder's add functions
 	func add_unions_type( unions_type_offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_UNIONS_TYPE, unions_type_offset )
 
@@ -475,24 +485,21 @@ static func create_RootTable( _fbb: FlatBufferBuilder,
 		godot_structs: int,
 		custom_structs: int,
 		tables: int,
-		single_type: TestUnion,
-		single: int,
 		unions_type: int,
 		unions: int ) -> int :
 	var builder: RootTableBuilder = RootTableBuilder.new( _fbb );
 	builder.add_unions( unions );
 	builder.add_unions_type( unions_type );
-	builder.add_single( single );
 	builder.add_tables( tables );
 	builder.add_custom_structs( custom_structs );
 	builder.add_godot_structs( godot_structs );
 	builder.add_strings( strings );
 	builder.add_enums( enums );
 	builder.add_scalars( scalars );
-	builder.add_single_type( single_type );
 	return builder.finish();
 
 ## TODO: create a doc comment for the get_RootTable function
 static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
 	assert(not _bytes.is_empty())
 	return RootTable.new(_bytes, _bytes.decode_u32(0))
+

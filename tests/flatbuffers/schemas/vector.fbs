@@ -57,9 +57,6 @@ table RootTable {
 	/// Vector of Tables
 	tables:[TestTableA];  // vector of table
 
-	/// Temporary Union to check the differences between vectors and non vectors
-	single:TestUnion;
-
 	/// Vector of Unions
 	unions:[TestUnion];   // vector of union
 }
