@@ -28,7 +28,7 @@ class TestStruct extends FlatBuffer:
 
 	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		if bytes_.is_empty(): 
+		if bytes_.is_empty():
 			_fb_bytes = PackedByteArray()
 			_fb_bytes.resize( _fb_struct_size )
 		else:
@@ -72,6 +72,8 @@ class TestTableA extends FlatBuffer:
 	## Field A
 	func a() -> int:
 		var field_start: int = get_inline_field_start( VT_A )
+		print("a().field_start: ", field_start)
+		print("buffer_size: ", _fb_bytes.size() )
 		if not field_start: return 0
 		return _fb_bytes.decode_s32( field_start )
 
@@ -341,13 +343,19 @@ class RootTable extends FlatBuffer:
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
 		assert( idx < array_size, 'index is out of bounds')
+		print("Array size: ", array_size)
+		print("into: ", into)
+		print("buffer_size: ", _fb_bytes.size())
 
 		var array_start: int = field_start + 4
+		print("Array start: ", array_start)
 		var element_pos: int = array_start + idx * 4
+		print("element_pos: ", element_pos)
 		var element_offset: int = _fb_bytes.decode_u32(element_pos)
+		print("element_offset: ", element_offset)
 		if into:
 			into._fb_bytes = _fb_bytes
-			into._fb_start = element_pos + element_offset
+			into._fb_start = field_start + element_offset
 			return into
 		return _vector_schema.TestTableA.new( _fb_bytes, element_pos + element_offset )
 
@@ -395,12 +403,12 @@ class RootTable extends FlatBuffer:
 		return _fb_bytes.decode_u32( array_start )
 
 	## Vector of Unions
-	# TODO GenFieldVectorUnionGet 
-	# unions: Array 
+	# TODO GenFieldVectorUnionGet
+	# unions: Array
 
 	## Vector of Unions
-	# TODO GenFieldVectorUnionAt 
-	# unions: Array 
+	# TODO GenFieldVectorUnionAt
+	# unions: Array
 
 
 ## TODO: Write a Doc Comment for the builder
@@ -488,4 +496,3 @@ static func create_RootTable( _fbb: FlatBufferBuilder,
 static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
 	assert(not _bytes.is_empty())
 	return RootTable.new(_bytes, _bytes.decode_u32(0))
-

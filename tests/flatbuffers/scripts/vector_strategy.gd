@@ -72,7 +72,18 @@ class Initial:
 		]
 
 	# Vector of Tables
-	var tables:Array[TestTableA] = []
+	var table_data:Array[Dictionary] = [
+		{ &'o':3},
+		{ &'o':5},
+		{ &'o':7}
+	]
+
+	func table_creator(fbb:FlatBufferBuilder, O:Dictionary) -> int:
+		var value:int = O.o
+		print("value: ", value)
+		var ofs:int = Schema.create_TestTableA(fbb, value)
+		print("ofs: ", ofs)
+		return ofs
 
 	# Vector of Unions
 	var unions:Array[TestUnion] = []
@@ -90,6 +101,15 @@ func initialise() -> void:
 #     ██    ██  ██  ██  ██      ██   ██ ██   ██ ██ ██   ██ ██           ██     #
 #      ██████    ████   ███████ ██   ██ ██   ██ ██ ██████  ███████ ███████     #
 func                        ________OVERRIDES________              ()->void:pass
+
+## Because we cannot pre-load a script that hasnt been generated yet, the test
+## script must load this script after the generated script has been created so
+## that this script can preload and use it properly.
+## It's a bit convoluted yes.
+var test:TestBase
+func _init(initiator:TestBase) -> void:
+	test = initiator
+	initialise()
 
 func _get_phase_count() -> int: return phases.size()
 
@@ -127,6 +147,8 @@ func _flow( selection:Array[int] ) -> void:
 	var encode:Callable = get_strategy(ENCODING, selection[ENCODING])
 	test.logp(" --- %s ---" % encode.get_method().capitalize())
 	var packed:PackedByteArray = encode.call()
+	if not test.TEST_FALSE_RET(packed.is_empty(),
+		"result of encoding should not be empty"): return
 	test.logd("bytes: %s" % TestBase.bytes_view(packed) )
 	# validate
 	var verify:Callable = get_strategy(VERIFYING, selection[VERIFYING])
@@ -174,8 +196,9 @@ func encode_builder() -> PackedByteArray:
 	var custom_structs_ofs:int = fbb.create_vector_of_custom_struct(
 		initial.custom_structs, Schema.TestStruct._fb_struct_size )
 
-	# Vector of Tables
 	#tables:[TestTableA];
+	var tables_ofs:int = fbb.create_vector_table(initial.table_data, initial.table_creator )
+	print("Tables_Ofs: ", tables_ofs)
 
 	# Temporary Union to check the differences between vectors and non vectors
 	#single:TestUnion;
@@ -189,10 +212,11 @@ func encode_builder() -> PackedByteArray:
 	rtb.add_strings(strings_ofs)
 	rtb.add_godot_structs(godot_structs_ofs)
 	rtb.add_custom_structs(custom_structs_ofs)
+	rtb.add_tables(tables_ofs)
 	var rtb_ofs:int = rtb.finish()
 	fbb.finish(rtb_ofs)
 
-	return fbb.to_packed_byte_array()
+	return fbb.get_buffer()
 
 
 func verify_a( _buf:PackedByteArray ) -> int:
@@ -241,7 +265,6 @@ func use_a( variant:Variant ) -> int:
 	# vector of structs
 	if test.TEST_EQ_RET(initial.custom_structs.size(), rtb.custom_structs_size(),
 			"size of initial custom_structs should match the decoded custom_structs_size()"):
-		pass
 		for i in initial.custom_structs.size():
 			var initial_custom_struct:Schema.TestStruct = initial.custom_structs[i]
 			var decoded_custom_struct:Schema.TestStruct = rtb.custom_structs_at(i)
@@ -250,26 +273,12 @@ func use_a( variant:Variant ) -> int:
 			test.TEST_EQ(initial_custom_struct.b, decoded_custom_struct.b,
 					"custom_structs_at(%d).b should match initial.custom_structs[%d].b" % [i,i])
 
+	if test.TEST_EQ_RET(initial.table_data.size(), rtb.tables_size(),
+			"size of initial custom_structs should match the decoded custom_structs_size()"):
+		for i in initial.table_data.size():
+			var O:Dictionary = initial.table_data[i]
+			var decoded_table:Schema.TestTableA = rtb.tables_at(i)
+			test.TEST_EQ(O.o, decoded_table.a(),
+				"Decoded table field should match initial data source")
 
 	return test.runcode
-
-
-func                        __BoilerPlate____________              ()->void:pass
-#region BoilerPlate
-#MARK: BoilerPlate
-## │ ___      _ _         ___ _      _          [br]
-## │| _ ) ___(_) |___ _ _| _ \ |__ _| |_ ___    [br]
-## │| _ \/ _ \ | / -_) '_|  _/ / _` |  _/ -_)   [br]
-## │|___/\___/_|_\___|_| |_| |_\__,_|\__\___|   [br]
-## ╰─────────────────────────────────────────── [br]
-## Because we cannot pre-load a script that hasnt been generated yet, the test
-## script must load this script after the generated script has been created so
-## that this script can preload and use it properly.
-## It's a bit convoluted yes.
-
-var test:TestBase
-func _init(initiator:TestBase) -> void:
-	test = initiator
-	initialise()
-
-#endregion BoilerPlate

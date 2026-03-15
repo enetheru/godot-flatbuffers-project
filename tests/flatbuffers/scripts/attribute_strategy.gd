@@ -86,6 +86,8 @@ func _flow( _selection:Array[int] ) -> void:
 	#var encode:Callable = get_strategy(ENCODING, selection[ENCODING])
 	#test.logp(" --- %s ---" % encode.get_method().capitalize())
 	#var packed:PackedByteArray = encode.call()
+	#if not test.TEST_FALSE_RET(packed.is_empty(),
+		#"result of encoding should not be empty"): return
 	## validate
 	#var verify:Callable = get_strategy(VERIFYING, selection[VERIFYING])
 	#test.logp(" --- %s ---" % verify.get_method().capitalize())

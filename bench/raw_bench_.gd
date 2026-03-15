@@ -12,7 +12,7 @@ class RawBench extends BenchBase:
 		fbc.initialized = true
 		if fbc.list.resize(kVectorLength) != OK:
 			push_error( "resizing fbc.list failed" )
-			
+
 		for i:int in kVectorLength:
 			# We add + i to not make these identical copies for a more realistic
 			# compression test.
@@ -21,14 +21,14 @@ class RawBench extends BenchBase:
 			foo.count = 10000 + i
 			foo.length = 1000000 + i
 			foo.prefix = ord('@') + i
-			
-			
+
+
 			var bar := Bar.new()
 			bar.parent = foo
 			bar.ratio = 3.14159 + i
 			bar.size = 10000 + i
 			bar.time = 123456 + i
-			
+
 			var foobar := FooBar.new()
 			fbc.list[i] = foobar
 			foobar.rating = 3.1415432432445543543 + i

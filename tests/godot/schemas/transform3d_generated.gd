@@ -19,7 +19,8 @@ class RootTable extends FlatBuffer:
 		return get_field_offset( VT_MY_FIELD )
 
 	func my_field() -> Transform3D:
-		return get_variant( VT_MY_FIELD, TYPE_TRANSFORM3D )
+		var field_start: int = get_inline_field_start( VT_MY_FIELD )
+		return decode_variant( field_start, TYPE_TRANSFORM3D )
 
 
 ## TODO: Write a Doc Comment for the builder

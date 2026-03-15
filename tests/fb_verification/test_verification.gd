@@ -10,7 +10,7 @@ func _run_test() -> int:
 	var final_ofs:int = Schema.create_MyTable(fbb, 42)
 	fbb.finish(final_ofs)
 
-	var packed:PackedByteArray = fbb.to_packed_byte_array()
+	var packed:PackedByteArray = fbb.get_buffer()
 	logd(sbytes(packed))
 
 	var fb_table := Schema.get_MyTable(packed, packed.decode_u32(0))

@@ -59,7 +59,7 @@ func Encode( _thing:Variant ) -> PackedByteArray:
 	#len = fbb.GetSize();
 	#NOTE: removed due to it existing in the packedbytearray return value
 	#return fbb.GetBufferPointer();
-	return fbb.to_packed_byte_array()
+	return fbb.get_buffer()
 
 
 #int64_t Use(void* decoded) override {

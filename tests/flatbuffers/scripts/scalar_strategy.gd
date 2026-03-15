@@ -74,6 +74,8 @@ func _flow( selection:Array[int] ) -> void:
 	var encode:Callable = get_strategy(ENCODING, selection[ENCODING])
 	test.logp(" --- %s ---" % encode.get_method().capitalize())
 	var packed:PackedByteArray = encode.call()
+	if not test.TEST_FALSE_RET(packed.is_empty(),
+		"result of encoding should not be empty"): return
 	test.logd("bytes: %s" % TestBase.bytes_view(packed) )
 	# validate
 	var verify:Callable = get_strategy(VERIFYING, selection[VERIFYING])
@@ -115,7 +117,7 @@ func encode_a() -> PackedByteArray:
 		-1		# f_double	== -1: we need better tests
 		)
 	fbb.finish(offset)
-	return fbb.to_packed_byte_array()
+	return fbb.get_buffer()
 
 
 func verify_a( _buf:PackedByteArray ) -> int:

@@ -78,6 +78,8 @@ func _flow( selection:Array[int] ) -> void:
 	var encode:Callable = get_strategy(ENCODING, selection[ENCODING])
 	test.logp(" --- %s ---" % encode.get_method().capitalize())
 	var packed:PackedByteArray = encode.call()
+	if not test.TEST_FALSE_RET(packed.is_empty(),
+		"result of encoding should not be empty"): return
 	test.logd("bytes: %s" % TestBase.bytes_view(packed) )
 
 	# validate
@@ -116,7 +118,7 @@ func encode_function() -> PackedByteArray:
 
 	var offset:int = Schema.create_RootTable(fbb, string_ofs)
 	fbb.finish(offset)
-	return fbb.to_packed_byte_array()
+	return fbb.get_buffer()
 
 
 func encode_builder() -> PackedByteArray:
@@ -131,7 +133,7 @@ func encode_builder() -> PackedByteArray:
 
 	# Finishe the buffer and get the bytes
 	fbb.finish( root_builder.finish() )
-	return fbb.to_packed_byte_array()
+	return fbb.get_buffer()
 
 
 func encode_manual() -> PackedByteArray:
@@ -142,7 +144,7 @@ func encode_manual() -> PackedByteArray:
 	var eto:int = fbb.end_table(sto)
 	# Finish the buffer and get the bytes
 	fbb.finish( eto )
-	return fbb.to_packed_byte_array()
+	return fbb.get_buffer()
 
 #endregion Encode
 

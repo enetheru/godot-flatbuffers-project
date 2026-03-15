@@ -18,7 +18,7 @@ static func _static_init() -> void:
 	BenchLib.FLAGS_benchmark_list_tests = false
 	BenchLib.FLAGS_benchmark_dry_run = false
 	BenchLib.kMaxIterations = 1
-	
+
 	bench_BM_Flatbuffers_Encode = \
 		RegisterLib.RegisterBenchmarkInternal(
 			FunctionBenchmark.new("BM_Flatbuffers_Encode", BM_Flatbuffers_Encode))
@@ -41,10 +41,10 @@ static func _static_init() -> void:
 
 
 func _run() -> void:
-	
-	
+
+
 	var reporter := ConsoleReporter.new()
-	
+
 	var num_benchmarks:int = BenchLib.RunSpecifiedBenchmarks(reporter)
 	if num_benchmarks == 0:
 		push_error("zero benchmarks")
@@ -74,7 +74,7 @@ static func Use( state:State, bench:BenchBase, buffer:PackedByteArray, check_sum
 	var sum:int = 0
 	for i:int in state:
 		sum = bench.Use(decoded)
-	
+
 	#if sum != check_sum:
 		#state.SkipWithError("Checksum did not match: %s != %s" % [check_sum, sum])
 		#state.

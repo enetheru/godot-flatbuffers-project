@@ -85,6 +85,8 @@ func _flow( selection:Array[int] ) -> void:
 	var encode:Callable = get_strategy(ENCODING, selection[ENCODING])
 	test.logp(" --- %s ---" % encode.get_method().capitalize())
 	var packed:PackedByteArray = encode.call()
+	if not test.TEST_FALSE_RET(packed.is_empty(),
+		"result of encoding should not be empty"): return
 	# validate
 	var verify:Callable = get_strategy(VERIFYING, selection[VERIFYING])
 	test.logp(" --- %s ---" % verify.get_method().capitalize())
@@ -128,7 +130,7 @@ func encode_manual() -> PackedByteArray:
 	fbb.add_element_int(4, value)
 	var te:int = fbb.end_table(ts)
 	fbb.finish(te)
-	return fbb.to_packed_byte_array()
+	return fbb.get_buffer()
 
 
 ## encoding method a, use the Schema.create_ function
@@ -138,7 +140,7 @@ func encode_function() -> PackedByteArray:
 	var rt_offset:int = Schema.create_Minimum(fbb, value )
 	fbb.finish( rt_offset )
 
-	var bytes:PackedByteArray = fbb.to_packed_byte_array()
+	var bytes:PackedByteArray = fbb.get_buffer()
 	test.logd("bytes: %s" % TestBase.bytes_view(bytes) )
 	return bytes
 
@@ -152,7 +154,7 @@ func encode_builder() -> PackedByteArray:
 	var ofs:int = mbb.finish()
 	fbb.finish(ofs)
 
-	var bytes:PackedByteArray = fbb.to_packed_byte_array()
+	var bytes:PackedByteArray = fbb.get_buffer()
 	test.logd("bytes: %s" % TestBase.bytes_view(bytes) )
 	return bytes
 

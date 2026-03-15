@@ -64,112 +64,128 @@ class RootTable extends FlatBuffer:
 		return get_field_offset( VT_FAABB )
 
 	func faabb() -> AABB:
-		return get_variant( VT_FAABB, TYPE_AABB )
+		var field_start: int = get_inline_field_start( VT_FAABB )
+		return decode_variant( field_start, TYPE_AABB )
 
 	## Return true if fbasis is present in the buffer, else false
 	func fbasis_is_present() -> bool:
 		return get_field_offset( VT_FBASIS )
 
 	func fbasis() -> Basis:
-		return get_variant( VT_FBASIS, TYPE_BASIS )
+		var field_start: int = get_inline_field_start( VT_FBASIS )
+		return decode_variant( field_start, TYPE_BASIS )
 
 	## Return true if fcolor is present in the buffer, else false
 	func fcolor_is_present() -> bool:
 		return get_field_offset( VT_FCOLOR )
 
 	func fcolor() -> Color:
-		return get_variant( VT_FCOLOR, TYPE_COLOR )
+		var field_start: int = get_inline_field_start( VT_FCOLOR )
+		return decode_variant( field_start, TYPE_COLOR )
 
 	## Return true if fplane is present in the buffer, else false
 	func fplane_is_present() -> bool:
 		return get_field_offset( VT_FPLANE )
 
 	func fplane() -> Plane:
-		return get_variant( VT_FPLANE, TYPE_PLANE )
+		var field_start: int = get_inline_field_start( VT_FPLANE )
+		return decode_variant( field_start, TYPE_PLANE )
 
 	## Return true if fprojection is present in the buffer, else false
 	func fprojection_is_present() -> bool:
 		return get_field_offset( VT_FPROJECTION )
 
 	func fprojection() -> Projection:
-		return get_variant( VT_FPROJECTION, TYPE_PROJECTION )
+		var field_start: int = get_inline_field_start( VT_FPROJECTION )
+		return decode_variant( field_start, TYPE_PROJECTION )
 
 	## Return true if fquaternion is present in the buffer, else false
 	func fquaternion_is_present() -> bool:
 		return get_field_offset( VT_FQUATERNION )
 
 	func fquaternion() -> Quaternion:
-		return get_variant( VT_FQUATERNION, TYPE_QUATERNION )
+		var field_start: int = get_inline_field_start( VT_FQUATERNION )
+		return decode_variant( field_start, TYPE_QUATERNION )
 
 	## Return true if frect2 is present in the buffer, else false
 	func frect2_is_present() -> bool:
 		return get_field_offset( VT_FRECT2 )
 
 	func frect2() -> Rect2:
-		return get_variant( VT_FRECT2, TYPE_RECT2 )
+		var field_start: int = get_inline_field_start( VT_FRECT2 )
+		return decode_variant( field_start, TYPE_RECT2 )
 
 	## Return true if frect2i is present in the buffer, else false
 	func frect2i_is_present() -> bool:
 		return get_field_offset( VT_FRECT2I )
 
 	func frect2i() -> Rect2i:
-		return get_variant( VT_FRECT2I, TYPE_RECT2I )
+		var field_start: int = get_inline_field_start( VT_FRECT2I )
+		return decode_variant( field_start, TYPE_RECT2I )
 
 	## Return true if ftransform2d is present in the buffer, else false
 	func ftransform2d_is_present() -> bool:
 		return get_field_offset( VT_FTRANSFORM2D )
 
 	func ftransform2d() -> Transform2D:
-		return get_variant( VT_FTRANSFORM2D, TYPE_TRANSFORM2D )
+		var field_start: int = get_inline_field_start( VT_FTRANSFORM2D )
+		return decode_variant( field_start, TYPE_TRANSFORM2D )
 
 	## Return true if ftransform3d is present in the buffer, else false
 	func ftransform3d_is_present() -> bool:
 		return get_field_offset( VT_FTRANSFORM3D )
 
 	func ftransform3d() -> Transform3D:
-		return get_variant( VT_FTRANSFORM3D, TYPE_TRANSFORM3D )
+		var field_start: int = get_inline_field_start( VT_FTRANSFORM3D )
+		return decode_variant( field_start, TYPE_TRANSFORM3D )
 
 	## Return true if fvector2 is present in the buffer, else false
 	func fvector2_is_present() -> bool:
 		return get_field_offset( VT_FVECTOR2 )
 
 	func fvector2() -> Vector2:
-		return get_variant( VT_FVECTOR2, TYPE_VECTOR2 )
+		var field_start: int = get_inline_field_start( VT_FVECTOR2 )
+		return decode_variant( field_start, TYPE_VECTOR2 )
 
 	## Return true if fvector2i is present in the buffer, else false
 	func fvector2i_is_present() -> bool:
 		return get_field_offset( VT_FVECTOR2I )
 
 	func fvector2i() -> Vector2i:
-		return get_variant( VT_FVECTOR2I, TYPE_VECTOR2I )
+		var field_start: int = get_inline_field_start( VT_FVECTOR2I )
+		return decode_variant( field_start, TYPE_VECTOR2I )
 
 	## Return true if fvector3 is present in the buffer, else false
 	func fvector3_is_present() -> bool:
 		return get_field_offset( VT_FVECTOR3 )
 
 	func fvector3() -> Vector3:
-		return get_variant( VT_FVECTOR3, TYPE_VECTOR3 )
+		var field_start: int = get_inline_field_start( VT_FVECTOR3 )
+		return decode_variant( field_start, TYPE_VECTOR3 )
 
 	## Return true if fvector3i is present in the buffer, else false
 	func fvector3i_is_present() -> bool:
 		return get_field_offset( VT_FVECTOR3I )
 
 	func fvector3i() -> Vector3i:
-		return get_variant( VT_FVECTOR3I, TYPE_VECTOR3I )
+		var field_start: int = get_inline_field_start( VT_FVECTOR3I )
+		return decode_variant( field_start, TYPE_VECTOR3I )
 
 	## Return true if fvector4 is present in the buffer, else false
 	func fvector4_is_present() -> bool:
 		return get_field_offset( VT_FVECTOR4 )
 
 	func fvector4() -> Vector4:
-		return get_variant( VT_FVECTOR4, TYPE_VECTOR4 )
+		var field_start: int = get_inline_field_start( VT_FVECTOR4 )
+		return decode_variant( field_start, TYPE_VECTOR4 )
 
 	## Return true if vector4i is present in the buffer, else false
 	func vector4i_is_present() -> bool:
 		return get_field_offset( VT_VECTOR4I )
 
 	func vector4i() -> Vector4i:
-		return get_variant( VT_VECTOR4I, TYPE_VECTOR4I )
+		var field_start: int = get_inline_field_start( VT_VECTOR4I )
+		return decode_variant( field_start, TYPE_VECTOR4I )
 
 
 ## TODO: Write a Doc Comment for the builder

@@ -16,7 +16,7 @@ class FBFoo extends FlatBuffer:
 
 	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		if bytes_.is_empty(): 
+		if bytes_.is_empty():
 			_fb_bytes = PackedByteArray()
 			_fb_bytes.resize( _fb_struct_size )
 		else:
@@ -60,7 +60,7 @@ class FBBar extends FlatBuffer:
 
 	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		if bytes_.is_empty(): 
+		if bytes_.is_empty():
 			_fb_bytes = PackedByteArray()
 			_fb_bytes.resize( _fb_struct_size )
 		else:
@@ -160,7 +160,7 @@ class FBFooBarBuilder extends RefCounted:
 
 	## TODO: Write a Doc Comment for the builder's add functions
 	func add_sibling( sibling: FBBar ) -> void:
-		fbb_.add_bytes( FBFooBar.VT_SIBLING, sibling._fb_bytes ) 
+		fbb_.add_bytes( FBFooBar.VT_SIBLING, sibling._fb_bytes )
 
 	## TODO: Write a Doc Comment for the builder's add functions
 	func add_name( name_offset: int ) -> void:
@@ -321,4 +321,3 @@ static func create_FBFooBarContainer( _fbb: FlatBufferBuilder,
 static func get_FBFooBarContainer( _bytes: PackedByteArray ) -> FBFooBarContainer:
 	assert(not _bytes.is_empty())
 	return FBFooBarContainer.new(_bytes, _bytes.decode_u32(0))
-

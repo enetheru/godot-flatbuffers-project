@@ -1,3 +1,14 @@
+
+## Because we cannot pre-load a script that hasnt been generated yet, the test
+## script must load this script after the generated script has been created so
+## that this script can preload and use it properly.
+## It's a bit convoluted yes.
+var test:TestBase
+func _init(initiator:TestBase) -> void:
+	test = initiator
+
+
+
 ##   ██████ ██████  ███████  █████  ████████ ██ ███    ██  ██████
 ##  ██      ██   ██ ██      ██   ██    ██    ██ ████   ██ ██
 ##  ██      ██████  █████   ███████    ██    ██ ██ ██  ██ ██   ███
@@ -22,18 +33,24 @@ func create_orc_flatbuffer() -> PackedByteArray:
 
 	# flatbuffers::FlatBufferBuilder builder(1024);
 	var builder := FlatBufferBuilder.create(1024)
+	if not test.TEST_TRUE_RET(is_instance_valid(builder),
+		"builder should be a valid instance"): return []
 
 	# After creating the builder, we can start serializing our data. Before we
 	# make our orc Monster, let's create some Weapons: a Sword and an Axe.
 
 	# auto weapon_one_name = builder.CreateString("Sword");
 	var weapon_one_name:int = builder.create_variant( "Sword" )
+	if not test.TEST_OP_RET(weapon_one_name, OP_GREATER, 0,
+		"weapon_one_name should have a positive value"): return []
 
 	# short weapon_one_damage = 3;
 	var weapon_one_damage:int = 3
 
 	# auto weapon_two_name = builder.CreateString("Axe");
 	var weapon_two_name:int = builder.create_variant( "Axe" )
+	if not test.TEST_OP_RET(weapon_two_name, OP_GREATER, 0,
+		"weapon_two_name should have a positive value"): return []
 
 	# short weapon_two_damage = 5;
 	var weapon_two_damage:int = 5
@@ -42,9 +59,13 @@ func create_orc_flatbuffer() -> PackedByteArray:
 
 	# auto sword = CreateWeapon(builder, weapon_one_name, weapon_one_damage);
 	var sword:int = schema.create_Weapon( builder, weapon_one_name, weapon_one_damage )
+	if not test.TEST_OP_RET(sword, OP_GREATER, 0,
+		"sword should have a positive value"): return []
 
 	# auto axe = CreateWeapon(builder, weapon_two_name, weapon_two_damage);
 	var axe:int = schema.create_Weapon( builder, weapon_two_name, weapon_two_damage )
+	if not test.TEST_OP_RET(axe, OP_GREATER, 0,
+		"axe should have a positive value"): return []
 
 	# Now let's create our monster, the orc. For this orc, lets make him red
 	# with rage, positioned at (1.0, 2.0, 3.0), and give him a large pool of
@@ -61,6 +82,8 @@ func create_orc_flatbuffer() -> PackedByteArray:
 
 	# auto name = builder.CreateString("Orc");
 	var name:int = builder.create_variant("Orc")
+	if not test.TEST_OP_RET(name, OP_GREATER, 0,
+		"name should have a positive value"): return []
 
 	# Create a `vector` representing the inventory of the Orc. Each number
 	# could correspond to an item that can be claimed after he is slain.
@@ -70,6 +93,8 @@ func create_orc_flatbuffer() -> PackedByteArray:
 
 	# auto inventory = builder.CreateVector(treasure, 10);
 	var inventory:int = builder.create_vector_uint8( treasure )
+	if not test.TEST_OP_RET(inventory, OP_GREATER, 0,
+		"inventory should have a positive value"): return []
 
 	# We serialized two built-in data types (string and vector) and captured
 	# their return values. These values are offsets into the serialized data,
@@ -94,23 +119,23 @@ func create_orc_flatbuffer() -> PackedByteArray:
 	var weapons_vector:PackedInt32Array
 
 	# weapons_vector.push_back(sword);
-	@warning_ignore("return_value_discarded")
-	weapons_vector.push_back(sword)
+	test.TEST_FALSE(weapons_vector.push_back(sword),
+			"failed to push int into PackedInt32Array")
 
 	# weapons_vector.push_back(axe);
-	@warning_ignore("return_value_discarded")
-	weapons_vector.push_back(axe)
+	test.TEST_FALSE(weapons_vector.push_back(axe),
+			"failed to push int into PackedInt32Array")
 
 	# auto weapons = builder.CreateVector(weapons_vector);
 	var weapons:int = builder.create_vector_offset( weapons_vector )
+	if not test.TEST_OP_RET(weapons, OP_GREATER, 0,
+		"weapons should have a positive value"): return []
 
 	# Note there are additional convenience overloads of CreateVector, allowing
 	# you to work with data that's not in a std::vector or allowing you to
 	# generate elements by calling a lambda. For the common case of
 	# std::vector<std::string> there's also CreateVectorOfStrings.
-
-	# NOTE: The equivalent function for godot is:
-	# builder.create_PackedStringArray()
+	# builder.create_variant(my_string_vector, TYPE_PACKED_STRING_ARRAY)
 
 	# Note that vectors of structs are serialized differently from tables,
 	# since structs are stored in-line in the vector. For example, to create a
@@ -121,20 +146,13 @@ func create_orc_flatbuffer() -> PackedByteArray:
 		Vector3(1,2,3),
 		Vector3(4,5,6)
 	]
-	# TODO:I'm not sure I can achieve this in gdscript without creating new
-	# array types, I have to think about how I can create into an existing
-	# buffer. I feel like a new type that can ingest a callable constructor, a
-	# size, etc. that can act as a go-between for a packedbyte array.
-	var points_ofs:int = builder.create_variant(_points)
-
-	# FIXME: For builtin godot types, some PackedArray's are available. But for
-	# custom structs, I have to figure out a method. Perhaps first packing them
-	# into a byte buffer, and then concatenating them. Could I fudge it under
-	# the hood? I wonder what tools are available.
 
 	# auto path = builder.CreateVectorOfStructs(points, 2);
-	# var path = builder.create_vector_struct( points, 2 )
-	#test.TEST_TRUE(false, "#TODO var path = builder.create_vector_struct( points, 2 )")
+	var path:int = builder.create_variant(_points)
+	if not test.TEST_OP_RET(path, OP_GREATER, 0,
+		"path should have a positive value"): return []
+	# NOTE: there is also the below function for flatabuffer defined structs.
+	# builder.create_vector_of_custom_struct(array, element_size)
 
 	# We have now serialized the non-scalar components of the orc, so we can
 	# serialize the monster itself:
@@ -142,9 +160,8 @@ func create_orc_flatbuffer() -> PackedByteArray:
 	# Create the position struct
 	# auto position = Vec3(1.0f, 2.0f, 3.0f);
 	var position := Vector3(1.0, 2.0, 3.0)
-
 	# NOTE: I have replaced the default Vec3 with the equivalent for Godot
-	# to test and demonstrate that it is a stand-in for a struct.
+	# to test and demonstrate that it behaves like a struct.
 
 	# Set his hit points to 300 and his mana to 150.
 	# int hp = 300;
@@ -160,8 +177,9 @@ func create_orc_flatbuffer() -> PackedByteArray:
 	#                         path);
 	var orc:int = schema.create_Monster(
 		builder, position, mana, hp, name, inventory, schema.Color_.RED,
-		weapons, schema.Equipment.WEAPON, axe, points_ofs )
-	#test.TEST_TRUE(false, "#TODO: still have to figure out how to create struct arrays.")
+		weapons, schema.Equipment.WEAPON, axe, path )
+	if not test.TEST_OP_RET(orc, OP_GREATER, 0,
+		"orc should have a positive value"): return []
 
 	# Note how we create Vec3 struct in-line in the table. Unlike tables,
 	# structs are simple combinations of scalars that are always stored inline,
@@ -181,7 +199,10 @@ func create_orc_flatbuffer() -> PackedByteArray:
 	# fields that are only used in a small number of instances, as it will not
 	# bloat the buffer if unused.
 
-	var _manual_method:Callable = func() -> void:
+	# NOTE: This is a lambda to show the example, it is not called.
+	# FIXME: Flip the two examples, because in the folloup reading example it
+	# indicates that some fields are defaulted.
+	var _builder_example:Callable = func() -> void:
 		# If you do not wish to set every field in a table, it may be more
 		# convenient to manually set each field of your monster, instead of
 		# calling CreateMonster(). The following snippet is functionally
@@ -207,8 +228,8 @@ func create_orc_flatbuffer() -> PackedByteArray:
 		monster_builder.add_equipped_type(schema.Equipment.WEAPON)
 		# monster_builder.add_equipped(axe.Union());
 		monster_builder.add_equipped(axe)
-
-		#monster_builder.add_path( )
+		# monster_builder.add_path(path);
+		monster_builder.add_path( path )
 		# auto orc = monster_builder.Finish();
 		var _orc_manual:int = monster_builder.finish()
 
@@ -225,6 +246,7 @@ func create_orc_flatbuffer() -> PackedByteArray:
 	# monster_builder.add_equipped_type(Equipment_Weapon); // Union type
 	# monster_builder.add_equipped(axe.Union()); // Union data
 
+	# GDScript:
 	# monster_builder.add_equipped_type( schema.Equipment.WEAPON ) # Union type
 	# monster_builder.add_equipped( axe ) # Union data
 
@@ -241,7 +263,7 @@ func create_orc_flatbuffer() -> PackedByteArray:
 
 	# You could also call:
 	# C++      `FinishMonsterBuffer(builder, orc);`.
-	# GDScript `schema.FinishMonsterBuffer(builder, orc)`.
+	# TODO? GDScript `schema.FinishMonsterBuffer(builder, orc)`.
 
 	# The buffer is now ready to be stored somewhere, sent over the network, be
 	# compressed, or whatever you'd like to do with it. You can access the
@@ -249,24 +271,17 @@ func create_orc_flatbuffer() -> PackedByteArray:
 
 	# This must be called after `Finish()`.
 	# uint8_t *buf = builder.GetBufferPointer();
-	var buf:PackedByteArray = builder.to_packed_byte_array()
+	var buf:PackedByteArray = builder.get_buffer()
+	test.TEST_FALSE(buf.is_empty(), "buf should not be empty")
 
 	# int size = builder.GetSize(); // Returns the size of the buffer that
 	#                               // `GetBufferPointer()` points to.
 	var size:int = builder.get_size()
 	test.logp("builder.get_size(): %s" % size)
+	test.TEST_OP(orc, OP_GREATER, 0, "size should be a positive integer")
 
 	# Now you can write the bytes to a file or send them over the network. Make
 	# sure your file mode (or transfer protocol) is set to BINARY, not text. If
 	# you transfer a FlatBuffer in text mode, the buffer will be corrupted,
 	# which will lead to hard to find problems when you read the buffer.
 	return buf
-
-
-## Because we cannot pre-load a script that hasnt been generated yet, the test
-## script must load this script after the generated script has been created so
-## that this script can preload and use it properly.
-## It's a bit convoluted yes.
-var test:TestBase
-func _init(initiator:TestBase) -> void:
-	test = initiator
