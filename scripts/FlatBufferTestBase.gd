@@ -1,6 +1,7 @@
 @tool
 @abstract
 extends TestBase
+class_name FlatBufferTestBase
 
 var default_generator_opts:FlatBuffersGeneratorOpts = load("uid://b8vn3e2cuhqy3")
 

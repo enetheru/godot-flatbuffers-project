@@ -1,17 +1,18 @@
 @tool
 extends FlatBufferTestBase
-## │ ___ _               _     ___ _     _    _       [br]
-## │/ __| |_ _ _ _  _ __| |_  | __(_)___| |__| |___   [br]
-## │\__ \  _| '_| || / _|  _| | _|| / -_) / _` (_-<   [br]
-## │|___/\__|_|  \_,_\__|\__| |_| |_\___|_\__,_/__/   [br]
-## ╰───────────────────────────────────────────────── [br]
-## Struct Fields By-Line
-##
-## Struct Fields Description
 
-const schema_file:String = "res://tests/flatbuffers/schemas/struct.fbs"
-const generated_file:String = "res://tests/flatbuffers/schemas/struct_generated.gd"
-const strategy_file:String = "res://tests/flatbuffers/scripts/struct_strategy.gd"
+## │__   __      _             ___ _     _    _       [br]
+## │\ \ / /__ __| |_ ___ _ _  | __(_)___| |__| |___   [br]
+## │ \ V / -_) _|  _/ _ \ '_| | _|| / -_) / _` (_-<   [br]
+## │  \_/\___\__|\__\___/_|   |_| |_\___|_\__,_/__/   [br]
+## ╰───────────────────────────────────────────────── [br]
+## Vector Fields By-Line
+##
+## Vector Fields Description
+
+const schema_file:String = "res://tests/godot/schemas/variant.fbs"
+const generated_file:String = "res://tests/godot/schemas/variant_generated.gd"
+const strategy_file:String = "res://tests/godot/scripts/variant_strategy.gd"
 
 func _run_test() -> int:
 	var efs:EditorFileSystem = EditorInterface.get_resource_filesystem()
@@ -35,7 +36,6 @@ func _run_test() -> int:
 	#     importer for type '' not found.
 	efs.reimport_files([generated_file, strategy_file])
 
-
 	## Because we cannot pre-load a script that hasnt been generated yet, it
 	## means that we have no access to types. But I can load and run a script
 	## that does pre-load the generated script, because when it is loaded it will
@@ -48,11 +48,10 @@ func _run_test() -> int:
 
 	# Iterate Over the combinations of strategies for each phase.
 	var counter:int = 0
-	for combo:Array[int] in tso:
+	for combo:Array in tso:
 		counter += 1
 		tso.flow(combo)
 	TEST_EQ(tso.get_max_combos(), counter,
 		"The expected number of combinations and the counter should match")
-
 
 	return runcode

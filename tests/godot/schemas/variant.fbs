@@ -1,0 +1,46 @@
+include "godot.fbs";
+
+table RootTable {
+	//nil:Nil;
+	boolean:bool;
+	integer:int64;
+	floating_point:double;
+	string:string;
+	vector2:Vector2;
+	vector2i:Vector2i;
+	rect2:Rect2;
+	rect2i:Rect2i;
+	vector3:Vector3;
+	vector3i:Vector3i;
+	transform2d:Transform2D;
+	vector4:Vector4;
+	vector4i:Vector4i;
+	plane:Plane;
+	quaternion:Quaternion;
+	aabb:AABB;
+	basis:Basis;
+	transform3d:Transform3D;
+	projection:Projection;
+	color:Color;
+	//string_name:StringName;
+	//node_path:NodePath;
+	// rid:Rid;
+	// object:Object;
+	// callable:Callable;
+	// signal:Signal;
+	// dictionary:Dictionary;
+	// array:Array;
+	packed_byte_array:[uint8];
+	packed_int32_array:[int32];
+	packed_int64_array:[int64];
+	packed_float32_array:[float];
+	packed_float64_array:[double];
+	packed_string_array:[string];
+	packed_vector2_array:[Vector2];
+	packed_vector3_array:[Vector3];
+	packed_color_array:[Color];
+	packed_vector4_array:[Vector4];
+	//variant_max:VariantMax;
+}
+
+root_type RootTable;

@@ -1,6 +1,5 @@
 @tool
-extends "scripts/fb_generic_test.gd"
-
+extends FlatBufferTestBase
 ##                                                    [br]
 ## │ ___ _       _             ___ _     _    _       [br]
 ## │/ __| |_ _ _(_)_ _  __ _  | __(_)___| |__| |___   [br]

@@ -1,0 +1,23 @@
+// A generic set of items used in testing.
+
+enum TestEnum:uint8 {
+	ZERO,
+	ONE
+}
+
+struct TestStruct {
+	a:int;
+	b:int;
+}
+
+table TestTableA {
+	a:int;
+}
+
+table TestTableB {
+	b:int;
+}
+
+union TestUnion {
+	TestTableA, TestTableB
+}

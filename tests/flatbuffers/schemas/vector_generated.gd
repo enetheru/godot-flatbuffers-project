@@ -28,7 +28,7 @@ class TestStruct extends FlatBuffer:
 
 	## TODO: create a useful doc comment for the init function
 	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		if bytes_.is_empty(): 
+		if bytes_.is_empty():
 			_fb_bytes = PackedByteArray()
 			_fb_bytes.resize( _fb_struct_size )
 		else:
@@ -502,4 +502,3 @@ static func create_RootTable( _fbb: FlatBufferBuilder,
 static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
 	assert(not _bytes.is_empty())
 	return RootTable.new(_bytes, _bytes.decode_u32(0))
-
