@@ -6,12 +6,16 @@ const FB = preload("bench_generated.gd")  # adjust path to your generated file
 
 
 var fbb:FlatBufferBuilder;
+var kVectorLength:int = 3
+var kStringLength:int = 32
 
 #explicit FlatBufferBench(int64_t initial_size, Allocator* allocator)
 	#: fbb(initial_size, allocator, false) {}
 
-func _init( initial_size:int ) -> void:
+func _init( initial_size:int, vlen:int = 3, slen:int = 32 ) -> void:
 	fbb = FlatBufferBuilder.create(initial_size)
+	kVectorLength = vlen
+	kStringLength = slen
 
 
 #uint8_t* Encode(void*, int64_t& len) override {
@@ -19,7 +23,6 @@ func Encode( _thing:Variant ) -> PackedByteArray:
 	fbb.clear();
 
 	#const int kVectorLength = 3;
-	const kVectorLength:int = 3
 	#Offset<FooBar> vec[kVectorLength];
 	var vec:PackedInt32Array = []
 	if vec.resize(kVectorLength) != OK:
@@ -40,14 +43,14 @@ func Encode( _thing:Variant ) -> PackedByteArray:
 		var bar:FB.FBBar = FB.create_FBBar(foo, 123456 + i, 3.14159 + i, 10000 + i)
 
 		#auto name = fbb.CreateString("Hello, World!");
-		var name_ofs:int = fbb.create_variant("Hello, World!")
+		var name_ofs:int = fbb.create_variant("Hello, World!".left(kStringLength))
 
 		#auto foobar = CreateFooBar(fbb, &bar, name, 3.1415432432445543543 + i, '!' + i);
 		#vec[i] = foobar;
 		vec[i] = FB.create_FBFooBar(fbb, bar, name_ofs, 3.1415432432445543543 + i, ord('!') + i)
 
 	#auto location = fbb.CreateString("http://google.com/flatbuffers/");
-	var loc_ofs:int = fbb.create_variant("http://google.com/flatbuffers/")
+	var loc_ofs:int = fbb.create_variant("http://google.com/flatbuffers/".left(kStringLength))
 
 	#auto foobarvec = fbb.CreateVector(vec, kVectorLength);
 	var foobarvec_ofs:int = fbb.create_vector_offset(vec)
@@ -69,7 +72,7 @@ func Use( decoded:Variant ) -> int:
 	#auto foobarcontainer = GetFooBarContainer(decoded);
 	var foobarcontainer:FB.FBFooBarContainer = FB.get_FBFooBarContainer(pba)
 	sum = 0;
-	Add(foobarcontainer.initialized())
+	Add(int(foobarcontainer.initialized()))
 	Add(foobarcontainer.location().length());
 	Add(foobarcontainer.fruit());
 	#for (unsigned int i = 0; i < foobarcontainer->list()->Length(); i++) {
@@ -87,7 +90,7 @@ func Use( decoded:Variant ) -> int:
 		#Add(static_cast<int64_t>(bar->ratio()));
 		Add( int(bar.ratio) )
 		#Add(bar->size());
-		Add( bar._fb_struct_size )
+		Add( bar.ssize )
 		#Add(bar->time());
 		Add( bar.time )
 		#auto& foo = bar->parent();

@@ -1,13 +1,20 @@
 @tool
 
-const kStringLength:int = 32
-const kVectorLength:int = 3
+var kStringLength:int = 32
+var kVectorLength:int = 3
 
 
 class RawBench extends BenchBase:
+	var kStringLength:int = 32
+	var kVectorLength:int = 3
+
+	func _init(vlen:int = 3, slen:int = 32) -> void:
+		kVectorLength = vlen
+		kStringLength = slen
+
 	func Encode(_buf:PackedByteArray) -> PackedByteArray:
 		var fbc := FooBarContainer.new()
-		fbc.location = "http://google.com/flatbuffers/"
+		fbc.location = "http://google.com/flatbuffers/".left(kStringLength)
 		fbc.fruit = FooBarContainer.Enum.Bananas
 		fbc.initialized = true
 		if fbc.list.resize(kVectorLength) != OK:
@@ -22,7 +29,6 @@ class RawBench extends BenchBase:
 			foo.length = 1000000 + i
 			foo.prefix = ord('@') + i
 
-
 			var bar := Bar.new()
 			bar.parent = foo
 			bar.ratio = 3.14159 + i
@@ -33,7 +39,7 @@ class RawBench extends BenchBase:
 			fbc.list[i] = foobar
 			foobar.rating = 3.1415432432445543543 + i
 			foobar.postfix = ord('!') + i
-			foobar.name = "Hello, World!"
+			foobar.name = "Hello, World!".left(kStringLength)
 			foobar.sibling = bar
 
 		return var_to_bytes_with_objects(fbc)
@@ -47,10 +53,12 @@ class RawBench extends BenchBase:
 	func Use( decoded:Variant ) -> int:
 		var foobarcontainer:FooBarContainer = decoded
 		sum = 0
-		Add(foobarcontainer.initialized)
+		Add(int(foobarcontainer.initialized))
+		Add(foobarcontainer.location.length())
 		Add(foobarcontainer.fruit)
-		for i:int in kVectorLength:
+		for i:int in foobarcontainer.list.size():
 			var foobar:FooBar = foobarcontainer.list[i]
+			Add(foobar.name.length())
 			Add(foobar.postfix)
 			Add(int(foobar.rating))
 			var bar:Bar = foobar.sibling
@@ -65,7 +73,10 @@ class RawBench extends BenchBase:
 
 		return sum
 
-	func Dealloc( _decoded:Variant ) -> void: pass
+
+	func Dealloc( _decoded:Variant ) -> void:
+		pass
 
 
-static func NewRawBench() -> RawBench: return RawBench.new()
+static func NewRawBench(vlen:int = 3, slen:int = 32) -> RawBench:
+	return RawBench.new(vlen, slen)
