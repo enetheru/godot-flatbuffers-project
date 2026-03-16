@@ -25,7 +25,7 @@ func StopTimer() -> void:
 	running_ = false;
 	#real_time_used_ += ChronoClockNow() - start_real_time_;
 	real_time_used_ += Time.get_ticks_usec() - start_real_time_;
-	
+
 	# Floating point error can result in the subtraction producing a negative
 	# time. Guard against that.
 	cpu_time_used_ += \
@@ -33,7 +33,8 @@ func StopTimer() -> void:
 
 
 # Called by each thread
-func SetIterationTime(micros:float) -> void: manual_time_used_ += int(micros * 1000000)
+func SetIterationTime(seconds:float) -> void:
+	manual_time_used_ += int(seconds * 1000000)
 
 func running() -> bool: return running_
 
@@ -69,5 +70,6 @@ var start_cpu_time_:int = 0;    # If running_
 # Accumulated time so far (does not contain current slice if running_)
 var real_time_used_:int = 0;
 var cpu_time_used_:int = 0;
+
 # Manually set iteration time. User sets this with SetIterationTime(seconds).
 var manual_time_used_:int = 0;

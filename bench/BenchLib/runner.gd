@@ -85,9 +85,9 @@ func CreateRunReport(
 # Execute one thread of benchmark b for the specified number of iterations.
 # Adds the stats collected for the thread into manager->results.
 static func RunInThread(
-			b_instance:BenchmarkInstance, 
+			b_instance:BenchmarkInstance,
 			r_iters:int, #IterationCount
-			thread_id:int, 
+			thread_id:int,
 			manager:ThreadManager,
 			perf_counters_measurement:PerfCountersMeasurement,
 			profiler_manager_:ProfileManager) -> void:
@@ -101,11 +101,11 @@ static func RunInThread(
 		print("st.total_iterations_: ", st.total_iterations_)
 		print("st.batch_leftover_: ", st.batch_leftover_)
 		print("st.started_: ", st.started_)
-		
+
 		st.SkipWithError(
 			"The benchmark didn't run, nor was it explicitly skipped. Please call "
 			+ "'SkipWithXXX` in your benchmark as appropriate.")
-  
+
 	manager.benchmark_mutex.lock()
 	var results:ThreadManager.Result = manager.results
 	results.iterations += st.iterations()
@@ -115,7 +115,7 @@ static func RunInThread(
 	results.complexity_n += st.complexity_length_n()
 	CounterLib.Increment(results.counters, st.counters)
 	manager.benchmark_mutex.unlock()
-	
+
 	manager.NotifyThreadComplete()
 
 
@@ -152,7 +152,7 @@ func _init(
 		iters = ComputeIters(_b, parsed_benchtime_flag)
 	else:
 		iters = 1
-	
+
 	perf_counters_measurement_ptr = _pcm
 
 	run_results.display_report_aggregates_only = \
@@ -192,7 +192,7 @@ func DoOneRepetition() -> void:
 	# is *only* calculated for the *first* repetition, and other repetitions
 	# simply use that precomputed iteration count.
 	while true:
-		
+
 		b.Setup();
 		i = DoNIterations();
 		b.Teardown();
@@ -292,7 +292,7 @@ func DoNIterations() -> IterationResults:
 					null)) # profiler_manager
 
 	var i := IterationResults.new()
-	
+
 	# Acquire the measurements/counters from the manager, UNDER THE LOCK!
 	manager.benchmark_mutex.lock()
 	i.results = manager.results
@@ -330,13 +330,15 @@ func PredictNumItersNeeded( i:IterationResults) -> int:
 	# See how much iterations should be increased by.
 	# Note: Avoid division by zero with max(seconds, 1ns).
 	var multiplier:float = GetMinTimeToApply() * 1.4 / max(i.seconds, 1e-9)
+
 	# If our last run was at least 10% of FLAGS_benchmark_min_time then we
 	# use the multiplier directly.
 	# Otherwise we use at most 10 times expansion.
 	# NOTE: When the last run was at least 10% of the min time the max
 	# expansion should be 14x.
 	var is_significant:bool = (i.seconds / GetMinTimeToApply()) > 0.1
-	multiplier = multiplier if is_significant else 10.0
+	if not is_significant:
+		multiplier = minf(multiplier, 10.0)
 
 	# So what seems to be the sufficiently-large iteration count? Round up.
 	var max_next_iters:int = roundi(maxf(multiplier * i.iters, i.iters + 1.0))
@@ -385,13 +387,13 @@ func RunWarmUp() -> void:
 func GetThreadRunner(
 			userThreadRunnerFactory:Variant,
 			num_threads:int ) -> BenchLib.ThreadRunnerBase:
-	
+
 	if userThreadRunnerFactory != null \
 	and userThreadRunnerFactory is Callable:
 		var threadFactory:Callable = userThreadRunnerFactory
 		if threadFactory.is_valid():
 			return threadFactory.call(num_threads)
-		
+
 	return ThreadRunnerDefault.new(num_threads)
 
 
@@ -443,11 +445,11 @@ class ThreadRunnerDefault extends BenchLib.ThreadRunnerBase:
 			push_error("Unable to resize ThreadRunnerDefault.pool")
 
 	func RunThreads(fn:Callable) -> void:
-	
-	# Called using:	
+
+	# Called using:
 	#thread_runner.RunThreads( func(thread_idx:int) -> void:
 		#RunInThread( b, iters, thread_idx, manager, perf_counters_measurement_ptr, null)) # profiler_manager
-		
+
 		# Run all but one thread in separate threads
 		for ti:int in pool.size():
 			#pool[ti] = thread(fn, ti + 1);

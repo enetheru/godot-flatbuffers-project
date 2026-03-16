@@ -65,15 +65,15 @@ static func StatisticsMedian(v:Array[float]) -> float:
 	var copy:Array[float] = v.duplicate(true)
 	copy.sort()
 
-	var center_idx:int = int(v.size() / 2.0) # iterator for the centre.
+	var center_idx:int = int(copy.size() / 2.0) # iterator for the centre.
 
 	# Did we have an odd number of samples?	If yes, then center is the median.
 	# If not, then we are looking for the average between center and the value
 	# before.	Instead of re-sorting, we just look for the max value before it,
 	# which is not necessarily the element immediately preceding `center` Since
 	# `copy` is only partially sorted by `nth_element`.
-	if v.size() % 2 == 1: return v[center_idx]
-	return (v[center_idx] + v[center_idx+1]) / 2.0;
+	if copy.size() % 2 == 1: return copy[center_idx]
+	return (copy[center_idx] + copy[center_idx+1]) / 2.0;
 
 
 # // Return the sum of the squares of this sample set
@@ -283,7 +283,7 @@ class CounterStat:
 	var c:Counter
 	var s:Array[float]
 	func _init(c_:Counter, s_:Array[float]) -> void: c=c_; s=s_
-		
+
 
 static func ComputeStats(reports:Array[BenchmarkReporter.Run]) -> Array[BenchmarkReporter.Run]:
 	const Run = BenchmarkReporter.Run
@@ -304,7 +304,7 @@ static func ComputeStats(reports:Array[BenchmarkReporter.Run]) -> Array[Benchmar
 	if real_accumulated_time_stat.resize(reports.size()) != OK:
 		push_error("Failed to reserve space for real_accumulated_time_stat")
 		return []
-		
+
 	if cpu_accumulated_time_stat.resize(reports.size()) != OK:
 		push_error("Failed to reserve space for cpu_accumulated_time_stat")
 		return []
@@ -312,7 +312,7 @@ static func ComputeStats(reports:Array[BenchmarkReporter.Run]) -> Array[Benchmar
 	# All repetitions should be run with the same number of iterations so we
 	# can take this information from the first benchmark.
 	var run_iterations:int = reports.front().iterations
-	
+
 	# create stats for user counters
 	var counter_stats:Dictionary[String,CounterStat]
 	for r:Run in reports:
@@ -333,7 +333,7 @@ static func ComputeStats(reports:Array[BenchmarkReporter.Run]) -> Array[Benchmar
 		#STUB BM_CHECK_EQ(reports[0].benchmark_name(), run.benchmark_name());
 		#STUB BM_CHECK_EQ(run_iterations, run.iterations);
 		if run.skipped != 0: continue;
-		
+
 		# FIXME, because we reserved space before I dont know if godot will
 		# put the data in the correct location
 		real_accumulated_time_stat.push_back(run.real_accumulated_time);
@@ -344,7 +344,7 @@ static func ComputeStats(reports:Array[BenchmarkReporter.Run]) -> Array[Benchmar
 			# STUB BM_CHECK_NE(it, counter_stats.end())
 			var cntst:CounterStat = counter_stats.get(cnt_key)
 			cntst.s.push_back(cnt)
-			
+
 
 	# Only add label if it is same for all runs
 	var report_label:String = reports[0].report_label
@@ -368,7 +368,7 @@ static func ComputeStats(reports:Array[BenchmarkReporter.Run]) -> Array[Benchmar
 		data.aggregate_name = Stat._name;
 		data.aggregate_unit = Stat._unit;
 		data.report_label = report_label;
-	
+
 		# It is incorrect to say that an aggregate is computed over
 		# run's iterations, because those iterations already got averaged.
 		# Similarly, if there are N repetitions with 1 iterations each,

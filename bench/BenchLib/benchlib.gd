@@ -190,7 +190,7 @@ class State:
 	# NOTE: KeepRunning may not be used after calling either of these functions.
 	# inline BENCHMARK_ALWAYS_INLINE StateIterator begin();
 	# inline BENCHMARK_ALWAYS_INLINE StateIterator end();
-	
+
 	# NOTE: I dont think I can directly represent the begin() and end()
 	# functions to retrieve iterators in gdscript. I might be able to hack it
 	# but I'd had it for every location, so we'll see. so far I dont remember
@@ -198,24 +198,26 @@ class State:
 	# it looks like we're not supposed to use the iterators directly. So i wonder
 	# if the start and end keep running
 	# I would think that the c++ standard range loop would be implemented using
-	# the begin and end functions, so I will have to incorporate it into the 
+	# the begin and end functions, so I will have to incorporate it into the
 	# init and test.
-	
-	# NOTE: I can support the range based  for loop for gdscript.
+
+	# NOTE: Support for a range based for loop in gdscript.
 	func _iter_get(iter:Variant) -> Variant:
 		return iter
 
 	func _iter_init(iter:Array) -> bool:
-		iter[0] = 0 if skipped() else max_iterations
+		if skipped(): return false
 		StartKeepRunning()
-		return true
+		iter[0] = max_iterations
+		return iter[0] > 0
 
 	func _iter_next(iter:Array) -> bool:
-		assert(iter[0] > 0) # This  might assert when we reach the end.
+		assert(iter[0] >= 0)
 		iter[0] -= 1
-		if iter[0] > 0: return true
-		FinishKeepRunning()
-		return false
+		if iter[0] == 0:
+			FinishKeepRunning()
+			return false
+		return true
 
 
 	## Returns true if the benchmark should continue through another iteration.
@@ -261,7 +263,7 @@ class State:
 			var measurements:Dictionary
 			if not perf_counters_measurement_.Stop(measurements):
 				assert(false, "Perf counters read the value failed.")
-			
+
 			for mname:String in measurements.keys():
 				var mvalue:float = measurements[mname]
 				# Counter was inserted with `kAvgIterations` flag by the constructor.
@@ -334,7 +336,7 @@ class State:
 			manager_.results.skip_message = msg
 			manager_.results.skipped = skipped_
 		manager_.benchmark_mutex.unlock()
-		
+
 		total_iterations_ = 0
 		if timer_.running(): timer_.StopTimer()
 
@@ -352,8 +354,10 @@ class State:
 	#
 	# For threaded benchmarks the final value will be set to the largest
 	# reported values.
-	func SetIterationTime(_seconds:float) -> void:
-		print("STUB: State.SetIterationTime")
+	func SetIterationTime(seconds:float) -> void:
+		assert(started_ and not finished_ and not skipped())
+		assert(timer_ != null)
+		timer_.SetIterationTime(seconds)
 
 	# Set the number of bytes processed by the current benchmark
 	# execution.	This routine is typically called once at the end of a
@@ -711,18 +715,18 @@ class BenchmarkInstance:
 
 	func Setup() -> void:
 		if _setup != null and _setup.is_valid():
-			var st := State.new( name.function_name, 1, _args, 0, _threads, 
+			var st := State.new( name.function_name, 1, _args, 0, _threads,
 					null, null, null, null)
 			_setup.call(st)
 
 
 	func Teardown() -> void:
 		if _teardown != null and _teardown.is_valid():
-			var st := State.new( name.function_name,  1, _args,  0, _threads, 
+			var st := State.new( name.function_name,  1, _args,  0, _threads,
 					null, null, null, null)
 			_teardown.call(st)
-	
-		
+
+
 	func GetUserThreadRunnerFactory() -> Callable:
 		return _benchmark.threadrunner
 
@@ -954,14 +958,14 @@ static func RunBenchmarks(
 
 			# FIXME: report each repetition separately, not all of them in bulk.
 			display_reporter.ReportRunsConfig(
-					runner.min_time, 
-					runner.has_explicit_iteration_count, 
+					runner.min_time,
+					runner.has_explicit_iteration_count,
 					runner.iters)
-					
+
 			if file_reporter != null:
 				file_reporter.ReportRunsConfig(
-					runner.min_time, 
-					runner.has_explicit_iteration_count, 
+					runner.min_time,
+					runner.has_explicit_iteration_count,
 					runner.iters)
 
 			var run_results:RunResults = runner.GetResults()
