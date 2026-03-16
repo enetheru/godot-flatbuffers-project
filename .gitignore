@@ -2,4 +2,6 @@
 .godot/
 .idea/
 addons/zylann.editor_debugger/
+addons/enetheru.flatbuffers-extension/
 scratch/
+*.exe
