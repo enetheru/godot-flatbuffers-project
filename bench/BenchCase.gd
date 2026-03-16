@@ -12,7 +12,7 @@ func Add( value:int ) -> void:
 @abstract
 ##virtual uint8_t* Encode(void* buf, int64_t& len) = 0;
 # NOTE: We can omit the length as it is within the packedbyearray
-func Encode( buf:PackedByteArray ) -> PackedByteArray
+func Encode( v:Variant = null ) -> PackedByteArray
 
 
 @abstract
@@ -24,8 +24,3 @@ func Decode( buf:PackedByteArray ) -> Variant
 ##virtual int64_t Use(void* decoded) = 0;
 func Use( decoded:Variant ) -> int
 #TODO And this consume a Variant
-
-
-@abstract
-##virtual void Dealloc(void* decoded) = 0;
-func Dealloc( decoded:Variant ) -> void

@@ -616,8 +616,10 @@ class Benchmark:
 class FunctionBenchmark extends Benchmark:
 	var _func:Callable
 
-	func _init( new_name:String, new_func:Callable ) -> void:
-		_name = new_name
+	func _init( new_func:Callable, new_name:String = "" ) -> void:
+		if new_name.is_empty():
+			_name = new_func.get_method()
+		else: _name = new_name
 		_func = new_func
 
 	func Run( state:State ) -> void:

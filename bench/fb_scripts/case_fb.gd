@@ -4,23 +4,21 @@ extends BenchCase
 
 const FB = preload("bench_generated.gd")  # adjust path to your generated file
 
-
-var fbb:FlatBufferBuilder;
 var kVectorLength:int = 3
-var kStringLength:int = 32
+var kPreAllocate:bool = false
 
 #explicit FlatBufferBench(int64_t initial_size, Allocator* allocator)
 	#: fbb(initial_size, allocator, false) {}
 
-func _init( initial_size:int, vlen:int = 3, slen:int = 32 ) -> void:
-	fbb = FlatBufferBuilder.create(initial_size)
+
+func _init( vlen:int = 3, pre_allocate:bool = false ) -> void:
 	kVectorLength = vlen
-	kStringLength = slen
+	kPreAllocate = pre_allocate
 
 
 #uint8_t* Encode(void*, int64_t& len) override {
-func Encode( _thing:Variant ) -> PackedByteArray:
-	fbb.clear();
+func Encode( _unused:Variant = null ) -> PackedByteArray:
+	var fbb := FlatBufferBuilder.create(384 if kPreAllocate else 0)
 
 	#const int kVectorLength = 3;
 	#Offset<FooBar> vec[kVectorLength];
@@ -43,14 +41,14 @@ func Encode( _thing:Variant ) -> PackedByteArray:
 		var bar:FB.FBBar = FB.create_FBBar(foo, 123456 + i, 3.14159 + i, 10000 + i)
 
 		#auto name = fbb.CreateString("Hello, World!");
-		var name_ofs:int = fbb.create_variant("Hello, World!".left(kStringLength))
+		var name_ofs:int = fbb.create_variant("Hello, World!")
 
 		#auto foobar = CreateFooBar(fbb, &bar, name, 3.1415432432445543543 + i, '!' + i);
 		#vec[i] = foobar;
 		vec[i] = FB.create_FBFooBar(fbb, bar, name_ofs, 3.1415432432445543543 + i, ord('!') + i)
 
 	#auto location = fbb.CreateString("http://google.com/flatbuffers/");
-	var loc_ofs:int = fbb.create_variant("http://google.com/flatbuffers/".left(kStringLength))
+	var loc_ofs:int = fbb.create_variant("http://google.com/flatbuffers/")
 
 	#auto foobarvec = fbb.CreateVector(vec, kVectorLength);
 	var foobarvec_ofs:int = fbb.create_vector_offset(vec)
@@ -65,12 +63,16 @@ func Encode( _thing:Variant ) -> PackedByteArray:
 	return fbb.get_buffer()
 
 
+#void* Decode(void* buffer, int64_t) override { return buffer; }
+func Decode( buf:PackedByteArray ) -> Variant:
+	var foobarcontainer:FB.FBFooBarContainer = FB.get_FBFooBarContainer(buf)
+	return foobarcontainer
+
+
 #int64_t Use(void* decoded) override {
 func Use( decoded:Variant ) -> int:
-	var pba:PackedByteArray = decoded
-	sum = 0;
 	#auto foobarcontainer = GetFooBarContainer(decoded);
-	var foobarcontainer:FB.FBFooBarContainer = FB.get_FBFooBarContainer(pba)
+	var foobarcontainer:FB.FBFooBarContainer = decoded
 	sum = 0;
 	Add(int(foobarcontainer.initialized()))
 	Add(foobarcontainer.location().length());
@@ -101,12 +103,3 @@ func Use( decoded:Variant ) -> int:
 		Add(foo.prefix)
 
 	return sum;
-
-
-#void* Decode(void* buffer, int64_t) override { return buffer; }
-func Decode( buf:PackedByteArray ) -> Variant:
-	return buf
-
-#void Dealloc(void*) override {};
-func Dealloc( _decoded:Variant ) -> void:
-	pass

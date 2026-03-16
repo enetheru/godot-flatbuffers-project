@@ -18,22 +18,22 @@ func _init() -> void:
 
 	bench_BM_Flatbuffers_Encode = \
 		RegisterLib.RegisterBenchmarkInternal(
-			FunctionBenchmark.new("BM_Flatbuffers_Encode", BM_Flatbuffers_Encode))
+			FunctionBenchmark.new(BM_Flatbuffers_Encode))
 	bench_BM_Flatbuffers_Decode = \
 		RegisterLib.RegisterBenchmarkInternal(
-			FunctionBenchmark.new("BM_Flatbuffers_Decode", BM_Flatbuffers_Decode))
+			FunctionBenchmark.new(BM_Flatbuffers_Decode))
 	bench_BM_Flatbuffers_Use = \
 		RegisterLib.RegisterBenchmarkInternal(
-			FunctionBenchmark.new("BM_Flatbuffers_Use", BM_Flatbuffers_Use))
+			FunctionBenchmark.new(BM_Flatbuffers_Use))
 	bench_BM_Raw_Encode = \
 		RegisterLib.RegisterBenchmarkInternal(
-			FunctionBenchmark.new("BM_Raw_Encode", BM_Raw_Encode))
+			FunctionBenchmark.new(BM_Raw_Encode))
 	bench_BM_Raw_Decode = \
 		RegisterLib.RegisterBenchmarkInternal(
-			FunctionBenchmark.new("BM_Raw_Decode", BM_Raw_Decode))
+			FunctionBenchmark.new(BM_Raw_Decode))
 	bench_BM_Raw_Use = \
 		RegisterLib.RegisterBenchmarkInternal(
-			FunctionBenchmark.new("BM_Raw_Use", BM_Raw_Use))
+			FunctionBenchmark.new(BM_Raw_Use))
 
 
 
@@ -47,24 +47,24 @@ func _run() -> void:
 		print("%d benchmarks" % num_benchmarks)
 
 
-static func Encode( state:State, bench:BenchCase, buffer:PackedByteArray ) -> void:
+static func Encode( state:State, bench:BenchCase, _buffer:PackedByteArray ) -> void:
 	for i in state:
-		var _buf:PackedByteArray = bench.Encode(buffer);
+		var _buf:PackedByteArray = bench.Encode();
 
 
 
-static func Decode( state:State, bench:BenchCase, buffer:PackedByteArray) -> void:
+static func Decode( state:State, bench:BenchCase, _buffer:PackedByteArray) -> void:
 	# int64_t length;
 	# uint8_t* encoded = bench->Encode(buffer, length);
-	var encoded:PackedByteArray = bench.Encode(buffer)
+	var encoded:PackedByteArray = bench.Encode()
 	# for (auto _ : state) {
 	for i:int in state:
 	# 	void* decoded = bench->Decode(encoded, length);
 		var _decoded:Variant = bench.Decode(encoded)
 
 
-static func Use( state:State, bench:BenchCase, buffer:PackedByteArray, _check_sum:int ) -> void:
-	var encoded:PackedByteArray = bench.Encode(buffer);
+static func Use( state:State, bench:BenchCase, _buffer:PackedByteArray, _check_sum:int ) -> void:
+	var encoded:PackedByteArray = bench.Encode();
 	var decoded:Variant = bench.Decode(encoded)
 	var sum:int = 0
 	for i:int in state:

@@ -8,6 +8,8 @@ const ConsoleReporter = preload("uid://cp6jwltd8s2ur")
 
 
 const FB = preload("fb_scripts/bench_generated.gd")
+const CaseGdDict = preload("uid://dve0r6lgn2kft")
+
 
 func _init() -> void:
 	BenchLib.BenchmarkFamilies.GetInstance()._families.clear()
@@ -17,35 +19,33 @@ func _init() -> void:
 
 	# Standard Encode
 	@warning_ignore_start("return_value_discarded")
-	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new("BM_Flatbuffers_Encode", BM_Flatbuffers_Encode))
-	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new("BM_BuiltIn_Encode", BM_BuiltIn_Encode))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_Encode))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_Decode))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_ReadAll))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_RoundTrip))
 
-	# Scaling Encode (Example: 64 elements)
-	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new("BM_Flatbuffers_Encode_64", BM_Flatbuffers_Encode_64))
-	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new("BM_BuiltIn_Encode_64", BM_BuiltIn_Encode_64))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_EncodePA))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_DecodePA))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_ReadAllPA))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_RoundTripPA))
 
-	# Decode / OpenView
-	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new("BM_Flatbuffers_OpenView", BM_Flatbuffers_OpenView))
-	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new("BM_BuiltIn_Deserialize", BM_BuiltIn_Deserialize))
 
-	# ReadAll (Aligned Use)
-	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new("BM_Flatbuffers_ReadAll", BM_Flatbuffers_ReadAll))
-	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new("BM_BuiltIn_ReadAll", BM_BuiltIn_ReadAll))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_Encode))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_Decode))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_ReadAll))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_RoundTrip))
 
-	# Scaling ReadAll (Example: 64 elements)
-	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new("BM_Flatbuffers_ReadAll_64", BM_Flatbuffers_ReadAll_64))
-	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new("BM_BuiltIn_ReadAll_64", BM_BuiltIn_ReadAll_64))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_GDict_Encode))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_GDict_Decode))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_GDict_ReadAll))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_GDict_RoundTrip))
 
-	# RoundTrip
-	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new("BM_Flatbuffers_RoundTrip", BM_Flatbuffers_RoundTrip))
-	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new("BM_BuiltIn_RoundTrip", BM_BuiltIn_RoundTrip))
 
-	# Access-pattern focused
-	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new("BM_Flatbuffers_MetadataOnly", BM_Flatbuffers_MetadataOnly))
-	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new("BM_BuiltIn_MetadataOnly", BM_BuiltIn_MetadataOnly))
-
-	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new("BM_Flatbuffers_RandomElement", BM_Flatbuffers_RandomElement))
-	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new("BM_BuiltIn_RandomElement", BM_BuiltIn_RandomElement))
+	#RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_MetadataOnly))
+	#RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_MetadataOnly))
+#
+	#RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_RandomElement))
+	#RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_RandomElement))
 	@warning_ignore_restore("return_value_discarded")
 
 
@@ -58,90 +58,91 @@ func _run() -> void:
 		print("%d benchmarks" % num_benchmarks)
 
 
-# --- Helper Methods ---
-
-static func Encode(state:State, bench:BenchCase, buffer:PackedByteArray) -> void:
+# --- Encode ---
+static func GenericEncode(state:State, bench:BenchCase) -> void:
 	for i in state:
-		var _buf:PackedByteArray = bench.Encode(buffer)
+		var _buf:PackedByteArray = bench.Encode()
+
+static func BM_Flatbuffers_Encode(state:State) -> void:
+	GenericEncode(state, FlatBuffersBench.new())
+
+static func BM_Flatbuffers_EncodePA(state:State) -> void:
+	GenericEncode(state, FlatBuffersBench.new(3,true))
+
+static func BM_BuiltIn_Encode(state:State) -> void:
+	GenericEncode(state, BuiltInBench.new())
+
+static func BM_GDict_Encode(state:State) -> void:
+	GenericEncode(state, CaseGdDict.new())
 
 
-static func Decode(state:State, bench:BenchCase, buffer:PackedByteArray) -> void:
-	var encoded:PackedByteArray = bench.Encode(buffer)
-	for i:int in state:
-		var _decoded:Variant = bench.Decode(encoded)
-
-
-static func Use(state:State, bench:BenchCase, buffer:PackedByteArray) -> void:
-	var encoded:PackedByteArray = bench.Encode(buffer)
+# --- Read-All ---
+static func GenericReadAll(state:State, bench:BenchCase) -> void:
+	var encoded:PackedByteArray = bench.Encode()
 	var decoded:Variant = bench.Decode(encoded)
 	var sum:int = 0
 	for i:int in state:
 		sum = bench.Use(decoded)
 	if sum: pass
 
-static func RoundTrip(state:State, bench:BenchCase, buffer:PackedByteArray) -> void:
-	for i in state:
-		var encoded:PackedByteArray = bench.Encode(buffer)
-		var decoded:Variant = bench.Decode(encoded)
-		var sum:int = bench.Use(decoded)
-		if sum: pass
-
-# --- Benchmark Implementations ---
-
-static func BM_Flatbuffers_Encode(state:State) -> void:
-	var bench:BenchCase = FlatBuffersBench.new(1024)
-	Encode(state, bench, [])
-
-static func BM_BuiltIn_Encode(state:State) -> void:
-	var bench:BenchCase = BuiltInBench.new()
-	Encode(state, bench, [])
-
-static func BM_Flatbuffers_OpenView(state:State) -> void:
-	var bench:BenchCase = FlatBuffersBench.new(1024)
-	Decode(state, bench, [])
-
-static func BM_BuiltIn_Deserialize(state:State) -> void:
-	var bench:BenchCase = BuiltInBench.new()
-	Decode(state, bench, [])
-
 static func BM_Flatbuffers_ReadAll(state:State) -> void:
-	var bench:BenchCase = FlatBuffersBench.new(1024)
-	Use(state, bench, [])
+	GenericReadAll(state, FlatBuffersBench.new())
+
+static func BM_Flatbuffers_ReadAllPA(state:State) -> void:
+	GenericReadAll(state, FlatBuffersBench.new(3,true))
 
 static func BM_BuiltIn_ReadAll(state:State) -> void:
-	var bench:BenchCase = BuiltInBench.new()
-	Use(state, bench, [])
+	GenericReadAll(state, BuiltInBench.new())
+
+static func BM_GDict_ReadAll(state:State) -> void:
+	GenericReadAll(state, CaseGdDict.new())
+
+# --- Round-Trip ---
+static func GenericRoundTrip(state:State, bench:BenchCase) -> void:
+	var check_sum:int = 2524655701620275826
+	for i in state:
+		var encoded:PackedByteArray = bench.Encode()
+		var decoded:Variant = bench.Decode(encoded)
+		var sum:int = bench.Use(decoded)
+		if sum != check_sum:
+			state.SkipWithError("Checksum did not match: %s != %s" % [check_sum, sum])
 
 static func BM_Flatbuffers_RoundTrip(state:State) -> void:
-	var bench:BenchCase = FlatBuffersBench.new(1024)
-	RoundTrip(state, bench, [])
+	GenericRoundTrip(state, FlatBuffersBench.new())
+
+static func BM_Flatbuffers_RoundTripPA(state:State) -> void:
+	GenericRoundTrip(state, FlatBuffersBench.new(3,true))
 
 static func BM_BuiltIn_RoundTrip(state:State) -> void:
-	var bench:BenchCase = BuiltInBench.new()
-	RoundTrip(state, bench, [])
+	GenericRoundTrip(state, BuiltInBench.new())
 
-static func BM_Flatbuffers_Encode_64(state:State) -> void:
-	var bench:BenchCase = FlatBuffersBench.new(4096, 64)
-	Encode(state, bench, [])
+static func BM_GDict_RoundTrip(state:State) -> void:
+	GenericRoundTrip(state, CaseGdDict.new())
 
-static func BM_BuiltIn_Encode_64(state:State) -> void:
-	var bench:BenchCase = BuiltInBench.new(64)
-	Encode(state, bench, [])
+# --- Decode ---
+static func GenericDecode(state:State, bench:BenchCase) -> void:
+	var encoded:PackedByteArray = bench.Encode()
+	for i:int in state:
+		var _decoded:Variant = bench.Decode(encoded)
 
-static func BM_Flatbuffers_ReadAll_64(state:State) -> void:
-	var bench:BenchCase = FlatBuffersBench.new(4096, 64)
-	Use(state, bench, [])
+static func BM_Flatbuffers_Decode(state:State) -> void:
+	GenericDecode(state, FlatBuffersBench.new())
 
-static func BM_BuiltIn_ReadAll_64(state:State) -> void:
-	var bench:BenchCase = BuiltInBench.new(64)
-	Use(state, bench, [])
+static func BM_Flatbuffers_DecodePA(state:State) -> void:
+	GenericDecode(state, FlatBuffersBench.new(3,true))
 
-# --- Specialized Access ---
+static func BM_BuiltIn_Decode(state:State) -> void:
+	GenericDecode(state, BuiltInBench.new())
 
+static func BM_GDict_Decode(state:State) -> void:
+	GenericDecode(state, CaseGdDict.new())
+
+
+# --- Metadata Only ---
+# TODO If I want to keep this test, move the function to the BenchCase abstract
 static func BM_Flatbuffers_MetadataOnly(state:State) -> void:
-	var bench:BenchCase = FlatBuffersBench.new(1024)
-	var encoded:PackedByteArray = bench.Encode([])
-
+	var bench:BenchCase = FlatBuffersBench.new()
+	var encoded:PackedByteArray = bench.Encode()
 	for i in state:
 		var foobarcontainer:FB.FBFooBarContainer = FB.get_FBFooBarContainer(encoded)
 		var _initialised:bool = foobarcontainer.initialized()
@@ -151,17 +152,18 @@ static func BM_Flatbuffers_MetadataOnly(state:State) -> void:
 
 static func BM_BuiltIn_MetadataOnly(state:State) -> void:
 	var bench:BenchCase = BuiltInBench.new()
-	var encoded:PackedByteArray = bench.Encode([])
+	var encoded:PackedByteArray = bench.Encode()
 	for i in state:
 		var foobarcontainer:FooBarContainer = bytes_to_var_with_objects(encoded)
 		var _initialised:bool = foobarcontainer.initialized
 		var _fruit:FooBarContainer.Enum = foobarcontainer.fruit
 		var _loc_len:int = foobarcontainer.location.length()
 
-
+# --- Random Element ---
+# TODO If I want to keep this test, move the function to the BenchCase abstract
 static func BM_Flatbuffers_RandomElement(state:State) -> void:
-	var bench:BenchCase = FlatBuffersBench.new(1024)
-	var encoded:PackedByteArray = bench.Encode([])
+	var bench:BenchCase = FlatBuffersBench.new()
+	var encoded:PackedByteArray = bench.Encode()
 	for i in state:
 		var foobarcontainer:FB.FBFooBarContainer = FB.get_FBFooBarContainer(encoded)
 		var list_size:int = foobarcontainer.list_size()
@@ -173,7 +175,7 @@ static func BM_Flatbuffers_RandomElement(state:State) -> void:
 
 static func BM_BuiltIn_RandomElement(state:State) -> void:
 	var bench:BenchCase = BuiltInBench.new()
-	var encoded:PackedByteArray = bench.Encode([])
+	var encoded:PackedByteArray = bench.Encode()
 	for i in state:
 		var foobarcontainer:FooBarContainer = bytes_to_var_with_objects(encoded)
 		var list:Array = foobarcontainer.list

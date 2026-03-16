@@ -2,16 +2,14 @@
 class_name BuiltInBench
 extends BenchCase
 
-var kStringLength:int = 32
 var kVectorLength:int = 3
 
-func _init(vlen:int = 3, slen:int = 32) -> void:
+func _init(vlen:int = 3) -> void:
 	kVectorLength = vlen
-	kStringLength = slen
 
-func Encode(_buf:PackedByteArray) -> PackedByteArray:
+func Encode( _unused:Variant = null ) -> PackedByteArray:
 	var fbc := FooBarContainer.new()
-	fbc.location = "http://google.com/flatbuffers/".left(kStringLength)
+	fbc.location = "http://google.com/flatbuffers/"
 	fbc.fruit = FooBarContainer.Enum.Bananas
 	fbc.initialized = true
 	if fbc.list.resize(kVectorLength) != OK:
@@ -36,7 +34,7 @@ func Encode(_buf:PackedByteArray) -> PackedByteArray:
 		fbc.list[i] = foobar
 		foobar.rating = 3.1415432432445543543 + i
 		foobar.postfix = ord('!') + i
-		foobar.name = "Hello, World!".left(kStringLength)
+		foobar.name = "Hello, World!"
 		foobar.sibling = bar
 
 	return var_to_bytes_with_objects(fbc)
@@ -69,7 +67,3 @@ func Use( decoded:Variant ) -> int:
 		Add(foo.prefix)
 
 	return sum
-
-
-func Dealloc( _decoded:Variant ) -> void:
-	pass
