@@ -1,6 +1,6 @@
 @tool
 extends EditorScript
-const Runner = preload("suite_runner.gd")
+const Runner = preload("runner_suite.gd")
 
 func _run() -> void:
 	var runner := Runner.new()

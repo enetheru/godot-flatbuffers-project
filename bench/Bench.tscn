@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://fb786i4j7ky7"]
-
-[ext_resource type="Script" uid="uid://ccki76bedbssv" path="res://bench/bench.gd" id="1_siywe"]
-
-[node name="Bench" type="Node2D" unique_id=587753636]
-script = ExtResource("1_siywe")

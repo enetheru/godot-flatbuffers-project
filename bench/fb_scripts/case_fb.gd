@@ -1,6 +1,6 @@
 @tool
 class_name FlatBuffersBench
-extends BenchBase
+extends BenchCase
 
 const FB = preload("bench_generated.gd")  # adjust path to your generated file
 

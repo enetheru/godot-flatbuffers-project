@@ -268,7 +268,7 @@ class FBFooBarContainer extends FlatBuffer:
 
 	func location() -> String:
 		var field_start: int = get_offset_field_start( VT_LOCATION )
-		if not field_start: return ''
+		assert(field_start)
 		return decode_variant( field_start, TYPE_STRING )
 
 

@@ -6,8 +6,6 @@ const Benchmark = BenchLib.Benchmark
 const FunctionBenchmark = BenchLib.FunctionBenchmark
 const ConsoleReporter = preload("uid://cp6jwltd8s2ur")
 
-const RB = preload("uid://ceg4ivov3pobi")
-
 # new checksum, should be the same for both 2524655701620245727
 # old checksum which was for the c++ version. 218812692406581874
 
@@ -49,13 +47,13 @@ func _run() -> void:
 		print("%d benchmarks" % num_benchmarks)
 
 
-static func Encode( state:State, bench:BenchBase, buffer:PackedByteArray ) -> void:
+static func Encode( state:State, bench:BenchCase, buffer:PackedByteArray ) -> void:
 	for i in state:
 		var _buf:PackedByteArray = bench.Encode(buffer);
 
 
 
-static func Decode( state:State, bench:BenchBase, buffer:PackedByteArray) -> void:
+static func Decode( state:State, bench:BenchCase, buffer:PackedByteArray) -> void:
 	# int64_t length;
 	# uint8_t* encoded = bench->Encode(buffer, length);
 	var encoded:PackedByteArray = bench.Encode(buffer)
@@ -65,7 +63,7 @@ static func Decode( state:State, bench:BenchBase, buffer:PackedByteArray) -> voi
 		var _decoded:Variant = bench.Decode(encoded)
 
 
-static func Use( state:State, bench:BenchBase, buffer:PackedByteArray, _check_sum:int ) -> void:
+static func Use( state:State, bench:BenchCase, buffer:PackedByteArray, _check_sum:int ) -> void:
 	var encoded:PackedByteArray = bench.Encode(buffer);
 	var decoded:Variant = bench.Decode(encoded)
 	var sum:int = 0
@@ -85,7 +83,7 @@ static func BM_Flatbuffers_Encode(state:State) -> void:
 		push_error("Failed to resize buffer")
 		return
 
-	var bench:BenchBase = FlatBuffersBench.new(kBufferLength);
+	var bench:BenchCase = FlatBuffersBench.new(kBufferLength);
 	Encode(state, bench, buffer);
 
 static var bench_BM_Flatbuffers_Encode:Benchmark
@@ -99,7 +97,7 @@ static func BM_Flatbuffers_Decode(state:State) -> void:
 		push_error("Failed to resize buffer")
 		return
 
-	var bench:BenchBase = FlatBuffersBench.new(kBufferLength)
+	var bench:BenchCase = FlatBuffersBench.new(kBufferLength)
 	Decode(state, bench, buffer)
 
 static var bench_BM_Flatbuffers_Decode:Benchmark
@@ -113,7 +111,7 @@ static func BM_Flatbuffers_Use(state:State) -> void:
 		push_error("Failed to resize buffer")
 		return
 
-	var bench:BenchBase = FlatBuffersBench.new(kBufferLength)
+	var bench:BenchCase = FlatBuffersBench.new(kBufferLength)
 	Use(state, bench, buffer, 2524655701620245727);
 
 static var bench_BM_Flatbuffers_Use:Benchmark
@@ -128,7 +126,7 @@ static func BM_Raw_Encode(state:State) -> void:
 		push_error("Failed to resize buffer")
 		return
 
-	var bench:BenchBase = RB.NewRawBench()
+	var bench:BenchCase = BuiltInBench.new()
 	Encode(state, bench, buffer);
 
 static var bench_BM_Raw_Encode:Benchmark
@@ -141,7 +139,7 @@ static func BM_Raw_Decode(state:State) -> void:
 		push_error("Failed to resize buffer")
 		return
 
-	var bench:BenchBase = RB.NewRawBench()
+	var bench:BenchCase = BuiltInBench.new()
 	Decode(state, bench, buffer);
 
 
@@ -155,7 +153,7 @@ static func BM_Raw_Use(state:State) -> void:
 		push_error("Failed to resize buffer")
 		return
 
-	var bench:BenchBase = RB.NewRawBench()
+	var bench:BenchCase = BuiltInBench.new()
 	Use(state, bench, buffer, 2524655701620245727)
 
 static var bench_BM_Raw_Use:Benchmark

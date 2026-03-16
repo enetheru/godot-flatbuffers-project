@@ -27,8 +27,8 @@ func _init( _opts:OutputOptions = OutputOptions.OO_Defaults) -> void:
 	_output_options = _opts
 	_name_field_width = 0
 	_printed_header = false
-	
-	
+
+
 static func FormatTime(time:float) -> String:
 	# For the time columns of the console printer 13 digits are reserved. One of
 	# them is a space and max two of them are the time unit (e.g ns). That puts
@@ -45,8 +45,8 @@ static func FormatTime(time:float) -> String:
 	if time > 9999999999: # max 10 digit number
 		return "%1.4e" % time
 	return "%10.0f" % time
-	
-	
+
+
 # Function to return an string for the calculated complexity
 func GetBigOString(complexity:BenchLib.BigO) -> String:
 	match complexity:
@@ -57,8 +57,8 @@ func GetBigOString(complexity:BenchLib.BigO) -> String:
 		BenchLib.BigO.oNLogN: return "NlgN"
 		BenchLib.BigO.o1: return "(1)"
 		_: return "f(N)"
-	
-	
+
+
 func GetTimeUnitString(unit:BenchLib.TimeUnit) -> String:
 	match unit:
 		BenchLib.TimeUnit.kSecond: return "s";
@@ -66,7 +66,7 @@ func GetTimeUnitString(unit:BenchLib.TimeUnit) -> String:
 		BenchLib.TimeUnit.kMicrosecond: return "us";
 		BenchLib.TimeUnit.kNanosecond: return "ns";
 		_: return ""
-  
+
 
 func ReportContext(context:Context) -> bool:
 	_name_field_width = context.name_field_width
@@ -99,16 +99,16 @@ func ReportRuns(reports:Array[Run]) -> void:
 func PrintRunData(result:Run) -> void:
 	var parts:Array[String] = []
 	var name_color:Color
-	if result.report_big_o or result.report_rms: 
+	if result.report_big_o or result.report_rms:
 		name_color = Color.BLUE
 	else: name_color = Color.GREEN
 	var error_color:String = Color.RED.to_html()
 	var skipped_color:String = Color.WHITE.to_html()
 	var yellow_color:String = Color.YELLOW.to_html()
 	var cyan_color:String = Color.CYAN.to_html()
-	
+
 	parts.append("[color=%s]%s [/color]" % [
-		name_color.to_html(true), 
+		name_color.to_html(true),
 		result.benchmark_name().rpad(_name_field_width)])
 
 	if BenchLib.Skipped.SkippedWithError == result.skipped:
@@ -171,7 +171,7 @@ func PrintRunData(result:Run) -> void:
 		else:
 			# FIXME, this is suposed to be time, not size
 			s = String.humanize_size(int(cnt.value))
-			
+
 		if (cnt.flags & BenchLib.Counter.Flags.kIsRate) != 0:
 			unit = "s" if (cnt.flags & BenchLib.Counter.Flags.kInvert) != 0 else "/s"
 

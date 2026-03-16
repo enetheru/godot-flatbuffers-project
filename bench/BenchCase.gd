@@ -1,7 +1,7 @@
 @tool
 
 @abstract
-class_name BenchBase
+class_name BenchCase
 
 var sum:int = 0
 

@@ -30,15 +30,15 @@ const kDisabledPrefix:String = "DISABLED_"
 #  BenchmarkFamilies
 #=============================================================================//
 
-# Class for managing registered benchmarks.		Note that each registered
-# benchmark identifies a family of related benchmarks to run.
+## Class for managing registered benchmarks. Note that each registered
+## benchmark identifies a family of related benchmarks to run.
 class BenchmarkFamilies:
 	static var instance := BenchmarkFamilies.new()
-	
+
 	static func GetInstance() -> BenchmarkFamilies:
 		return instance
 
-	# Registers a benchmark family and returns the index assigned to it.
+	## Registers a benchmark family and returns the index assigned to it.
 	func AddBenchmark(family:BenchLib.Benchmark) -> int:
 		_mutex.lock()
 		var index:int = _families.size()
@@ -46,15 +46,16 @@ class BenchmarkFamilies:
 		_mutex.unlock()
 		return index;
 
-	# Clear all registered benchmark families.
+	## Clear all registered benchmark families.
 	func ClearBenchmarks() -> void:
 		_mutex.lock()
 		_families.clear();
 		_mutex.unlock()
 
-	# Extract the list of benchmark instances that match the specified
-	# regular expression.
+	## Extract the list of benchmark instances that match the specified
+	## regular expression.
 	func FindBenchmarks(spec:String, benchmarks:Array[BenchLib.BenchmarkInstance]) -> bool:
+		assert(not spec.is_empty(), "spec must not be an empty string")
 		# Make regular expression out of command-line flag
 		var re := RegEx.new()
 		var is_negative_filter:bool = false
@@ -65,7 +66,7 @@ class BenchmarkFamilies:
 		if re.compile(spec, true) != OK:
 			push_error( "Could not compile benchmark RegEx")
 			return false
-#
+
 		# Special list of thread counts to use when none are specified
 		const one_thread:Array[int] = [1]
 
@@ -107,7 +108,7 @@ class BenchmarkFamilies:
 			for args:PackedInt64Array in family._args:
 				for num_threads:int in thread_counts:
 					var binstance := BenchLib.BenchmarkInstance.new(
-						family, family_index, per_family_instance_index, 
+						family, family_index, per_family_instance_index,
 						args, num_threads)
 
 					var full_name:String = str(binstance.name)
@@ -115,7 +116,7 @@ class BenchmarkFamilies:
 					if full_name.rfind(kDisabledPrefix, 0) != 0 \
 					and (re_match and not is_negative_filter) \
 					or (not re_match and is_negative_filter):
-						if benchmarks_last <= benchmarks.size():
+						if benchmarks_last <= benchmarks.size() -1:
 							benchmarks[benchmarks_last] = binstance
 							benchmarks_last += 1
 						else:
