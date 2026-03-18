@@ -138,7 +138,7 @@ class PerfCountersMeasurement:
 
 		for cname:String in _counters.names():
 			measurements[cname] = _end_values[cname] - _start_values[cname]
-		
+
 
 		return _valid_read
 

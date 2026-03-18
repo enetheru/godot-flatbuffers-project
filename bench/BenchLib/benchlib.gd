@@ -3,15 +3,18 @@ class_name BenchLib
 
 const RegisterLib = preload("uid://ehhn1k7v0g6w")
 const BenchmarkFamilies = RegisterLib.BenchmarkFamilies
+const Benchmark = RegisterLib.Benchmark
 
 const StatsLib = preload("uid://c8w76q8bhpf8q")
 const PerfCounters = preload("uid://b57mx2pbhhtfa")
 const PerfCountersMeasurement = PerfCounters.PerfCountersMeasurement
 
+const Log = preload("uid://dccn5dspfd8q4")
+
 
 # Default number of minimum benchmark running time in seconds.
 static var kDefaultMinTimeStr:String = "0.5s"
-static var kMaxIterations:int = 1
+static var kMaxIterations:int = 1000000000000
 
 static var FLAGS_benchmark_list_tests:bool = false
 
@@ -82,7 +85,6 @@ enum StatisticUnit {
 	kPercentage
 }
 
-
 # If a ProfilerManager is registered (via RegisterProfilerManager()), the
 # benchmark will be run an additional time under the profiler to collect and
 # report profile metrics for the run of the benchmark.
@@ -134,28 +136,35 @@ class ThreadRunnerBase:
 class Counter:
 	enum Flags {
 		kDefaults = 0,
-		# Mark the counter as a rate. It will be presented divided
-		# by the duration of the benchmark.
+
+		## Mark the counter as a rate. It will be presented divided
+		## by the duration of the benchmark.
 		kIsRate = 1 << 0,
-		# Mark the counter as a thread-average quantity. It will be
-		# presented divided by the number of threads.
+
+		## Mark the counter as a thread-average quantity. It will be
+		## presented divided by the number of threads.
 		kAvgThreads = 1 << 1,
-		# Mark the counter as a thread-average rate. See above.
+
+		## Mark the counter as a thread-average rate. See above.
 		kAvgThreadsRate = kIsRate | kAvgThreads,
-		# Mark the counter as a constant value, valid/same for *every* iteration.
-		# When reporting, it will be *multiplied* by the iteration count.
+
+		## Mark the counter as a constant value, valid/same for *every* iteration.
+		## When reporting, it will be *multiplied* by the iteration count.
 		kIsIterationInvariant = 1 << 2,
-		# Mark the counter as a constant rate.
-		# When reporting, it will be *multiplied* by the iteration count
-		# and then divided by the duration of the benchmark.
+
+		## Mark the counter as a constant rate.
+		## When reporting, it will be *multiplied* by the iteration count
+		## and then divided by the duration of the benchmark.
 		kIsIterationInvariantRate = kIsRate | kIsIterationInvariant,
-		# Mark the counter as a iteration-average quantity.
-		# It will be presented divided by the number of iterations.
+
+		## Mark the counter as a iteration-average quantity.
+		## It will be presented divided by the number of iterations.
 		kAvgIterations = 1 << 3,
-		# Mark the counter as a iteration-average rate. See above.
+
+		## Mark the counter as a iteration-average rate. See above.
 		kAvgIterationsRate = kIsRate | kAvgIterations,
 
-		# In the end, invert the result. This is always done last!
+		## In the end, invert the result. This is always done last!
 		kInvert = 1 << 31
 	}
 
@@ -168,13 +177,13 @@ class Counter:
 
 	var value:float
 	var flags:Flags
-	var oneK:OneK = OneK.kIs1000
+	var one_k:OneK = OneK.kIs1000
 
 
 	func _init(v:float = 0., f:Flags = Flags.kDefaults, k:OneK = OneK.kIs1000) -> void:
 		value = v
 		flags = f
-		oneK = k
+		one_k = k
 
 
 class State:
@@ -264,11 +273,11 @@ class State:
 			if not perf_counters_measurement_.Stop(measurements):
 				assert(false, "Perf counters read the value failed.")
 
-			for mname:String in measurements.keys():
-				var mvalue:float = measurements[mname]
+			for key:String in measurements.keys():
+				var cnt:Counter = measurements.get(key)
 				# Counter was inserted with `kAvgIterations` flag by the constructor.
-				assert(counters.has(mname))
-				counters[name].value += mvalue
+				assert(counters.has(key))
+				counters[key].value += cnt.value
 
 
 	## REQUIRES: timer is not running and 'SkipWithMessage(...)' or
@@ -468,7 +477,7 @@ class State:
 	var complexity_n_:int = 0 #ComplexityN
 
 	# Container for user-defined counters.
-	var counters:Dictionary #UserCounters
+	var counters:Dictionary[String, Counter] #UserCounters
 
 	func _init(
 				new_name:String,
@@ -551,68 +560,6 @@ class State:
 	var profiler_manager_:ProfilerManager
 
 
-@abstract
-class Benchmark:
-	func _init( name:String ) -> void:
-		_name = name
-		@warning_ignore_start("return_value_discarded")
-		ComputeStatistics("mean", StatsLib.StatisticsMean)
-		ComputeStatistics("median", StatsLib.StatisticsMedian)
-		ComputeStatistics("stddev", StatsLib.StatisticsStdDev)
-		ComputeStatistics("cv", StatsLib.StatisticsCV, StatisticUnit.kPercentage)
-		@warning_ignore_restore("return_value_discarded")
-
-
-	@warning_ignore_start("unused_private_class_variable")
-	var _name:String
-	var _aggregation_report_mode:AggregationReportMode = \
-			AggregationReportMode.ARM_Unspecified
-	var _arg_names:PackedStringArray	# Args for all benchmark runs
-	var _args:Array[PackedInt64Array] # Args for all benchmark runs
-
-	var _time_unit:TimeUnit = default_time_unit
-
-	var _use_default_time_unit:bool = true
-
-	var _range_multiplier:int = RegisterLib.kRangeMultiplier
-	var _min_time:float = 0
-	var _min_warmup_time:float = 0
-	var _iterations:int = 0
-	var _repetitions:int = 0
-	var _measure_process_cpu_time:bool = false
-	var _use_real_time:bool = false
-	var _use_manual_time:bool = false
-	var _complexity:BigO = BigO.oNone
-	var _complexity_lambda:Callable #BigOFunc
-	var _statistics:Array[Statistics] = []
-	var _thread_counts:Array[int] = []
-
-	var _setup:Callable
-	var _teardown:Callable
-
-	var threadrunner:Callable = Callable() #threadrunner_factory
-	@warning_ignore_restore("unused_private_class_variable")
-
-
-	@abstract
-	func Run( state:State ) -> void
-
-	func ArgsCnt() -> int:
-		if _args.is_empty():
-			if _arg_names.is_empty():
-				return -1
-			return _arg_names.size()
-		var front:PackedInt64Array = _args.front()
-		return front.size()
-
-
-	func ComputeStatistics(
-				name:String, statistics:Callable, #StatisticsFunc
-				unit:StatisticUnit = StatisticUnit.kTime ) -> Benchmark:
-		_statistics.push_back(Statistics.new(name, statistics, unit))
-		return self
-
-
 class FunctionBenchmark extends Benchmark:
 	var _func:Callable
 
@@ -683,7 +630,7 @@ class BenchmarkInstance:
 					name.args += "%s:" % arg_name
 
 			#_name.args += StrFormat("%" PRId64, arg);
-			name.args += "%" % arg
+			name.args += str(arg)
 			arg_i += 1
 
 		if not is_zero_approx(benchmark._min_time):
@@ -837,7 +784,7 @@ static func RunSpecifiedBenchmarks(
 		return 0;
 
 	if benchmarks.is_empty():
-		push_error("Failed to match any benchmarks against regex: ", spec)
+		printerr("Failed to match any benchmarks against regex: ", spec)
 		return 0
 
 	if FLAGS_benchmark_list_tests:

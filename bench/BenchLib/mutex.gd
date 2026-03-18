@@ -7,7 +7,7 @@ class Barrier:
 #   Barrier(int num_threads) : running_threads_(num_threads) {}
 	func _init( num_threads:int ) -> void:
 		running_threads_ = num_threads
-# 
+#
 	# Called by each thread
 #   bool wait() EXCLUDES(lock_) {
 	func wait() -> bool:
@@ -76,7 +76,7 @@ class Barrier:
 					return phase_number_ > phase_number_cp \
 					or entered_ == running_threads_
 #       phase_condition_.wait(ml.native_handle(), cb);
-			#FIXME This is the part I am hung up on. cpp documentation 
+			#FIXME This is the part I am hung up on. cpp documentation
 			# on condition_variable.wait() says that the lock is unlocked here
 			# and then a signal is waited on which would look something like:
 			ml.unlock() # allows another thread to reach this point.

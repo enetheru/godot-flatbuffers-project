@@ -4,14 +4,14 @@ const Benchlib = preload("uid://oxy2u2g2m8qu")
 const Counter = BenchLib.Counter
 
 static func FinishCounter(
-			c:Counter, 
-			iterations:int, # IterationCount 
+			c:Counter,
+			iterations:int, # IterationCount
 			cpu_time:float,
 			num_threads:float ) -> float:
 	var v:float = c.value
 	if (c.flags & Counter.Flags.kIsRate) != 0:
 		v /= cpu_time;
-	
+
 	if (c.flags & Counter.Flags.kAvgThreads) != 0:
 		v /= num_threads;
 
@@ -27,9 +27,9 @@ static func FinishCounter(
 
 
 static func FinishUserCounters(
-			l:Dictionary[String, Counter], # UserCounters, 
-			iterations:int, # IterationCount, 
-			cpu_time:float, 
+			l:Dictionary[String, Counter], # UserCounters,
+			iterations:int, # IterationCount,
+			cpu_time:float,
 			num_threads:float) -> void:
 	for c:String in l.keys():
 		l[c].value = FinishCounter(l[c], iterations, cpu_time, num_threads)

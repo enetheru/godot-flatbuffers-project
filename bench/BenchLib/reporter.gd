@@ -41,7 +41,7 @@ class Run:
 		return '_'.join([str(run_name), aggregate_name]) \
 			if run_type == RunType.RT_Aggregate \
 			else str(run_name)
-	
+
 	var run_name:BenchLib.BenchmarkName
 	var family_index:int
 	var per_family_instance_index:int
@@ -164,10 +164,10 @@ func PrintBasicContext( context:Context ) -> void:
 
 	var info:CPUInfo = context.cpu_info
 	lines.append( "Run on (%d X %f MHz CPU%s)" % [
-		info.num_cpus, 
+		info.num_cpus,
 		(info.cycles_per_second / 1000000.0),
 		's' if info.num_cpus > 1 else ''])
-		
+
 	if not info.caches.is_empty():
 		lines.append( "CPU Caches:")
 		for CInfo in info.caches:
@@ -175,7 +175,7 @@ func PrintBasicContext( context:Context ) -> void:
 			if CInfo.num_sharing != 0:
 				line += " (x%d)" % [divi(info.num_cpus , CInfo.num_sharing)]
 			lines.append(line)
-			
+
 	if not info.load_avg.is_empty():
 		var line:String = "Load Average: "
 		line += ','.join(info.load_avg.map(func(la:float)->String:return "%.2f" % la ))
@@ -197,5 +197,5 @@ func PrintBasicContext( context:Context ) -> void:
 
 	if OS.is_debug_build():
 		lines.append("***WARNING*** Library was built as DEBUG. Timings may be affected.")
-		
+
 	print('\n'.join(lines))

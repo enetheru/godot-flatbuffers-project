@@ -1,6 +1,9 @@
 @tool
 extends BenchmarkReporter
 
+const StrUtil = preload("uid://bpmy1tbljbgvt")
+
+
 # Simple reporter that outputs benchmark data to the console. This is the
 # default reporter used by RunSpecifiedBenchmarks().
 
@@ -124,44 +127,54 @@ func PrintRunData(result:Run) -> void:
 		return
 
 	var real_time:float = result.GetAdjustedRealTime()
-	var cpu_time:float = result.GetAdjustedCPUTime()
+	#var cpu_time:float = result.GetAdjustedCPUTime()
 	var real_time_str:String = FormatTime(real_time)
-	var cpu_time_str:String = FormatTime(cpu_time)
+	#var cpu_time_str:String = FormatTime(cpu_time)
 
 	if result.report_big_o:
 		var big_o:String = GetBigOString(result.complexity);
 		#printer( Color.YELLOW, "%10.2f %-4s %10.2f %-4s ", real_time,
 				#big_o, cpu_time, big_o);
-		parts.append("[color=%s]%10.2f %-4s %10.2f %-4s [/color]" % [
-				yellow_color, real_time, big_o, cpu_time, big_o])
+		#parts.append("[color=%s]%10.2f %-4s %10.2f %-4s [/color]" % [
+				#yellow_color, real_time, big_o, cpu_time, big_o])
+		# Remove Redundant CPU Time since we dont have access to it.
+		parts.append("[color=%s]%10.2f %-4s [/color]" % [
+				yellow_color, real_time, big_o])
 	elif result.report_rms:
 		#printer( Color.YELLOW, "%10.0f %-4s %10.0f %-4s ", real_time * 100, "%",
 				#cpu_time * 100, "%");
-		parts.append("[color=%s]%10.0f %-4s %10.0f %-4s [/color]" % [
-				yellow_color, real_time * 100, "%", cpu_time * 100, "%"])
-	elif result.run_type != Run.RunType.RT_Aggregate or \
-			 result.aggregate_unit == StatisticUnit.kTime:
+		#parts.append("[color=%s]%10.0f %-4s %10.0f %-4s [/color]" % [
+				#yellow_color, real_time * 100, "%", cpu_time * 100, "%"])
+		parts.append("[color=%s]%10.0f %-4s [/color]" % [
+				yellow_color, real_time * 100, "%"])
+	elif result.run_type != Run.RunType.RT_Aggregate \
+	or result.aggregate_unit == StatisticUnit.kTime:
 		var timeLabel:String = GetTimeUnitString(result.time_unit)
 		#printer( Color.YELLOW, "%s %-4s %s %-4s ", real_time_str,
 				#timeLabel, cpu_time_str, timeLabel);
-		parts.append("[color=%s]%s %-4s %s %-4s [/color]" % [
-				yellow_color, real_time_str, timeLabel, cpu_time_str, timeLabel])
+		#parts.append("[color=%s]%s %-4s %s %-4s [/color]" % [
+				#yellow_color, real_time_str, timeLabel, cpu_time_str, timeLabel])
+		parts.append("[color=%s]%s %-4s [/color]" % [
+				yellow_color, real_time_str, timeLabel])
 	else:
 		assert(result.aggregate_unit == StatisticUnit.kPercentage)
 		#printer( Color.YELLOW, "%10.2f %-4s %10.2f %-4s ",
 				#(100. * result.real_accumulated_time), "%",
 				#(100. * result.cpu_accumulated_time), "%")
-		parts.append("[color=%s]%10.2f %-4s %10.2f %-4s [/color]" % [
+		#parts.append("[color=%s]%10.2f %-4s %10.2f %-4s [/color]" % [
+				#yellow_color,
+				#(100. * result.real_accumulated_time), "%",
+				#(100. * result.cpu_accumulated_time), "%"])
+		parts.append("[color=%s]%10.2f %-4s [/color]" % [
 				yellow_color,
-				(100. * result.real_accumulated_time), "%",
-				(100. * result.cpu_accumulated_time), "%"])
+				(100. * result.real_accumulated_time), "%"])
 
 	if not result.report_big_o and not result.report_rms:
 		parts.append("[color=%s]%10d[/color]" % [cyan_color, result.iterations])
 
 	for ckey:String in result.counters.keys():
 		var cnt:Counter = result.counters.get(ckey)
-		var cNameLen:int = max(10, ckey.length())
+		var cNameLen:int = maxi(10, ckey.length())
 		var s:String;
 		var unit:String = "";
 		if result.run_type == Run.RunType.RT_Aggregate \
@@ -169,31 +182,33 @@ func PrintRunData(result:Run) -> void:
 				s = "%.2f" % [100.0 * cnt.value]
 				unit = "%"
 		else:
-			# FIXME, this is suposed to be time, not size
-			s = String.humanize_size(int(cnt.value))
+			s = StrUtil.HumanReadableNumber( cnt.value, cnt.one_k )
 
 		if (cnt.flags & BenchLib.Counter.Flags.kIsRate) != 0:
 			unit = "s" if (cnt.flags & BenchLib.Counter.Flags.kInvert) != 0 else "/s"
 
 		if (_output_options & OutputOptions.OO_Tabular) != 0:
-			parts.append((" %s%s" % [s, unit]).lpad(cNameLen - unit.length()))
+			parts.append((" %s%s" % [s, unit]).lpad(cNameLen+2))
 		else:
 			parts.append(" %s=%s%s" % [ckey, s, unit])
 
 	if not result.report_label.is_empty():
-		parts.append(" "+result.report_label)
+		parts.append(" " + result.report_label)
 
 	print_rich(''.join(parts))
 
 
 func PrintHeader(run:Run) -> void:
-	var header:String = "%s %s %s %s" % [
+	#var header:String = "%s %s %s %s" % [
+		#"Benchmark".rpad(_name_field_width),
+		#"Time".lpad(13), "CPU".lpad(15), "Iterations".lpad(12)]
+	var header:String = "%s %s %s" % [
 		"Benchmark".rpad(_name_field_width),
-		"Time".lpad(13), "CPU".lpad(15), "Iterations".lpad(12)]
+		"Time".lpad(13), "Iterations".lpad(12)]
 	if not run.counters.is_empty():
 		if (_output_options & OutputOptions.OO_Tabular) != 0:
 			for ckey:String in run.counters.keys():
-				header += " %s" % str(ckey)
+				header += " %s" % str(ckey).lpad(maxi(10, ckey.length() +2))
 		else:
 			header += " UserCounters..."
 
