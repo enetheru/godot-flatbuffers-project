@@ -83,7 +83,7 @@ static func BM_Flatbuffers_Encode(state:State) -> void:
 		push_error("Failed to resize buffer")
 		return
 
-	var bench:BenchCase = FlatBuffersBench.new(kBufferLength);
+	var bench:BenchCase = FlatBuffersBench.new();
 	Encode(state, bench, buffer);
 
 static var bench_BM_Flatbuffers_Encode:Benchmark
@@ -97,7 +97,7 @@ static func BM_Flatbuffers_Decode(state:State) -> void:
 		push_error("Failed to resize buffer")
 		return
 
-	var bench:BenchCase = FlatBuffersBench.new(kBufferLength)
+	var bench:BenchCase = FlatBuffersBench.new()
 	Decode(state, bench, buffer)
 
 static var bench_BM_Flatbuffers_Decode:Benchmark
@@ -111,7 +111,7 @@ static func BM_Flatbuffers_Use(state:State) -> void:
 		push_error("Failed to resize buffer")
 		return
 
-	var bench:BenchCase = FlatBuffersBench.new(kBufferLength)
+	var bench:BenchCase = FlatBuffersBench.new()
 	Use(state, bench, buffer, 2524655701620245727);
 
 static var bench_BM_Flatbuffers_Use:Benchmark

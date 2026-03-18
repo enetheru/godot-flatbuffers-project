@@ -5,20 +5,27 @@ extends BenchCase
 const FB = preload("bench_generated.gd")  # adjust path to your generated file
 
 var kVectorLength:int = 3
-var kPreAllocate:bool = false
+var kPreAllocateSize:int = 0
+var kStaticReader:bool = false
 
 #explicit FlatBufferBench(int64_t initial_size, Allocator* allocator)
 	#: fbb(initial_size, allocator, false) {}
 
+var default_opts:Dictionary = {
+	&'kVectorLength':3,
+	&'kPreAllocateSize':false,
+	&'kStaticReader':false
+}
 
-func _init( vlen:int = 3, pre_allocate:bool = false ) -> void:
-	kVectorLength = vlen
-	kPreAllocate = pre_allocate
+func _init( opts:Dictionary = default_opts ) -> void:
+	kVectorLength = opts.get(&'kVectorLength', kVectorLength)
+	kPreAllocateSize = opts.get(&'kPreAllocateSize', kPreAllocateSize)
+	kStaticReader = opts.get(&'kStaticReader', kStaticReader)
 
 
 #uint8_t* Encode(void*, int64_t& len) override {
 func Encode( _unused:Variant = null ) -> PackedByteArray:
-	var fbb := FlatBufferBuilder.create(384 if kPreAllocate else 0)
+	var fbb := FlatBufferBuilder.create(kPreAllocateSize)
 
 	#const int kVectorLength = 3;
 	#Offset<FooBar> vec[kVectorLength];
@@ -62,17 +69,24 @@ func Encode( _unused:Variant = null ) -> PackedByteArray:
 	#return fbb.GetBufferPointer();
 	return fbb.get_buffer()
 
+# static reader so we dont need to allocate.
+static var _sbf_foobarcontainer := FB.FBFooBarContainer.new()
 
 #void* Decode(void* buffer, int64_t) override { return buffer; }
 func Decode( buf:PackedByteArray ) -> Variant:
-	var foobarcontainer:FB.FBFooBarContainer = FB.get_FBFooBarContainer(buf)
-	return foobarcontainer
+	if kStaticReader:
+		_sbf_foobarcontainer._interpret_as_root(buf)
+	else:
+		return FB.get_FBFooBarContainer(buf)
+
+	return _sbf_foobarcontainer
 
 
 #int64_t Use(void* decoded) override {
 func Use( decoded:Variant ) -> int:
 	#auto foobarcontainer = GetFooBarContainer(decoded);
 	var foobarcontainer:FB.FBFooBarContainer = decoded
+
 	sum = 0;
 	Add(int(foobarcontainer.initialized()))
 	Add(foobarcontainer.location().length());

@@ -6,16 +6,17 @@ const Benchmark = BenchLib.Benchmark
 const FunctionBenchmark = BenchLib.FunctionBenchmark
 const ConsoleReporter = preload("uid://cp6jwltd8s2ur")
 
+const CntFlags = BenchLib.Counter.Flags
+const CntOneK = BenchLib.Counter.OneK
 
 const FB = preload("fb_scripts/bench_generated.gd")
 const CaseGdDict = preload("uid://dve0r6lgn2kft")
-
 
 func _init() -> void:
 	BenchLib.BenchmarkFamilies.GetInstance()._families.clear()
 	BenchLib.FLAGS_benchmark_list_tests = false
 	BenchLib.FLAGS_benchmark_dry_run = false
-	BenchLib.kMaxIterations = 1
+	BenchLib.kMaxIterations = 100
 
 	# Standard Encode
 	@warning_ignore_start("return_value_discarded")
@@ -29,6 +30,16 @@ func _init() -> void:
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_ReadAllPA))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_RoundTripPA))
 
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_EncodeSR))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_DecodeSR))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_ReadAllSR))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_RoundTripSR))
+
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_EncodePASR))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_DecodePASR))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_ReadAllPASR))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_RoundTripPASR))
+
 
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_Encode))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_Decode))
@@ -38,14 +49,14 @@ func _init() -> void:
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_GDict_Encode))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_GDict_Decode))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_GDict_ReadAll))
-	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_GDict_RoundTrip))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_GDict_RoundTrip)).Arg(1)
 
 
-	#RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_MetadataOnly))
-	#RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_MetadataOnly))
-#
-	#RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_RandomElement))
-	#RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_RandomElement))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_MetadataOnly))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_MetadataOnly))
+
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_RandomElement))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_RandomElement))
 	@warning_ignore_restore("return_value_discarded")
 
 
@@ -53,21 +64,36 @@ func _run() -> void:
 	var reporter := ConsoleReporter.new()
 	var num_benchmarks:int = BenchLib.RunSpecifiedBenchmarks(reporter)
 	if num_benchmarks == 0:
-		push_error("zero benchmarks")
+		printerr("zero benchmarks")
 	else:
 		print("%d benchmarks" % num_benchmarks)
 
 
 # --- Encode ---
 static func GenericEncode(state:State, bench:BenchCase) -> void:
+	state.counters["bytes_size"] = BenchLib.Counter.new(
+			bench.Encode().size(), CntFlags.kIsIterationInvariant, CntOneK.kIs1024)
+
+	var throughput := BenchLib.Counter.new(0, CntFlags.kIsRate, CntOneK.kIs1024)
+	state.counters["bytes/s"] = throughput
+
 	for i in state:
-		var _buf:PackedByteArray = bench.Encode()
+		var buf:PackedByteArray = bench.Encode()
+		throughput.value += buf.size()
+
 
 static func BM_Flatbuffers_Encode(state:State) -> void:
 	GenericEncode(state, FlatBuffersBench.new())
 
 static func BM_Flatbuffers_EncodePA(state:State) -> void:
-	GenericEncode(state, FlatBuffersBench.new(3,true))
+	GenericEncode(state, FlatBuffersBench.new({&'pre_allocate':true}))
+
+static func BM_Flatbuffers_EncodeSR(state:State) -> void:
+	GenericEncode(state, FlatBuffersBench.new({&'static_reader':true}))
+
+static func BM_Flatbuffers_EncodePASR(state:State) -> void:
+	GenericEncode(state, FlatBuffersBench.new(
+		{&'pre_allocate':true, &'static_reader':true}))
 
 static func BM_BuiltIn_Encode(state:State) -> void:
 	GenericEncode(state, BuiltInBench.new())
@@ -89,7 +115,14 @@ static func BM_Flatbuffers_ReadAll(state:State) -> void:
 	GenericReadAll(state, FlatBuffersBench.new())
 
 static func BM_Flatbuffers_ReadAllPA(state:State) -> void:
-	GenericReadAll(state, FlatBuffersBench.new(3,true))
+	GenericReadAll(state, FlatBuffersBench.new({&'pre_allocate':true}))
+
+static func BM_Flatbuffers_ReadAllSR(state:State) -> void:
+	GenericReadAll(state, FlatBuffersBench.new({&'static_reader':true}))
+
+static func BM_Flatbuffers_ReadAllPASR(state:State) -> void:
+	GenericReadAll(state, FlatBuffersBench.new(
+		{&'pre_allocate':true, &'static_reader':true}))
 
 static func BM_BuiltIn_ReadAll(state:State) -> void:
 	GenericReadAll(state, BuiltInBench.new())
@@ -111,7 +144,14 @@ static func BM_Flatbuffers_RoundTrip(state:State) -> void:
 	GenericRoundTrip(state, FlatBuffersBench.new())
 
 static func BM_Flatbuffers_RoundTripPA(state:State) -> void:
-	GenericRoundTrip(state, FlatBuffersBench.new(3,true))
+	GenericRoundTrip(state, FlatBuffersBench.new({&'pre_allocate':true}))
+
+static func BM_Flatbuffers_RoundTripSR(state:State) -> void:
+	GenericRoundTrip(state, FlatBuffersBench.new({&'static_reader':true}))
+
+static func BM_Flatbuffers_RoundTripPASR(state:State) -> void:
+	GenericRoundTrip(state, FlatBuffersBench.new(
+		{&'pre_allocate':true, &'static_reader':true}))
 
 static func BM_BuiltIn_RoundTrip(state:State) -> void:
 	GenericRoundTrip(state, BuiltInBench.new())
@@ -129,7 +169,14 @@ static func BM_Flatbuffers_Decode(state:State) -> void:
 	GenericDecode(state, FlatBuffersBench.new())
 
 static func BM_Flatbuffers_DecodePA(state:State) -> void:
-	GenericDecode(state, FlatBuffersBench.new(3,true))
+	GenericDecode(state, FlatBuffersBench.new({&'pre_allocate':true}))
+
+static func BM_Flatbuffers_DecodeSR(state:State) -> void:
+	GenericDecode(state, FlatBuffersBench.new({&'static_reader':true}))
+
+static func BM_Flatbuffers_DecodePASR(state:State) -> void:
+	GenericDecode(state, FlatBuffersBench.new(
+		{&'pre_allocate':true, &'static_reader':true}))
 
 static func BM_BuiltIn_Decode(state:State) -> void:
 	GenericDecode(state, BuiltInBench.new())
