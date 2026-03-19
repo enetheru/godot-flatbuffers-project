@@ -1,7 +1,8 @@
 @tool
 
 const RegisterLib = preload("uid://ehhn1k7v0g6w")
-const State = BenchLib.State
+const Statelib = preload("uid://wwktui5nflyr")
+const State = Statelib.State
 const Benchmark = BenchLib.Benchmark
 const FunctionBenchmark = BenchLib.FunctionBenchmark
 const ConsoleReporter = preload("uid://cp6jwltd8s2ur")
@@ -13,7 +14,7 @@ const FB = preload("fb_scripts/bench_generated.gd")
 const CaseGdDict = preload("uid://dve0r6lgn2kft")
 
 func _init() -> void:
-	BenchLib.BenchmarkFamilies.GetInstance()._families.clear()
+	RegisterLib.GetInstance()._families.clear()
 	BenchLib.FLAGS_benchmark_list_tests = false
 	BenchLib.FLAGS_benchmark_dry_run = false
 	BenchLib.kMaxIterations = 100
@@ -25,7 +26,8 @@ func _init() -> void:
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_ReadAll))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_RoundTrip))
 
-	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_EncodePA))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_EncodePA)) \
+	.AddRange(0,10).AddRange(0,10)
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_DecodePA))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_ReadAllPA))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_RoundTripPA))
@@ -40,7 +42,6 @@ func _init() -> void:
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_ReadAllPASR))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_RoundTripPASR))
 
-
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_Encode))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_Decode))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_ReadAll))
@@ -49,7 +50,7 @@ func _init() -> void:
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_GDict_Encode))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_GDict_Decode))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_GDict_ReadAll))
-	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_GDict_RoundTrip)).Arg(1)
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_GDict_RoundTrip))
 
 
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_MetadataOnly))

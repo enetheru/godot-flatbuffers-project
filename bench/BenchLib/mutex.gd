@@ -60,7 +60,7 @@ class Barrier:
 #   bool createBarrier(MutexLock& ml) REQUIRES(lock_) {
 	func createBarrier( ml:Mutex ) -> bool:
 #     BM_CHECK_LT(entered_, running_threads_);
-		assert(entered_ < running_threads_)
+		#assert(entered_ < running_threads_, "entered is not less than running_threads.")
 #     entered_++;
 		entered_ += 1
 #     if (entered_ < running_threads_) {

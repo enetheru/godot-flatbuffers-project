@@ -1,3 +1,4 @@
+@tool
 #ifndef CHECK_H_
 #define CHECK_H_
 
@@ -108,6 +109,12 @@ static func BM_CHECK(b:bool, msg:String = "") -> Log.LogType:
 #define BM_CHECK_LE(a, b) BM_CHECK((a) <= (b))
 #define BM_CHECK_GT(a, b) BM_CHECK((a) > (b))
 #define BM_CHECK_LT(a, b) BM_CHECK((a) < (b))
+static func BM_CHECK_EQ(a:Variant, b:Variant) -> Log.LogType: return BM_CHECK(true if a == b else false)
+static func BM_CHECK_NE(a:Variant, b:Variant) -> Log.LogType: return BM_CHECK(true if a != b else false)
+static func BM_CHECK_GE(a:Variant, b:Variant) -> Log.LogType: return BM_CHECK(true if a >= b else false)
+static func BM_CHECK_LE(a:Variant, b:Variant) -> Log.LogType: return BM_CHECK(true if a <= b else false)
+static func BM_CHECK_GT(a:Variant, b:Variant) -> Log.LogType: return BM_CHECK(true if a > b else false)
+static func BM_CHECK_LT(a:Variant, b:Variant) -> Log.LogType: return BM_CHECK(true if a < b else false)
 
 #define BM_CHECK_FLOAT_EQ(a, b, eps) BM_CHECK(std::fabs((a) - (b)) <  (eps))
 #define BM_CHECK_FLOAT_NE(a, b, eps) BM_CHECK(std::fabs((a) - (b)) >= (eps))

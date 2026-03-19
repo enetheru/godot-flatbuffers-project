@@ -15,8 +15,10 @@
 
 const BenchmarkInstance = BenchLib.BenchmarkInstance
 
-const StatsLib = preload("uid://c8w76q8bhpf8q")
+const Statslib = preload("uid://c8w76q8bhpf8q")
 const Check = preload("uid://no47e6pld06k")
+const Log = preload("uid://dccn5dspfd8q4")
+
 
 
 
@@ -29,19 +31,17 @@ const kMaxFamilySize:int = 100
 
 const kDisabledPrefix:String = "DISABLED_"
 
-
 #=============================================================================//
 #  BenchmarkFamilies
 #=============================================================================//
 
+static var instance := BenchmarkFamilies.new()
+static func GetInstance() -> BenchmarkFamilies:
+		return instance
+
 ## Class for managing registered benchmarks. Note that each registered
 ## benchmark identifies a family of related benchmarks to run.
 class BenchmarkFamilies:
-	static var instance := BenchmarkFamilies.new()
-
-	static func GetInstance() -> BenchmarkFamilies:
-		return instance
-
 	## Registers a benchmark family and returns the index assigned to it.
 	func AddBenchmark(family:Benchmark) -> int:
 		_mutex.lock()
@@ -140,7 +140,7 @@ class BenchmarkFamilies:
 
 
 static func RegisterBenchmarkInternal( bench:Benchmark ) -> Benchmark:
-	var families := BenchmarkFamilies.GetInstance();
+	var families := GetInstance();
 	var _index:int = families.AddBenchmark(bench);
 	return bench
 
@@ -154,8 +154,8 @@ class Benchmark:
 
 	@warning_ignore_start("unused_private_class_variable")
 	var _name:String
-	var _aggregation_report_mode:BenchLib.AggregationReportMode = \
-			BenchLib.AggregationReportMode.ARM_Unspecified
+	var _aggregation_report_mode:Statslib.AggregationReportMode = \
+			Statslib.AggregationReportMode.ARM_Unspecified
 	var _arg_names:PackedStringArray	# Args for all benchmark runs
 	var _args:Array[PackedInt64Array] # Args for all benchmark runs
 
@@ -171,7 +171,7 @@ class Benchmark:
 	var _measure_process_cpu_time:bool = false
 	var _use_real_time:bool = false
 	var _use_manual_time:bool = false
-	var _complexity:BenchLib.BigO = BenchLib.BigO.oNone
+	var _complexity:Statslib.BigO = Statslib.BigO.oNone
 	var _complexity_lambda:Callable #BigOFunc
 	var _statistics:Array[BenchLib.Statistics] = []
 	var _thread_counts:Array[int] = []
@@ -206,10 +206,10 @@ class Benchmark:
 	func _init( name:String ) -> void:
 		_name = name
 		@warning_ignore_start("return_value_discarded")
-		ComputeStatistics("mean", StatsLib.StatisticsMean)
-		ComputeStatistics("median", StatsLib.StatisticsMedian)
-		ComputeStatistics("stddev", StatsLib.StatisticsStdDev)
-		ComputeStatistics("cv", StatsLib.StatisticsCV, BenchLib.StatisticUnit.kPercentage)
+		ComputeStatistics("mean", Statslib.StatisticsMean)
+		ComputeStatistics("median", Statslib.StatisticsMedian)
+		ComputeStatistics("stddev", Statslib.StatisticsStdDev)
+		ComputeStatistics("cv", Statslib.StatisticsCV, Statslib.StatisticUnit.kPercentage)
 		@warning_ignore_restore("return_value_discarded")
 
 	#Benchmark::~Benchmark() {}
@@ -252,6 +252,100 @@ class Benchmark:
 	# 	return this;
 	# }
 
+	func AddRange(start:int, limit:int) -> Benchmark:
+		assert(ArgsCnt() == -1 or ArgsCnt() == 1)
+		var arglist:PackedInt64Array
+		arglist = MakeRange(arglist, start, limit, _range_multiplier)
+		for i:int in arglist:
+			_args.push_back([i])
+		return self
+
+
+	#void AddRange(std::vector<T>* dst, T lo, T hi, int mult) {
+	func MakeRange(dst:Array, lo:int, hi:int, mult:int) -> PackedInt64Array:
+		assert( hi >= lo )
+		assert( mult >= 2 )
+
+		# Add "lo"
+		dst.push_back(lo);
+
+		# Handle lo == hi as a special case, so we then know
+		# lo < hi and so it is safe to add 1 to lo and subtract 1
+		# from hi without falling outside of the range of T.
+		if lo == hi: return dst
+
+		# Ensure that lo_inner <= hi_inner below.
+		if lo + 1 == hi:
+			dst.push_back(hi)
+			return dst
+
+		# Add all powers of 'mult' in the range [lo+1, hi-1] (inclusive).
+		var lo_inner:int = lo + 1
+		var hi_inner:int = hi - 1
+
+		# Insert negative values
+		if lo_inner < 0:
+			dst.append_array(AddNegatedPowers(lo_inner, mini(hi_inner, -1), mult))
+
+		# Treat 0 as a special case (see discussion on #762).
+		if lo < 0 and hi >= 0: dst.push_back(0)
+
+		# Insert positive values
+		if hi_inner > 0:
+			dst.append_array(AddPowers(maxi(lo_inner, 1), hi_inner, mult))
+
+		# Add "hi" (if different from last value).
+		if hi != dst.back(): dst.push_back(hi)
+
+		return dst
+
+
+	# Append the powers of 'mult' in the closed interval [lo, hi].
+	# Returns iterator to the start of the inserted range.
+	#typename std::vector<T>::iterator AddPowers(std::vector<T>* dst, T lo, T hi,
+											#int mult) {
+	func AddPowers(lo:int, hi:int, mult:int) -> Array:
+		var _l:Log.LogType = Check.BM_CHECK_GE(lo, 0)
+		_l = Check.BM_CHECK_GE(hi, lo)
+		_l = Check.BM_CHECK_GE(mult, 2)
+
+		var dst:Array = []
+
+		#static const T kmax = std::numeric_limits<T>::max();
+		const kmax:int = 0x7FFFFFFFFFFFFFFF
+
+		# Space out the values in multiples of "mult"
+		#for (T i = static_cast<T>(1); i <= hi; i = static_cast<T>(i * mult)) {
+		var i:int = 1
+		while i < hi:
+			if i >= lo: dst.push_back(i)
+			# Break the loop here since multiplying by
+			# 'mult' would move outside of the range of T
+			i = i * mult
+			if i > kmax / mult: break
+
+		return dst
+
+
+	func AddNegatedPowers(lo:int, hi:int, mult:int) -> Array:
+		# We negate lo and hi so we require that they cannot be equal to 'min'.
+		#BM_CHECK_GT(lo, std::numeric_limits<T>::min());
+		#BM_CHECK_GT(hi, std::numeric_limits<T>::min());
+		var _l:Log.LogType = Check.BM_CHECK_GE(hi, lo)
+		_l = Check.BM_CHECK_LE(hi, 0)
+
+		# Add positive powers, then negate and reverse.
+		# Casts necessary since small integers get promoted
+		# to 'int' when negating.
+		var lo_complement:int = -lo
+		var hi_complement:int = -hi
+
+		var _powers:Array = AddPowers(hi_complement, lo_complement, mult)
+		var dst:Array = _powers.map(func(i:int)->int:return i * -1)
+		dst.reverse()
+		return dst
+
+
 	# Benchmark* Benchmark::Ranges(
 	# 			const std::vector<std::pair<int64_t, int64_t>>& ranges) {
 	# 	BM_CHECK(ArgsCnt() == -1 || ArgsCnt() == static_cast<int>(ranges.size()));
@@ -263,34 +357,77 @@ class Benchmark:
 	# 	ArgsProduct(arglists);
 	# 	return this;
 	# }
+	func AddRanges( ...ranges:Array) -> Benchmark:
+		#BM_CHECK(ArgsCnt() == -1 || ArgsCnt() == static_cast<int>(ranges.size()));
+		assert(ArgsCnt() == -1 or ArgsCnt() == ranges.size())
+		#std::vector<std::vector<int64_t>> arglists(ranges.size());
+		var arglists:Array[PackedInt64Array]
+		if arglists.resize(ranges.size()) != OK:
+			printerr("Failed to resize arglists")
+		#for (std::size_t i = 0; i < ranges.size(); i++) {
+		for i:int in ranges.size():
+			#internal::AddRange(&arglists[i], ranges[i].first, ranges[i].second,
+					#range_multiplier_);
+			var r:PackedInt64Array = ranges[i]
+			arglists[i] = MakeRange(arglists[i], r[0], r[1], _range_multiplier)
+		return ArgsProduct(arglists)
+
 
 	# Benchmark* Benchmark::ArgsProduct(
 	# 			const std::vector<std::vector<int64_t>>& arglists) {
 	# 	BM_CHECK(ArgsCnt() == -1 || ArgsCnt() == static_cast<int>(arglists.size()));
-	#
+	func ArgsProduct( arglists:Array[PackedInt64Array] ) -> Benchmark:
+		assert(ArgsCnt() == -1 or ArgsCnt() == arglists.size())
+
 	# 	std::vector<std::size_t> indices(arglists.size());
+		var indices:PackedInt64Array
+		if indices.resize(arglists.size()) != OK:
+			printerr("Failed to resize indices list.")
 	# 	const std::size_t total = std::accumulate(
 	# 					std::begin(arglists), std::end(arglists), std::size_t{1},
 	# 					[](const std::size_t res, const std::vector<int64_t>& arglist) {
 	# 							return res * arglist.size();
 	# 					});
+		var total:int = arglists.reduce(
+			func(res:int, arglist:Array) -> int:
+				return res * arglist.size(),
+			1)
 	# 	std::vector<int64_t> args;
+		var args:PackedInt64Array
 	# 	args.reserve(arglists.size());
+		if args.resize(arglists.size()) != OK:
+			printerr("Failed to resize args list.")
 	# 	for (std::size_t i = 0; i < total; i++) {
-	# 			for (std::size_t arg = 0; arg < arglists.size(); arg++) {
-	# 					args.push_back(arglists[arg][indices[arg]]);
-	# 			}
-	# 			args_.push_back(args);
-	# 			args.clear();
-	#
-	# 			std::size_t arg = 0;
-	# 			do {
-	# 					indices[arg] = (indices[arg] + 1) % arglists[arg].size();
-	# 			} while (indices[arg++] == 0 && arg < arglists.size());
-	# 	}
-	#
-	# 	return this;
-	# }
+		for i:int in total:
+	# 		for (std::size_t arg = 0; arg < arglists.size(); arg++) {
+			for arg:int in arglists.size():
+	# 			args.push_back(arglists[arg][indices[arg]]);
+				var arglist:Array = arglists[arg]
+				var value:int = arglist[indices[arg]]
+				args[arg] = value
+	# 		args_.push_back(args);
+			_args.push_back(args.duplicate())
+	# 		args.clear();
+			#NOTE: Clearing in gdscript shrinks the array.
+			# which we dont want to do.
+
+	# 		std::size_t arg = 0;
+			var arg:int = 0
+
+	# 		do {
+	# 				indices[arg] = (indices[arg] + 1) % arglists[arg].size();
+	# 		} while (indices[arg++] == 0 && arg < arglists.size());
+
+			# Increment the least-significant "digit" first
+			while arg < arglists.size():
+				indices[arg] += 1
+				if indices[arg] < arglists[arg].size():
+					break                               # no carry, done
+				indices[arg] = 0                        # carry: reset this digit
+				arg += 1                                # move to next higher digit
+
+		return self
+
 
 	# Benchmark* Benchmark::ArgName(const std::string& name) {
 	# 	BM_CHECK(ArgsCnt() == -1 || ArgsCnt() == 1);
@@ -312,12 +449,22 @@ class Benchmark:
 	# 	}
 	# 	return this;
 	# }
+	func DenseRange(start:int, limit:int, step:int) -> Benchmark:
+		#BM_CHECK(ArgsCnt() == -1 || ArgsCnt() == 1);
+		#BM_CHECK_LE(start, limit);
+		#for (int64_t arg = start; arg <= limit; arg += step) {
+				#args_.push_back({arg});
+		for arg in range( start, limit, step):
+			_args.push_back([arg])
 
-	# Benchmark* Benchmark::Args(const std::vector<int64_t>& args) {
-	# 	BM_CHECK(ArgsCnt() == -1 || ArgsCnt() == static_cast<int>(args.size()));
-	# 	args_.push_back(args);
-	# 	return this;
-	# }
+		return self
+
+	# Benchmark* Benchmark::Args(const std::vector<int64_t>& args);
+	func Args(args:PackedInt64Array) -> Benchmark:
+		#BM_CHECK(ArgsCnt() == -1 || ArgsCnt() == static_cast<int>(args.size()));
+		assert( ArgsCnt() == -1 or ArgsCnt() == args.size() )
+		_args.push_back(args);
+		return self
 
 	# Benchmark* Benchmark::Apply(
 	# 			const std::function<void(Benchmark* benchmark)>& custom_arguments) {
@@ -349,11 +496,12 @@ class Benchmark:
 	# 	return this;
 	# }
 
-	# Benchmark* Benchmark::RangeMultiplier(int multiplier) {
-	# 	BM_CHECK(multiplier > 1);
-	# 	range_multiplier_ = multiplier;
-	# 	return this;
-	# }
+	# Benchmark* Benchmark::RangeMultiplier(int multiplier);
+	func RangeMultiplier(multiplier:int) -> Benchmark:
+		#Check.BM_CHECK(multiplier > 1)
+		assert( multiplier > 1)
+		_range_multiplier = multiplier;
+		return self
 
 	# Benchmark* Benchmark::MinTime(double t) {
 	# 	BM_CHECK(t > 0.0);
@@ -445,7 +593,7 @@ class Benchmark:
 	# }
 	func ComputeStatistics(
 				name:String, statistics:Callable, #StatisticsFunc
-				unit:BenchLib.StatisticUnit = BenchLib.StatisticUnit.kTime ) -> Benchmark:
+				unit:Statslib.StatisticUnit = Statslib.StatisticUnit.kTime ) -> Benchmark:
 		_statistics.push_back(BenchLib.Statistics.new(name, statistics, unit))
 		return self
 
@@ -492,15 +640,7 @@ class Benchmark:
 	# const char* Benchmark::GetName() const { return name_.c_str(); }
 	func GetName() -> String: return _name
 
-	# int Benchmark::ArgsCnt() const {
-	# 		if (args_.empty()) {
-	# 				if (arg_names_.empty()) {
-	# 						return -1;
-	# 				}
-	# 				return static_cast<int>(arg_names_.size());
-	# 		}
-	# 		return static_cast<int>(args_.front().size());
-	# }
+	# int Benchmark::ArgsCnt() const;
 	func ArgsCnt() -> int:
 		if _args.is_empty():
 			if _arg_names.is_empty():

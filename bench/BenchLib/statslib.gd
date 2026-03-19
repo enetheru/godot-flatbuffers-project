@@ -1,18 +1,85 @@
 @tool
-# Copyright 2016 Ismael Jimenez Martinez. All rights reserved.
-# Copyright 2017 Roman Lebedev. All rights reserved.
+# Copyright 2015 Google Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#		http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+#ifndef BENCHMARK_STATISTICS_H_
+#define BENCHMARK_STATISTICS_H_
+
+#include <string>
+#include <vector>
+
+#include "benchmark/types.h"
+
+#namespace benchmark {
+
+# BigO is passed to a benchmark in order to specify the asymptotic
+# computational
+# complexity for the benchmark. In case oAuto is selected, complexity will be
+# calculated automatically to the best fit.
+enum BigO { oNone, o1, oN, oNSquared, oNCubed, oLogN, oNLogN, oAuto, oLambda }
+
+#typedef int64_t ComplexityN;
+
+enum StatisticUnit { kTime, kPercentage }
+
+#typedef double(BigOFunc)(ComplexityN);
+
+#typedef double(StatisticsFunc)(const std::vector<double>&);
+
+#namespace internal {
+#struct Statistics {
+class Statistics:
+	#  std::string name_;
+	var _name:String
+	#  StatisticsFunc* compute_;
+	var _compute:Callable
+	#  StatisticUnit unit_;
+	var _unit:StatisticUnit
+
+	#  Statistics(const std::string& name, StatisticsFunc* compute,
+	#             StatisticUnit unit = kTime)
+	#      : name_(name), compute_(compute), unit_(unit) {}
+	func _init(name:String, compute:Callable,
+				unit:StatisticUnit = StatisticUnit.kTime) -> void:
+		_name = name; _compute = compute; _unit = unit
+#};
+
+
+enum AggregationReportMode {
+	# The mode has not been manually specified
+	ARM_Unspecified = 0,
+	# The mode is user-specified.
+	# This may or may not be set when the following bit-flags are set.
+	ARM_Default = 1 << 0,
+	# File reporter should only output aggregates.
+	ARM_FileReportAggregatesOnly = 1 << 1,
+	# Display reporter should only output aggregates
+	ARM_DisplayReportAggregatesOnly = 1 << 2,
+	# Both reporters should only display aggregates.
+	ARM_ReportAggregatesOnly = ARM_FileReportAggregatesOnly | ARM_DisplayReportAggregatesOnly
+}
+
+enum Skipped {
+  NotSkipped = 0,
+  SkippedWithMessage,
+  SkippedWithError
+}
+
+#}  // namespace internal
+#}  // namespace benchmark
+#endif  // BENCHMARK_STATISTICS_H_
+
 
 
 const Counter = BenchLib.Counter
@@ -379,7 +446,7 @@ static func ComputeStats(reports:Array[BenchmarkReporter.Run]) -> Array[Benchmar
 		data.real_accumulated_time = Stat._compute.call(real_accumulated_time_stat)
 		data.cpu_accumulated_time = Stat._compute.call(cpu_accumulated_time_stat)
 
-		if data.aggregate_unit == BenchLib.StatisticUnit.kTime:
+		if data.aggregate_unit == StatisticUnit.kTime:
 			# We will divide these times by data.iterations when reporting, but the
 			# data.iterations is not necessarily the scale of these measurements,
 			# because in each repetition, these timers are sum over all the iters.
@@ -395,7 +462,7 @@ static func ComputeStats(reports:Array[BenchmarkReporter.Run]) -> Array[Benchmar
 			var cntst:CounterStat = counter_stats.get(kv)
 			# Do *NOT* rescale the custom counters. They are already properly scaled.
 			var uc_stat:float = Stat._compute.call(cntst.s)
-			var c := Counter.new(uc_stat, cntst.c.flags, cntst.c.oneK)
+			var c := Counter.new(uc_stat, cntst.c.flags, cntst.c.one_k)
 			data.counters[kv] = c
 
 		results.push_back(data);

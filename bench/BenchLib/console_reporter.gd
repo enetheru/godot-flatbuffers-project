@@ -4,6 +4,7 @@ extends BenchmarkReporter
 const StrUtil = preload("uid://bpmy1tbljbgvt")
 
 
+
 # Simple reporter that outputs benchmark data to the console. This is the
 # default reporter used by RunSpecifiedBenchmarks().
 
@@ -51,14 +52,14 @@ static func FormatTime(time:float) -> String:
 
 
 # Function to return an string for the calculated complexity
-func GetBigOString(complexity:BenchLib.BigO) -> String:
+func GetBigOString(complexity:Statslib.BigO) -> String:
 	match complexity:
-		BenchLib.BigO.oN: return "N"
-		BenchLib.BigO.oNSquared: return "N^2"
-		BenchLib.BigO.oNCubed: return "N^3"
-		BenchLib.BigO.oLogN: return "lgN"
-		BenchLib.BigO.oNLogN: return "NlgN"
-		BenchLib.BigO.o1: return "(1)"
+		Statslib.BigO.oN: return "N"
+		Statslib.BigO.oNSquared: return "N^2"
+		Statslib.BigO.oNCubed: return "N^3"
+		Statslib.BigO.oLogN: return "lgN"
+		Statslib.BigO.oNLogN: return "NlgN"
+		Statslib.BigO.o1: return "(1)"
 		_: return "f(N)"
 
 
@@ -114,13 +115,13 @@ func PrintRunData(result:Run) -> void:
 		name_color.to_html(true),
 		result.benchmark_name().rpad(_name_field_width)])
 
-	if BenchLib.Skipped.SkippedWithError == result.skipped:
+	if Statslib.Skipped.SkippedWithError == result.skipped:
 		parts.append("[color=%s]ERROR OCCURRED: '%s'[/color]" % [
 				error_color, result.skip_message])
 		print_rich(''.join(parts))
 		return
 
-	if BenchLib.Skipped.SkippedWithMessage == result.skipped:
+	if Statslib.Skipped.SkippedWithMessage == result.skipped:
 		parts.append("[color=%s]SKIPPED: '%s'[/color]" % [
 				skipped_color, result.skip_message])
 		print_rich(''.join(parts))

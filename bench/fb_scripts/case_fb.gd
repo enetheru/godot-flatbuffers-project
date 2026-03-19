@@ -13,7 +13,7 @@ var kStaticReader:bool = false
 
 var default_opts:Dictionary = {
 	&'kVectorLength':3,
-	&'kPreAllocateSize':false,
+	&'kPreAllocateSize':0,
 	&'kStaticReader':false
 }
 

@@ -3,18 +3,28 @@ class_name BenchmarkRunner
 # BenchTimeType { UNSPECIFIED, ITERS, TIME }
 # This was a tagged union, but I'll let the return type as float or int do the
 # talking
+
+const RunResults = BenchLib.RunResults
+const ProfileManager = BenchLib.ProfilerManager
+
+const Instlib = preload("uid://dl8f6nc1cjmw6")
+const BenchmarkInstance = Instlib.BenchmarkInstance
+
+const Statelib = preload("uid://wwktui5nflyr")
+const State = Statelib.State
+
+const Statslib = preload("uid://c8w76q8bhpf8q")
+const AggregationReportMode = StatsLib.AggregationReportMode
+
 const PerfCounters = preload("uid://b57mx2pbhhtfa")
 const PerfCountersMeasurement = PerfCounters.PerfCountersMeasurement
 
-
-const RunResults = BenchLib.RunResults
-const BenchmarkInstance = BenchLib.BenchmarkInstance
-const AggregationReportMode = BenchLib.AggregationReportMode
-const ProfileManager = BenchLib.ProfilerManager
-const State = BenchLib.State
 const CounterLib = preload("uid://ct2wyy7dxrm5")
 
 const StatsLib = preload("uid://c8w76q8bhpf8q")
+
+const Threadlib = preload("uid://hgmj8mo7h7dy")
+const ThreadManager = Threadlib.ThreadManager
 
 var kMaxIterations:int = 1000000
 
@@ -72,18 +82,18 @@ func CreateRunReport(
 			else:
 				report.allocs_per_iter = 0
 
-		# The CPU time is the total time taken by all thread. If we used that as
-		# the denominator, we'd be calculating the rate per thread here. This is
-		# why we have to divide the total cpu_time by the number of threads for
-		# global counters to get a global rate.
+		## The CPU time is the total time taken by all thread. If we used that as
+		## the denominator, we'd be calculating the rate per thread here. This is
+		## why we have to divide the total cpu_time by the number of threads for
+		## global counters to get a global rate.
 		var thread_seconds:float = seconds / b_instance._threads
 		CounterLib.FinishUserCounters(report.counters, results.iterations, thread_seconds, b_instance._threads)
 
 	return report;
 
 
-# Execute one thread of benchmark b for the specified number of iterations.
-# Adds the stats collected for the thread into manager->results.
+## Execute one thread of benchmark b for the specified number of iterations.
+## Adds the stats collected for the thread into manager->results.
 static func RunInThread(
 			b_instance:BenchmarkInstance,
 			r_iters:int, #IterationCount
@@ -196,15 +206,18 @@ func DoOneRepetition() -> void:
 		b.Setup();
 		i = DoNIterations();
 		b.Teardown();
+		assert( i, "missing iteration results" )
 
 		# Do we consider the results to be significant?
 		# If we are doing repetitions, and the first repetition was already done,
 		# it has calculated the correct iteration time, so we have run that very
 		# iteration count just now. No need to calculate anything. Just report.
 		# Else, the normal rules apply.
-		var results_are_significant:bool = not is_the_first_repetition or \
-											 has_explicit_iteration_count or \
-											 ShouldReportIterationResults(i)
+		var results_are_significant:bool = \
+			(not is_the_first_repetition) \
+			or has_explicit_iteration_count \
+			or ShouldReportIterationResults(i)
+
 		# Good, let's report them!
 		if results_are_significant: break
 
@@ -283,7 +296,9 @@ func DoNIterations() -> IterationResults:
 	#print("Running ", b.name, " for ", iters)
 
 	#manager.reset(new internal::ThreadManager(b.threads()))
-	var manager := ThreadManager.new(b._threads)
+	#var manager:ThreadManager = ThreadManager.new(b._threads)
+	var manager:ThreadManager = ThreadManager.new(0)
+	assert( manager )
 
 	thread_runner.RunThreads(
 		func(thread_idx:int) -> void:
@@ -353,7 +368,7 @@ func ShouldReportIterationResults(i:IterationResults) -> bool:
 	# Determine if this run should be reported;
 	# Either it has run for a sufficient amount of time
 	# or because an error was reported.
-	if i.results.skipped != BenchLib.Skipped.NotSkipped: return true
+	if i.results.skipped != Statslib.Skipped.NotSkipped: return true
 	if BenchLib.FLAGS_benchmark_dry_run: return true
 	# Too many iterations already.
 	if i.iters >= kMaxIterations:  return true

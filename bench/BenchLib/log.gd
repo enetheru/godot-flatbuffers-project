@@ -1,3 +1,4 @@
+@tool
 #ifndef BENCHMARK_LOG_H_
 #define BENCHMARK_LOG_H_
 
