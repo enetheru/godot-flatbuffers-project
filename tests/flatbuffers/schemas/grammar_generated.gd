@@ -39,8 +39,21 @@ class TableDecl extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			and verify_field_u8(verifier, VT_SCALAR_BOOL, 1)
+			and verify_field_s32(verifier, VT_SCALAR_INT, 4)
+			and verify_field_float(verifier, VT_SCALAR_FLOAT, 4)
+			and verify_offset(verifier, VT_IDENT5)
+			and verify_vector_u32(verifier, VT_IDENT5)
+			and verify_end_table(verifier)
+		)
 
 	## Return true if scalar_bool is present in the buffer, else false
 	func scalar_bool_is_present() -> bool:
@@ -74,6 +87,13 @@ class TableDecl extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## Access elements of ident5 by [param index]
+	func ident5_at( index: int ) -> int:
+		var array_start: int = get_offset_field_start( VT_IDENT5 )
+		assert(array_start, 'access to invalid vector of enum')
+		array_start += 4
+		return _fb_bytes.decode_u32( array_start + index * 4)
+
 	## Decode and return all elements of ident5 as an [Array]
 	func ident5() -> Array:
 		var array_start: int = get_offset_field_start( VT_IDENT5 )
@@ -86,13 +106,6 @@ class TableDecl extends FlatBuffer:
 			array[i] = _fb_bytes.decode_u32( array_start + i * 4)
 		# To return packed array types, the scalar elements have to be of an appropriate type.
 		return array
-
-	## Access elements of ident5 by [param index]
-	func ident5_at( index: int ) -> int:
-		var array_start: int = get_offset_field_start( VT_IDENT5 )
-		assert(array_start, 'access to invalid vector of enum')
-		array_start += 4
-		return _fb_bytes.decode_u32( array_start + index * 4)
 
 
 ## TODO: Write a Doc Comment for the builder

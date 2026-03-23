@@ -15,16 +15,16 @@ union Equipment { Weapon } // Optionally add more tables.
 //}
 
 table Monster {
-  pos:Vector3; // Struct.
+  pos:Vector3;        // Struct
   mana:short = 150;
   hp:short = 100;
   name:string;
   friendly:bool = false (deprecated);
-  inventory:[ubyte];  // Vector of scalars.
-  color:Color = Blue; // Enum.
-  weapons:[Weapon];   // Vector of tables.
-  equipped:Equipment; // Union.
-  path:[Vector3];     // Vector of structs.
+  inventory:[ubyte];  // Vector of scalars
+  color:Color = Blue; // Enum
+  weapons:[Weapon];   // Vector of tables
+  equipped:Equipment; // Union
+  path:[Vector3];     // Vector of structs
 }
 
 table Weapon {

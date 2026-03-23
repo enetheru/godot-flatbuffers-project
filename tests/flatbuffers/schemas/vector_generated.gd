@@ -27,13 +27,12 @@ class TestStruct extends FlatBuffer:
 	const _fb_struct_size: int = 8
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		if bytes_.is_empty():
-			_fb_bytes = PackedByteArray()
-			_fb_bytes.resize( _fb_struct_size )
-		else:
-			assert(start_ + _fb_struct_size <= bytes_.size())
-			_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		if packed_bytes.is_empty():
+			packed_bytes = PackedByteArray()
+			packed_bytes.resize( _fb_struct_size )
+		assert(offset + _fb_struct_size <= packed_bytes.size())
+		assign_buffer( packed_bytes, offset )
 
 	## Field A
 	var a: int :
@@ -62,8 +61,17 @@ class TestTableA extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			and verify_field_s32(verifier, VT_A, 4)
+			and verify_end_table(verifier)
+		)
 
 	## Return true if a is present in the buffer, else false
 	func a_is_present() -> bool:
@@ -110,8 +118,17 @@ class TestTableB extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			and verify_field_s32(verifier, VT_B, 4)
+			and verify_end_table(verifier)
+		)
 
 	## Return true if b is present in the buffer, else false
 	func b_is_present() -> bool:
@@ -167,14 +184,49 @@ class RootTable extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			and verify_offset(verifier, VT_SCALARS)
+			and verify_vector_s32(verifier, VT_SCALARS)
+			and verify_offset(verifier, VT_ENUMS)
+			and verify_vector_u8(verifier, VT_ENUMS)
+			and verify_offset(verifier, VT_STRINGS)
+			and verify_vector_u32(verifier, VT_STRINGS)
+			# TODO and verifier.verify_vector_of_strings(strings())
+			and verify_offset(verifier, VT_GODOT_STRUCTS)
+			and verify_vector_u32(verifier, VT_GODOT_STRUCTS)
+			and verify_offset(verifier, VT_CUSTOM_STRUCTS)
+			and verify_vector_u32(verifier, VT_CUSTOM_STRUCTS)
+			and verify_offset(verifier, VT_TABLES)
+			and verify_vector_u32(verifier, VT_TABLES)
+			and verify_tables(verifier)
+			and verify_offset(verifier, VT_UNIONS_TYPE)
+			and verify_vector_u8(verifier, VT_UNIONS_TYPE)
+			and verify_offset(verifier, VT_UNIONS)
+			and verify_vector_u32(verifier, VT_UNIONS)
+			# TODO and verify_TestUnion_vector(verifier, unions(), unions_type())
+			and verify_end_table(verifier)
+		)
 
 	## Vector of Scalars
 	func scalars_size() -> int:
 		var array_start: int = get_offset_field_start( VT_SCALARS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
+
+	## Vector of Scalars
+	## Access elements of scalars by [param index]
+	func scalars_at( index: int ) -> int:
+		var array_start: int = get_offset_field_start( VT_SCALARS )
+		assert(array_start, 'access to invalid vector of enum')
+		array_start += 4
+		return _fb_bytes.decode_s32( array_start + index * 4)
 
 	## Vector of Scalars
 	## Decode and return all elements of scalars as an [PackedInt32Array]
@@ -186,19 +238,19 @@ class RootTable extends FlatBuffer:
 		var array_end: int = array_start + array_size * 4
 		return _fb_bytes.slice( array_start, array_end ).to_int32_array()
 
-	## Vector of Scalars
-	## Access elements of scalars by [param index]
-	func scalars_at( index: int ) -> int:
-		var array_start: int = get_offset_field_start( VT_SCALARS )
-		assert(array_start, 'access to invalid vector of enum')
-		array_start += 4
-		return _fb_bytes.decode_s32( array_start + index * 4)
-
 	## Vector of Enums
 	func enums_size() -> int:
 		var array_start: int = get_offset_field_start( VT_ENUMS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
+
+	## Vector of Enums
+	## Access elements of enums by [param index]
+	func enums_at( index: int ) -> TestEnum:
+		var array_start: int = get_offset_field_start( VT_ENUMS )
+		assert(array_start, 'access to invalid vector of enum')
+		array_start += 4
+		return _fb_bytes[array_start + index]
 
 	## Vector of Enums
 	## Decode and return all elements of enums as an [PackedByteArray]
@@ -209,19 +261,20 @@ class RootTable extends FlatBuffer:
 		array_start += 4
 		return _fb_bytes.slice( array_start, array_start + array_size )
 
-	## Vector of Enums
-	## Access elements of enums by [param index]
-	func enums_at( index: int ) -> TestEnum:
-		var array_start: int = get_offset_field_start( VT_ENUMS )
-		assert(array_start, 'access to invalid vector of enum')
-		array_start += 4
-		return _fb_bytes[array_start + index]
-
 	## Vector of Strings
 	func strings_size() -> int:
 		var array_start: int = get_offset_field_start( VT_STRINGS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
+
+	## Vector of Strings
+	func strings_at( index: int ) -> String:
+		var array_start: int = get_offset_field_start( VT_STRINGS )
+		if not array_start: return ''
+		array_start += 4
+		var string_start: int = array_start + index * 4
+		string_start += _fb_bytes.decode_u32( string_start )
+		return decode_variant( string_start, TYPE_STRING )
 
 	## Vector of Strings
 	func strings() -> PackedStringArray:
@@ -237,20 +290,23 @@ class RootTable extends FlatBuffer:
 			array[i] = decode_variant( element_start, TYPE_STRING )
 		return array
 
-	## Vector of Strings
-	func strings_at( index: int ) -> String:
-		var array_start: int = get_offset_field_start( VT_STRINGS )
-		if not array_start: return ''
-		array_start += 4
-		var string_start: int = array_start + index * 4
-		string_start += _fb_bytes.decode_u32( string_start )
-		return decode_variant( string_start, TYPE_STRING )
-
 	## Vector of Godot Structs
 	func godot_structs_size() -> int:
 		var array_start: int = get_offset_field_start( VT_GODOT_STRUCTS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
+
+	## Vector of Godot Structs
+	func godot_structs_at( idx: int ) -> Vector3:
+		var field_start: int = get_offset_field_start( VT_GODOT_STRUCTS )
+		assert(field_start, 'Field "godot_structs" is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4
+		var element_offset: int = array_start + idx * 4
+		return decode_variant( element_offset, TYPE_VECTOR3 )
 
 	## Vector of Godot Structs
 	func godot_structs() -> PackedVector3Array:
@@ -263,23 +319,26 @@ class RootTable extends FlatBuffer:
 				array_start, array_start + array_size * 12 ) \
 				.to_vector3_array()
 
-	## Vector of Godot Structs
-	func godot_structs_at( idx: int ) -> Vector3:
-		var field_start: int = get_offset_field_start( VT_GODOT_STRUCTS )
-		assert(field_start, 'Field "godot_structs" is not present in buffer' )
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4
-		var element_offset: int = array_start + idx * 12
-		return decode_variant( element_offset, TYPE_VECTOR3 )
-
 	## Vector of Custom Structs
 	func custom_structs_size() -> int:
 		var array_start: int = get_offset_field_start( VT_CUSTOM_STRUCTS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
+
+	## Vector of Custom Structs
+	func custom_structs_at( idx: int, into: TestStruct = null ) -> TestStruct:
+		var field_start: int = get_offset_field_start( VT_CUSTOM_STRUCTS )
+		assert(field_start, 'Field "custom_structs" is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4
+		var element_offset: int = array_start + idx * 4
+		if into:
+			into.assign_buffer(_fb_bytes, element_offset)
+			return into
+		return _vector_schema.TestStruct.new( _fb_bytes, element_offset )
 
 	## Vector of Custom Structs
 	func custom_structs() -> Array[TestStruct]:
@@ -294,40 +353,19 @@ class RootTable extends FlatBuffer:
 			array[i] = _vector_schema.TestStruct.new(_fb_bytes, array_start + i * 8 )
 		return array
 
-	## Vector of Custom Structs
-	func custom_structs_at( idx: int, into: TestStruct = null ) -> TestStruct:
-		var field_start: int = get_offset_field_start( VT_CUSTOM_STRUCTS )
-		assert(field_start, 'Field "custom_structs" is not present in buffer' )
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4
-		var element_offset: int = array_start + idx * 8
-		if into:
-			into._fb_bytes = _fb_bytes
-			into._fb_start = element_offset
-			return into
-		return _vector_schema.TestStruct.new( _fb_bytes, element_offset )
+	## Vector of Tables
+	func verify_tables(verifier:FlatBufferVerifier) -> bool:
+		var tmp := _vector_schema.TestTableA.new()
+		for i in tables_size():
+			if not tables_at(i, tmp).verify(verifier):
+				return false
+		return true
 
 	## Vector of Tables
 	func tables_size() -> int:
 		var array_start: int = get_offset_field_start( VT_TABLES )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
-
-	## Vector of Tables
-	func tables() -> Array:
-		var array_start: int = get_offset_field_start( VT_TABLES )
-		if not array_start: return []
-		var array_size: int = _fb_bytes.decode_u32( array_start )
-		array_start += 4
-		var array: Array
-		if array.resize( array_size ) != OK: return []
-		for i: int in array_size:
-			var p: int = array_start + i * 4
-			array[i] = _vector_schema.TestTableA.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
-		return array
 
 	## Vector of Tables
 	func tables_at( idx: int, into: TestTableA = null ) -> TestTableA:
@@ -344,10 +382,34 @@ class RootTable extends FlatBuffer:
 		var element_pos: int = array_start + idx * 4
 		var element_offset: int = _fb_bytes.decode_u32(element_pos)
 		if into:
-			into._fb_bytes = _fb_bytes
-			into._fb_start = element_pos + element_offset
+			into.assign_buffer(_fb_bytes, element_pos + element_offset)
 			return into
 		return _vector_schema.TestTableA.new( _fb_bytes, element_pos + element_offset )
+
+	## Vector of Tables
+	func tables() -> Array:
+		var array_start: int = get_offset_field_start( VT_TABLES )
+		if not array_start: return []
+		var array_size: int = _fb_bytes.decode_u32( array_start )
+		array_start += 4
+		var array: Array
+		if array.resize( array_size ) != OK: return []
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _vector_schema.TestTableA.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+		return array
+
+	func unions_type_size() -> int:
+		var array_start: int = get_offset_field_start( VT_UNIONS_TYPE )
+		if not array_start: return 0
+		return _fb_bytes.decode_u32( array_start )
+
+	## Access elements of unions_type by [param index]
+	func unions_type_at( index: int ) -> TestUnion:
+		var array_start: int = get_offset_field_start( VT_UNIONS_TYPE )
+		assert(array_start, 'access to invalid vector of enum')
+		array_start += 4
+		return _fb_bytes[array_start + index]
 
 	## Decode and return all elements of unions_type as an [Array]
 	func unions_type() -> Array:
@@ -357,18 +419,39 @@ class RootTable extends FlatBuffer:
 		array_start += 4
 		return _fb_bytes.slice( array_start, array_start + array_size )
 
-	## Access elements of unions_type by [param index]
-	func unions_type_at( index: int ) -> TestUnion:
-		var array_start: int = get_offset_field_start( VT_UNIONS_TYPE )
-		assert(array_start, 'access to invalid vector of enum')
-		array_start += 4
-		return _fb_bytes[array_start + index]
-
 	## Vector of Unions
 	func unions_size() -> int:
 		var array_start: int = get_offset_field_start( VT_UNIONS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
+
+	## Vector of Unions
+	func unions_at( idx: int, into: Variant = null ) -> Variant:
+		var field_start: int = get_offset_field_start( VT_UNIONS )
+		assert(field_start, 'Field "unions" is not present in buffer' )
+
+		# The field is a vector of union, to decode the
+		# content, we need to use the paired *_type vector
+		var type:TestUnion = unions_type_at(idx)
+		assert(type, 'unions_type is null' )
+
+		# The inline data is a vector of offsets to the element location.
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4 # (siseof uint32_t)
+		var element_pos: int = array_start + idx * 4
+		var element_offset: int = _fb_bytes.decode_u32(element_pos)
+		if into:
+			into.assign_buffer( _fb_bytes, element_pos + element_offset)
+			return into
+
+		match type:
+			TestUnion.TEST_TABLE_A:
+				return TestTableA.new( _fb_bytes, element_pos + element_offset )
+			TestUnion.TEST_TABLE_B:
+				return TestTableB.new( _fb_bytes, element_pos + element_offset )
+		return null
 
 	## Vector of Unions
 	func unions() -> Array:
@@ -398,35 +481,6 @@ class RootTable extends FlatBuffer:
 				TestUnion.TEST_TABLE_B:
 					result[i] = TestTableB.new( _fb_bytes, element_pos + element_offset )
 		return result
-
-	## Vector of Unions
-	func unions_at( idx: int, into: Variant = null ) -> Variant:
-		var field_start: int = get_offset_field_start( VT_UNIONS )
-		assert(field_start, 'Field "unions" is not present in buffer' )
-
-		# The field is a vector of union, to decode the
-		# content, we need to use the paired *_type vector
-		var type:TestUnion = unions_type_at(idx)
-		assert(type, 'unions_type is null' )
-
-		# The inline data is a vector of offsets to the element location.
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4 # (siseof uint32_t)
-		var element_pos: int = array_start + idx * 4
-		var element_offset: int = _fb_bytes.decode_u32(element_pos)
-		if into:
-			into._fb_bytes = _fb_bytes
-			into._fb_start = element_pos + element_offset
-			return into
-
-		match type:
-			TestUnion.TEST_TABLE_A:
-				return TestTableA.new( _fb_bytes, element_pos + element_offset )
-			TestUnion.TEST_TABLE_B:
-				return TestTableB.new( _fb_bytes, element_pos + element_offset )
-		return null
 
 
 ## TODO: Write a Doc Comment for the builder
@@ -502,3 +556,4 @@ static func create_RootTable( _fbb: FlatBufferBuilder,
 static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
 	assert(not _bytes.is_empty())
 	return RootTable.new(_bytes, _bytes.decode_u32(0))
+

@@ -9,13 +9,12 @@ class CustomStruct extends FlatBuffer:
 	const _fb_struct_size: int = 24
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		if bytes_.is_empty(): 
-			_fb_bytes = PackedByteArray()
-			_fb_bytes.resize( _fb_struct_size )
-		else:
-			assert(start_ + _fb_struct_size <= bytes_.size())
-			_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		if packed_bytes.is_empty():
+			packed_bytes = PackedByteArray()
+			packed_bytes.resize( _fb_struct_size )
+		assert(offset + _fb_struct_size <= packed_bytes.size())
+		assign_buffer( packed_bytes, offset )
 
 	var is_true: bool :
 		get(): return _fb_bytes.decode_u8(_fb_start + 0)
@@ -56,8 +55,19 @@ class RootTable extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			# FIXME: custom struct
+			#  and verify_field<was templated>u32(verifier, VT_CUSTOM_STRUCT, 4)
+			and verify_field_s32(verifier, VT_Z, 4)
+			and verify_end_table(verifier)
+		)
 
 	## Return true if custom_struct is present in the buffer, else false
 	func custom_struct_is_present() -> bool:

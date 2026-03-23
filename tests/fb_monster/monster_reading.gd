@@ -4,8 +4,11 @@
 ## It's a bit convoluted yes.
 
 var test:TestBase
+var verifier:FlatBufferVerifier
+
 func _init(initiator:TestBase) -> void:
 	test = initiator
+	verifier = FlatBufferVerifier.new()
 
 ## ██████  ███████  █████  ██████  ██ ███    ██  ██████
 ## ██   ██ ██      ██   ██ ██   ██ ██ ████   ██ ██
@@ -33,13 +36,20 @@ func read_orc_flatbuffer( bytes:PackedByteArray ) -> void:
 	if not test.TEST_FALSE_RET(bytes.is_empty(),
 		"bytes should not be empty"): return
 
+	var monster := schema.Monster.new()
+	monster.assign_buffer(bytes, bytes.decode_u32(0))
+
+	verifier.set_buffer(bytes)
+	if not test.TEST_TRUE_RET(monster.verify(verifier),
+		"verification should pass"): return
+
 	# Again, make sure you read the bytes in BINARY mode, otherwise the code
 	# below won't work.
 	# uint8_t *buffer_pointer = /* the data you just read */;
 
 	# Get a pointer to the root object inside the buffer.
 	# auto monster = GetMonster(buffer_pointer);
-	var monster:schema.Monster = schema.get_Monster( bytes )
+	#var monster:schema.Monster = schema.get_Monster( bytes )
 	if not test.TEST_TRUE_RET(is_instance_valid(monster),
 		"monster should be a valid instance"): return
 

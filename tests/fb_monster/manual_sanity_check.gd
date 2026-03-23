@@ -15,22 +15,22 @@ const Schema = preload("uid://d08seaooakblg")
 func _run() -> void:
 	print("New Builder")
 	var fbb := FlatBufferBuilder.new()
-	
+
 	print("Create String for name: \n\t'MonsterName'")
-	var name_ofs:int = fbb.create_String("MonsterName")
-	
+	var name_ofs:int = fbb.create_variant("MonsterName", TYPE_STRING)
+
 	print("Create Inventory Array:")
 	var treasure:PackedByteArray = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 	print("\t", treasure)
 	var inventory_ofs:int = fbb.create_vector_uint8( treasure )
-	
+
 	print("Creating Weapons List:")
 	var weapons:Dictionary = {
 		"Sword":3,
 		"Axe":5
 	}
 	# Store the individual weapon offsets in here
-	var weapon_ofs:Dictionary = {} 
+	var weapon_ofs:Dictionary = {}
 
 	# Create offset to the list of offsets to the weapons.
 	# ofs -> [ofs] -> weapon
@@ -40,21 +40,21 @@ func _run() -> void:
 				var damage:int = weapons[wname]
 				print( "\t%s:%s" % [wname, damage])
 				var ofs:int = Schema.create_Weapon(fbb,
-					fbb.create_String(wname), damage)
+					fbb.create_variant(wname, TYPE_STRING), damage)
 				weapon_ofs[wname] = ofs
 				return ofs))
-	
-	
+
+
 	var points:PackedVector3Array = [
 		Vector3(1,2,3),
 		Vector3(4,5,6)
 	]
 	print("Creating Path:\n\t", points)
-	var points_ofs:int = fbb.create_PackedVector3Array(points)
-	
+	var points_ofs:int = fbb.create_variant(points, TYPE_PACKED_VECTOR3_ARRAY)
+
 	print("New Monster Builder")
 	var mbb := Schema.MonsterBuilder.new(fbb)
-	
+
 	print("Add fields")
 # table Monster {
 #   pos:Vector3; // Struct.
@@ -78,16 +78,16 @@ func _run() -> void:
 #   path:[Vector3];     // Vector of structs.
 	mbb.add_path(points_ofs)
 # }
-	
+
 	print("Finish Monster")
 	var final_ofs:int = mbb.finish()
 	print("Finish Builder")
 	fbb.finish(final_ofs)
-	
+
 	print("export to PackedByteArray")
-	var packed := fbb.to_packed_byte_array()
+	var packed := fbb.get_buffer()
 	print( Enetheru.string.sbytes(packed) )
-	
+
 	print("get Monster")
 	var mreader := Schema.get_Monster(packed)
 	print( "pos      : ", mreader.pos() )
@@ -96,12 +96,12 @@ func _run() -> void:
 	print( "name     : ", mreader.name() )
 	print( "inventory: ", mreader.inventory() )
 	print( "color    : ", Schema.Color_.find_key(mreader.color()) )
-	
+
 	print( "weapons  : ", mreader.weapons_size() )
 	for i in mreader.weapons_size():
 		var weapon := mreader.weapons_at(i)
 		print( "\t%s:%s" % [weapon.name(), weapon.damage()])
-		
+
 	print( "equippedT: ", Schema.Equipment.find_key(mreader.equipped_type()) )
 	print( "equipped: ")
 	match mreader.equipped_type():
@@ -110,7 +110,7 @@ func _run() -> void:
 		Schema.Equipment.WEAPON:
 			var equipped:Schema.Weapon = mreader.equipped()
 			print( "\t%s:%s" % [equipped.name(), equipped.damage()])
-			
+
 	print( "path.size:", mreader.path_size())
 	print( "path_at(i):")
 	for i in mreader.path_size():
@@ -118,4 +118,3 @@ func _run() -> void:
 	print( "path():")
 	for p:Vector3 in mreader.path():
 		print( "\t%s" % p)
-	

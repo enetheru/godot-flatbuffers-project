@@ -17,8 +17,21 @@ class RootTable extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			and verify_offset(verifier, VT_EXTERNAL)
+			and external().verify(verifier)
+			and verify_offset(verifier, VT_EXTERNAL_ARRAY)
+			and verify_vector_u32(verifier, VT_EXTERNAL_ARRAY)
+			and verify_external_array(verifier)
+			and verify_end_table(verifier)
+		)
 
 	## Return true if external is present in the buffer, else false
 	func external_is_present() -> bool:
@@ -29,22 +42,17 @@ class RootTable extends FlatBuffer:
 		if not field_start: return null
 		return _minimum_schema.Minimum.new( _fb_bytes, field_start )
 
+	func verify_external_array(verifier:FlatBufferVerifier) -> bool:
+		var tmp := _minimum_schema.Minimum.new()
+		for i in external_array_size():
+			if not external_array_at(i, tmp).verify(verifier):
+				return false
+		return true
+
 	func external_array_size() -> int:
 		var array_start: int = get_offset_field_start( VT_EXTERNAL_ARRAY )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
-
-	func external_array() -> Array:
-		var array_start: int = get_offset_field_start( VT_EXTERNAL_ARRAY )
-		if not array_start: return []
-		var array_size: int = _fb_bytes.decode_u32( array_start )
-		array_start += 4
-		var array: Array
-		if array.resize( array_size ) != OK: return []
-		for i: int in array_size:
-			var p: int = array_start + i * 4
-			array[i] = _minimum_schema.Minimum.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
-		return array
 
 	func external_array_at( idx: int, into: Minimum = null ) -> Minimum:
 		var field_start: int = get_offset_field_start( VT_EXTERNAL_ARRAY )
@@ -60,10 +68,21 @@ class RootTable extends FlatBuffer:
 		var element_pos: int = array_start + idx * 4
 		var element_offset: int = _fb_bytes.decode_u32(element_pos)
 		if into:
-			into._fb_bytes = _fb_bytes
-			into._fb_start = element_pos + element_offset
+			into.assign_buffer(_fb_bytes, element_pos + element_offset)
 			return into
 		return _minimum_schema.Minimum.new( _fb_bytes, element_pos + element_offset )
+
+	func external_array() -> Array:
+		var array_start: int = get_offset_field_start( VT_EXTERNAL_ARRAY )
+		if not array_start: return []
+		var array_size: int = _fb_bytes.decode_u32( array_start )
+		array_start += 4
+		var array: Array
+		if array.resize( array_size ) != OK: return []
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _minimum_schema.Minimum.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+		return array
 
 
 ## TODO: Write a Doc Comment for the builder

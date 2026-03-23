@@ -19,7 +19,7 @@ var phases:Array[Dictionary] = [{
 		&"strategies":[encode_function, encode_builder, encode_manual]
 	},{
 		&"name":"Verifying",
-		&"strategies":[verify_a]
+		&"strategies":[verify]
 	},{
 		&"name":"Decoding",
 		&"strategies":[decode_a]
@@ -43,6 +43,7 @@ func                        ________OVERRIDES________              ()->void:pass
 var test:TestBase
 func _init(initiator:TestBase) -> void:
 	test = initiator
+	verifier = FlatBufferVerifier.new()
 
 
 func _get_phase_count() -> int:
@@ -87,15 +88,21 @@ func _flow( selection:Array[int] ) -> void:
 	var packed:PackedByteArray = encode.call()
 	if not test.TEST_FALSE_RET(packed.is_empty(),
 		"result of encoding should not be empty"): return
-	# validate
-	var verify:Callable = get_strategy(VERIFYING, selection[VERIFYING])
-	test.logp(" --- %s ---" % verify.get_method().capitalize())
-	var is_verified:bool = verify.call(packed)
-	if is_verified: pass
+
 	# decode
 	var decode:Callable = get_strategy(DECODING, selection[DECODING])
 	test.logp(" --- %s ---" % decode.get_method().capitalize())
-	var unpacked:Variant = decode.call(packed)
+	var unpacked:Schema.Minimum = decode.call(packed)
+	if not test.TEST_TRUE_RET(is_instance_valid(unpacked),
+		"result of unpacking should be a valid instance"): return
+
+	# validate
+	var verify_func:Callable = get_strategy(VERIFYING, selection[VERIFYING])
+	test.logp(" --- %s ---" % verify_func.get_method().capitalize())
+	var is_verified:bool = verify_func.call(unpacked)
+	if not test.TEST_TRUE_RET(is_verified,
+		"verification of buffer should succeed"): return
+
 	# use
 	var use:Callable = get_strategy(USING, selection[USING])
 	test.logp(" --- %s ---" % use.get_method().capitalize())
@@ -161,30 +168,6 @@ func encode_builder() -> PackedByteArray:
 #endregion encoding
 
 
-func                        __Verification___________              ()->void:pass
-#region Verification
-#MARK: Verification
-## │__   __       _  __ _         _   _             [br]
-## │\ \ / /__ _ _(_)/ _(_)__ __ _| |_(_)___ _ _     [br]
-## │ \ V / -_) '_| |  _| / _/ _` |  _| / _ \ ' \    [br]
-## │  \_/\___|_| |_|_| |_\__\__,_|\__|_\___/_||_|   [br]
-## ╰─────────────────────────────────────────────── [br]
-## Verification By-Line
-##
-## Verification Description
-
-func verify_a( _buf:PackedByteArray ) -> int:
-	#logp("[b]== Verification ==[/b]")
-	#var verifier := FlatBufferVerifier.new()
-	#verifier.set_buffer(bytes)
-
-	# TODO requires code generation changes
-	# TEST_TRUE(fb_table.verify(verifier), "verifying fb_table")
-	return TestBase.RetCode.TEST_OK
-
-#endregion Verification
-
-
 func                        __Decoding_______________              ()->void:pass
 #region Decoding
 #MARK: Decoding
@@ -198,11 +181,31 @@ func                        __Decoding_______________              ()->void:pass
 ##
 ## Decoding Description
 
-func decode_a( buf:PackedByteArray ) -> Variant:
-	var decoded:Schema.Minimum = Schema.get_Minimum(buf)
-	return decoded
+func decode_a( buf:PackedByteArray ) -> Schema.Minimum:
+	return Schema.get_Minimum(buf)
 
 #endregion Decoding
+
+
+func                        __Verification___________              ()->void:pass
+#region Verification
+#MARK: Verification
+## │__   __       _  __ _         _   _             [br]
+## │\ \ / /__ _ _(_)/ _(_)__ __ _| |_(_)___ _ _     [br]
+## │ \ V / -_) '_| |  _| / _/ _` |  _| / _ \ ' \    [br]
+## │  \_/\___|_| |_|_| |_\__\__,_|\__|_\___/_||_|   [br]
+## ╰─────────────────────────────────────────────── [br]
+## Verification By-Line
+##
+## Verification Description
+
+var verifier:FlatBufferVerifier
+
+func verify( decoded:Schema.Minimum ) -> int:
+	test.TEST_TRUE(decoded.verify(verifier), "verifying fb_table")
+	return TestBase.RetCode.TEST_OK
+
+#endregion Verification
 
 
 func                        __Usage__________________              ()->void:pass
@@ -218,8 +221,7 @@ func                        __Usage__________________              ()->void:pass
 ##
 ## Usage Description
 
-func use_a( variant:Variant ) -> int:
-	var decoded:Schema.Minimum = variant
+func use_a( decoded:Schema.Minimum ) -> int:
 	test.TEST_EQ(value, decoded.my_field(), "rt.my_field()")
 	test.logd("decoded value: %X" % decoded.my_field() )
 	return TestBase.RetCode.TEST_OK

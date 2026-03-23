@@ -34,8 +34,33 @@ class Monster extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			and verify_variant(verifier, VT_POS, TYPE_VECTOR3)
+			and verify_field_s16(verifier, VT_MANA, 2)
+			and verify_field_s16(verifier, VT_HP, 2)
+			and verify_offset(verifier, VT_NAME)
+			and verify_string( verifier, VT_NAME )
+			and verify_offset(verifier, VT_INVENTORY)
+			and verify_vector_u8(verifier, VT_INVENTORY)
+			and verify_field_s8(verifier, VT_COLOR, 1)
+			and verify_offset(verifier, VT_WEAPONS)
+			and verify_vector_u32(verifier, VT_WEAPONS)
+			and verify_weapons(verifier)
+			and verify_field_u8(verifier, VT_EQUIPPED_TYPE, 1)
+			and verify_offset(verifier, VT_EQUIPPED)
+			# TODO: implement verification for a union
+			#  and verify_Equipment(verifier, equipped(), equipped_type())
+			and verify_offset(verifier, VT_PATH)
+			and verify_vector_u32(verifier, VT_PATH)
+			and verify_end_table(verifier)
+		)
 
 	## Return true if pos is present in the buffer, else false
 	func pos_is_present() -> bool:
@@ -77,6 +102,13 @@ class Monster extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## Access elements of inventory by [param index]
+	func inventory_at( index: int ) -> int:
+		var array_start: int = get_offset_field_start( VT_INVENTORY )
+		assert(array_start, 'access to invalid vector of enum')
+		array_start += 4
+		return _fb_bytes[array_start + index]
+
 	## Decode and return all elements of inventory as an [PackedByteArray]
 	func inventory() -> PackedByteArray:
 		var array_start: int = get_offset_field_start( VT_INVENTORY )
@@ -84,13 +116,6 @@ class Monster extends FlatBuffer:
 		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
 		return _fb_bytes.slice( array_start, array_start + array_size )
-
-	## Access elements of inventory by [param index]
-	func inventory_at( index: int ) -> int:
-		var array_start: int = get_offset_field_start( VT_INVENTORY )
-		assert(array_start, 'access to invalid vector of enum')
-		array_start += 4
-		return _fb_bytes[array_start + index]
 
 	## Return true if color is present in the buffer, else false
 	func color_is_present() -> bool:
@@ -102,22 +127,17 @@ class Monster extends FlatBuffer:
 		var decoded: Color_ = _fb_bytes.decode_s8( field_start )
 		return decoded
 
+	func verify_weapons(verifier:FlatBufferVerifier) -> bool:
+		var tmp := _Monster_schema.Weapon.new()
+		for i in weapons_size():
+			if not weapons_at(i, tmp).verify(verifier):
+				return false
+		return true
+
 	func weapons_size() -> int:
 		var array_start: int = get_offset_field_start( VT_WEAPONS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
-
-	func weapons() -> Array:
-		var array_start: int = get_offset_field_start( VT_WEAPONS )
-		if not array_start: return []
-		var array_size: int = _fb_bytes.decode_u32( array_start )
-		array_start += 4
-		var array: Array
-		if array.resize( array_size ) != OK: return []
-		for i: int in array_size:
-			var p: int = array_start + i * 4
-			array[i] = _Monster_schema.Weapon.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
-		return array
 
 	func weapons_at( idx: int, into: Weapon = null ) -> Weapon:
 		var field_start: int = get_offset_field_start( VT_WEAPONS )
@@ -133,10 +153,21 @@ class Monster extends FlatBuffer:
 		var element_pos: int = array_start + idx * 4
 		var element_offset: int = _fb_bytes.decode_u32(element_pos)
 		if into:
-			into._fb_bytes = _fb_bytes
-			into._fb_start = element_pos + element_offset
+			into.assign_buffer(_fb_bytes, element_pos + element_offset)
 			return into
 		return _Monster_schema.Weapon.new( _fb_bytes, element_pos + element_offset )
+
+	func weapons() -> Array:
+		var array_start: int = get_offset_field_start( VT_WEAPONS )
+		if not array_start: return []
+		var array_size: int = _fb_bytes.decode_u32( array_start )
+		array_start += 4
+		var array: Array
+		if array.resize( array_size ) != OK: return []
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Monster_schema.Weapon.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+		return array
 
 	## Return true if equipped is present in the buffer, else false
 	func equipped_is_present() -> bool:
@@ -162,6 +193,17 @@ class Monster extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	func path_at( idx: int ) -> Vector3:
+		var field_start: int = get_offset_field_start( VT_PATH )
+		assert(field_start, 'Field "path" is not present in buffer' )
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		assert( idx < array_size, 'index is out of bounds')
+
+		var array_start: int = field_start + 4
+		var element_offset: int = array_start + idx * 4
+		return decode_variant( element_offset, TYPE_VECTOR3 )
+
 	func path() -> PackedVector3Array:
 		var field_start: int = get_offset_field_start( VT_PATH )
 		if not field_start: return []
@@ -171,17 +213,6 @@ class Monster extends FlatBuffer:
 		return _fb_bytes.slice(
 				array_start, array_start + array_size * 12 ) \
 				.to_vector3_array()
-
-	func path_at( idx: int ) -> Vector3:
-		var field_start: int = get_offset_field_start( VT_PATH )
-		assert(field_start, 'Field "path" is not present in buffer' )
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4
-		var element_offset: int = array_start + idx * 12
-		return decode_variant( element_offset, TYPE_VECTOR3 )
 
 
 ## TODO: Write a Doc Comment for the builder
@@ -272,8 +303,19 @@ class Weapon extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			and verify_offset(verifier, VT_NAME)
+			and verify_string( verifier, VT_NAME )
+			and verify_field_s16(verifier, VT_DAMAGE, 2)
+			and verify_end_table(verifier)
+		)
 
 	## Return true if name is present in the buffer, else false
 	func name_is_present() -> bool:

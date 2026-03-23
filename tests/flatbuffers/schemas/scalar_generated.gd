@@ -21,8 +21,27 @@ class RootTable extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			and verify_field_u8(verifier, VT_F_BOOL, 1)
+			and verify_field_s8(verifier, VT_F_BYTE, 1)
+			and verify_field_u8(verifier, VT_F_UBYTE, 1)
+			and verify_field_s16(verifier, VT_F_SHORT, 2)
+			and verify_field_u16(verifier, VT_F_USHORT, 2)
+			and verify_field_s32(verifier, VT_F_INT, 4)
+			and verify_field_u32(verifier, VT_F_UINT, 4)
+			and verify_field_s64(verifier, VT_F_LONG, 8)
+			and verify_field_u64(verifier, VT_F_ULONG, 8)
+			and verify_field_float(verifier, VT_F_FLOAT, 4)
+			and verify_field_double(verifier, VT_F_DOUBLE, 8)
+			and verify_end_table(verifier)
+		)
 
 	## Return true if f_bool is present in the buffer, else false
 	func f_bool_is_present() -> bool:
