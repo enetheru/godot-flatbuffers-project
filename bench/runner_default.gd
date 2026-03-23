@@ -11,7 +11,7 @@ const ConsoleReporter = preload("uid://cp6jwltd8s2ur")
 
 
 func _init() -> void:
-	BenchLib.BenchmarkFamilies.GetInstance()._families.clear()
+	BenchLib.GetInstance()._families.clear()
 	BenchLib.FLAGS_benchmark_list_tests = false
 	BenchLib.FLAGS_benchmark_dry_run = false
 	BenchLib.kMaxIterations = 1

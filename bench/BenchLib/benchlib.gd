@@ -1,9 +1,9 @@
 @tool
 class_name BenchLib
 
-const RegisterLib = preload("uid://ehhn1k7v0g6w")
-const BenchmarkFamilies = RegisterLib.BenchmarkFamilies
-const Benchmark = RegisterLib.Benchmark
+const Reglib = preload("uid://ehhn1k7v0g6w")
+const BenchmarkFamilies = Reglib.BenchmarkFamilies
+const Benchmark = Reglib.Benchmark
 const Instlib = preload("uid://dl8f6nc1cjmw6")
 const BenchmarkInstance = Instlib.BenchmarkInstance
 
@@ -242,7 +242,7 @@ static func RunSpecifiedBenchmarks(
 		spec = '.' # Regexp that matches all benchmarks
 
 	var benchmarks:Array[BenchmarkInstance]
-	if not RegisterLib.GetInstance().FindBenchmarks(spec, benchmarks):
+	if not GetInstance().FindBenchmarks(spec, benchmarks):
 		return 0
 
 	if benchmarks.is_empty():
@@ -465,3 +465,12 @@ static func GetTimeUnitMultiplier(unit:TimeUnit) -> float:
 		TimeUnit.kMicrosecond: return 1e6;
 		TimeUnit.kNanosecond: return 1e9;
 	return 1
+
+
+#=============================================================================//
+#  BenchmarkFamilies
+#=============================================================================//
+
+static var instance := BenchmarkFamilies.new()
+static func GetInstance() -> BenchmarkFamilies:
+		return instance

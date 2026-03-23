@@ -31,13 +31,6 @@ const kMaxFamilySize:int = 100
 
 const kDisabledPrefix:String = "DISABLED_"
 
-#=============================================================================//
-#  BenchmarkFamilies
-#=============================================================================//
-
-static var instance := BenchmarkFamilies.new()
-static func GetInstance() -> BenchmarkFamilies:
-		return instance
 
 ## Class for managing registered benchmarks. Note that each registered
 ## benchmark identifies a family of related benchmarks to run.
@@ -140,7 +133,7 @@ class BenchmarkFamilies:
 
 
 static func RegisterBenchmarkInternal( bench:Benchmark ) -> Benchmark:
-	var families := GetInstance();
+	var families := BenchLib.GetInstance();
 	var _index:int = families.AddBenchmark(bench);
 	return bench
 

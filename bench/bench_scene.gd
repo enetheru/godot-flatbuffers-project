@@ -49,7 +49,7 @@ func _on_meta_clicked( meta:String ) -> void:
 
 
 func _init() -> void:
-	bmf = RegisterLib.GetInstance()
+	bmf = BenchLib.GetInstance()
 	var _runner := Runner.new()
 
 
