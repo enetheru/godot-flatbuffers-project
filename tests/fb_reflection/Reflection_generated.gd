@@ -48,8 +48,22 @@ class Type extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			and verify_field_s8(verifier, VT_BASE_TYPE, 1)
+			and verify_field_s8(verifier, VT_ELEMENT, 1)
+			and verify_field_s32(verifier, VT_INDEX, 4)
+			and verify_field_u16(verifier, VT_FIXED_LENGTH, 2)
+			and verify_field_u32(verifier, VT_BASE_SIZE, 4)
+			and verify_field_u32(verifier, VT_ELEMENT_SIZE, 4)
+			and verify_end_table(verifier)
+		)
 
 	## Return true if base_type is present in the buffer, else false
 	func base_type_is_present() -> bool:
@@ -174,8 +188,21 @@ class KeyValue extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			# TODO required field
+			and verify_offset(verifier, VT_KEY)
+			and verify_string( verifier, VT_KEY )
+			and verify_offset(verifier, VT_VALUE)
+			and verify_string( verifier, VT_VALUE )
+			and verify_end_table(verifier)
+		)
 
 	## Return true if key is present in the buffer, else false
 	## attribute: required
@@ -244,8 +271,28 @@ class EnumVal extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			# TODO required field
+			and verify_offset(verifier, VT_NAME)
+			and verify_string( verifier, VT_NAME )
+			and verify_field_s64(verifier, VT_VALUE, 8)
+			and verify_offset(verifier, VT_UNION_TYPE)
+			and union_type().verify(verifier)
+			and verify_offset(verifier, VT_DOCUMENTATION)
+			and verify_vector_u32(verifier, VT_DOCUMENTATION)
+			# TODO and verifier.verify_vector_of_strings(documentation())
+			and verify_offset(verifier, VT_ATTRIBUTES)
+			and verify_vector_u32(verifier, VT_ATTRIBUTES)
+			and verify_attributes(verifier)
+			and verify_end_table(verifier)
+		)
 
 	## Return true if name is present in the buffer, else false
 	## attribute: required
@@ -280,6 +327,14 @@ class EnumVal extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	func documentation_at( index: int ) -> String:
+		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
+		if not array_start: return ''
+		array_start += 4
+		var string_start: int = array_start + index * 4
+		string_start += _fb_bytes.decode_u32( string_start )
+		return decode_variant( string_start, TYPE_STRING )
+
 	func documentation() -> PackedStringArray:
 		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
 		if not array_start: return []
@@ -293,30 +348,17 @@ class EnumVal extends FlatBuffer:
 			array[i] = decode_variant( element_start, TYPE_STRING )
 		return array
 
-	func documentation_at( index: int ) -> String:
-		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
-		if not array_start: return ''
-		array_start += 4
-		var string_start: int = array_start + index * 4
-		string_start += _fb_bytes.decode_u32( string_start )
-		return decode_variant( string_start, TYPE_STRING )
+	func verify_attributes(verifier:FlatBufferVerifier) -> bool:
+		var tmp := _Reflection_schema.KeyValue.new()
+		for i in attributes_size():
+			if not attributes_at(i, tmp).verify(verifier):
+				return false
+		return true
 
 	func attributes_size() -> int:
 		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
-
-	func attributes() -> Array:
-		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
-		if not array_start: return []
-		var array_size: int = _fb_bytes.decode_u32( array_start )
-		array_start += 4
-		var array: Array
-		if array.resize( array_size ) != OK: return []
-		for i: int in array_size:
-			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
-		return array
 
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
 		var field_start: int = get_offset_field_start( VT_ATTRIBUTES )
@@ -332,10 +374,21 @@ class EnumVal extends FlatBuffer:
 		var element_pos: int = array_start + idx * 4
 		var element_offset: int = _fb_bytes.decode_u32(element_pos)
 		if into:
-			into._fb_bytes = _fb_bytes
-			into._fb_start = element_pos + element_offset
+			into.assign_buffer(_fb_bytes, element_pos + element_offset)
 			return into
 		return _Reflection_schema.KeyValue.new( _fb_bytes, element_pos + element_offset )
+
+	func attributes() -> Array:
+		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
+		if not array_start: return []
+		var array_size: int = _fb_bytes.decode_u32( array_start )
+		array_start += 4
+		var array: Array
+		if array.resize( array_size ) != OK: return []
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+		return array
 
 
 ## TODO: Write a Doc Comment for the builder
@@ -404,8 +457,35 @@ class Enum extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			# TODO required field
+			and verify_offset(verifier, VT_NAME)
+			and verify_string( verifier, VT_NAME )
+			# TODO required field
+			and verify_offset(verifier, VT_VALUES)
+			and verify_vector_u32(verifier, VT_VALUES)
+			and verify_values(verifier)
+			and verify_field_u8(verifier, VT_IS_UNION, 1)
+			# TODO required field
+			and verify_offset(verifier, VT_UNDERLYING_TYPE)
+			and underlying_type().verify(verifier)
+			and verify_offset(verifier, VT_ATTRIBUTES)
+			and verify_vector_u32(verifier, VT_ATTRIBUTES)
+			and verify_attributes(verifier)
+			and verify_offset(verifier, VT_DOCUMENTATION)
+			and verify_vector_u32(verifier, VT_DOCUMENTATION)
+			# TODO and verifier.verify_vector_of_strings(documentation())
+			and verify_offset(verifier, VT_DECLARATION_FILE)
+			and verify_string( verifier, VT_DECLARATION_FILE )
+			and verify_end_table(verifier)
+		)
 
 	## Return true if name is present in the buffer, else false
 	## attribute: required
@@ -417,22 +497,17 @@ class Enum extends FlatBuffer:
 		if not field_start: return ''
 		return decode_variant( field_start, TYPE_STRING )
 
+	func verify_values(verifier:FlatBufferVerifier) -> bool:
+		var tmp := _Reflection_schema.EnumVal.new()
+		for i in values_size():
+			if not values_at(i, tmp).verify(verifier):
+				return false
+		return true
+
 	func values_size() -> int:
 		var array_start: int = get_offset_field_start( VT_VALUES )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
-
-	func values() -> Array:
-		var array_start: int = get_offset_field_start( VT_VALUES )
-		if not array_start: return []
-		var array_size: int = _fb_bytes.decode_u32( array_start )
-		array_start += 4
-		var array: Array
-		if array.resize( array_size ) != OK: return []
-		for i: int in array_size:
-			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.EnumVal.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
-		return array
 
 	func values_at( idx: int, into: EnumVal = null ) -> EnumVal:
 		var field_start: int = get_offset_field_start( VT_VALUES )
@@ -448,10 +523,21 @@ class Enum extends FlatBuffer:
 		var element_pos: int = array_start + idx * 4
 		var element_offset: int = _fb_bytes.decode_u32(element_pos)
 		if into:
-			into._fb_bytes = _fb_bytes
-			into._fb_start = element_pos + element_offset
+			into.assign_buffer(_fb_bytes, element_pos + element_offset)
 			return into
 		return _Reflection_schema.EnumVal.new( _fb_bytes, element_pos + element_offset )
+
+	func values() -> Array:
+		var array_start: int = get_offset_field_start( VT_VALUES )
+		if not array_start: return []
+		var array_size: int = _fb_bytes.decode_u32( array_start )
+		array_start += 4
+		var array: Array
+		if array.resize( array_size ) != OK: return []
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.EnumVal.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+		return array
 
 	## Return true if is_union is present in the buffer, else false
 	func is_union_is_present() -> bool:
@@ -472,22 +558,17 @@ class Enum extends FlatBuffer:
 		if not field_start: return null
 		return _Reflection_schema.Type.new( _fb_bytes, field_start )
 
+	func verify_attributes(verifier:FlatBufferVerifier) -> bool:
+		var tmp := _Reflection_schema.KeyValue.new()
+		for i in attributes_size():
+			if not attributes_at(i, tmp).verify(verifier):
+				return false
+		return true
+
 	func attributes_size() -> int:
 		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
-
-	func attributes() -> Array:
-		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
-		if not array_start: return []
-		var array_size: int = _fb_bytes.decode_u32( array_start )
-		array_start += 4
-		var array: Array
-		if array.resize( array_size ) != OK: return []
-		for i: int in array_size:
-			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
-		return array
 
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
 		var field_start: int = get_offset_field_start( VT_ATTRIBUTES )
@@ -503,15 +584,34 @@ class Enum extends FlatBuffer:
 		var element_pos: int = array_start + idx * 4
 		var element_offset: int = _fb_bytes.decode_u32(element_pos)
 		if into:
-			into._fb_bytes = _fb_bytes
-			into._fb_start = element_pos + element_offset
+			into.assign_buffer(_fb_bytes, element_pos + element_offset)
 			return into
 		return _Reflection_schema.KeyValue.new( _fb_bytes, element_pos + element_offset )
+
+	func attributes() -> Array:
+		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
+		if not array_start: return []
+		var array_size: int = _fb_bytes.decode_u32( array_start )
+		array_start += 4
+		var array: Array
+		if array.resize( array_size ) != OK: return []
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+		return array
 
 	func documentation_size() -> int:
 		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
+
+	func documentation_at( index: int ) -> String:
+		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
+		if not array_start: return ''
+		array_start += 4
+		var string_start: int = array_start + index * 4
+		string_start += _fb_bytes.decode_u32( string_start )
+		return decode_variant( string_start, TYPE_STRING )
 
 	func documentation() -> PackedStringArray:
 		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
@@ -525,14 +625,6 @@ class Enum extends FlatBuffer:
 			var element_start: int = idx + _fb_bytes.decode_u32( idx )
 			array[i] = decode_variant( element_start, TYPE_STRING )
 		return array
-
-	func documentation_at( index: int ) -> String:
-		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
-		if not array_start: return ''
-		array_start += 4
-		var string_start: int = array_start + index * 4
-		string_start += _fb_bytes.decode_u32( string_start )
-		return decode_variant( string_start, TYPE_STRING )
 
 	## Return true if declaration_file is present in the buffer, else false
 	func declaration_file_is_present() -> bool:
@@ -630,8 +722,37 @@ class Field extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			# TODO required field
+			and verify_offset(verifier, VT_NAME)
+			and verify_string( verifier, VT_NAME )
+			# TODO required field
+			and verify_offset(verifier, VT_TYPE)
+			and type().verify(verifier)
+			and verify_field_u16(verifier, VT_ID, 2)
+			and verify_field_u16(verifier, VT_OFFSET, 2)
+			and verify_field_s64(verifier, VT_DEFAULT_INTEGER, 8)
+			and verify_field_double(verifier, VT_DEFAULT_REAL, 8)
+			and verify_field_u8(verifier, VT_DEPRECATED, 1)
+			and verify_field_u8(verifier, VT_REQUIRED, 1)
+			and verify_field_u8(verifier, VT_KEY, 1)
+			and verify_offset(verifier, VT_ATTRIBUTES)
+			and verify_vector_u32(verifier, VT_ATTRIBUTES)
+			and verify_attributes(verifier)
+			and verify_offset(verifier, VT_DOCUMENTATION)
+			and verify_vector_u32(verifier, VT_DOCUMENTATION)
+			# TODO and verifier.verify_vector_of_strings(documentation())
+			and verify_field_u8(verifier, VT_OPTIONAL, 1)
+			and verify_field_u16(verifier, VT_PADDING, 2)
+			and verify_end_table(verifier)
+		)
 
 	## Return true if name is present in the buffer, else false
 	## attribute: required
@@ -716,22 +837,17 @@ class Field extends FlatBuffer:
 		if not field_start: return 0
 		return _fb_bytes.decode_u8( field_start )
 
+	func verify_attributes(verifier:FlatBufferVerifier) -> bool:
+		var tmp := _Reflection_schema.KeyValue.new()
+		for i in attributes_size():
+			if not attributes_at(i, tmp).verify(verifier):
+				return false
+		return true
+
 	func attributes_size() -> int:
 		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
-
-	func attributes() -> Array:
-		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
-		if not array_start: return []
-		var array_size: int = _fb_bytes.decode_u32( array_start )
-		array_start += 4
-		var array: Array
-		if array.resize( array_size ) != OK: return []
-		for i: int in array_size:
-			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
-		return array
 
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
 		var field_start: int = get_offset_field_start( VT_ATTRIBUTES )
@@ -747,15 +863,34 @@ class Field extends FlatBuffer:
 		var element_pos: int = array_start + idx * 4
 		var element_offset: int = _fb_bytes.decode_u32(element_pos)
 		if into:
-			into._fb_bytes = _fb_bytes
-			into._fb_start = element_pos + element_offset
+			into.assign_buffer(_fb_bytes, element_pos + element_offset)
 			return into
 		return _Reflection_schema.KeyValue.new( _fb_bytes, element_pos + element_offset )
+
+	func attributes() -> Array:
+		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
+		if not array_start: return []
+		var array_size: int = _fb_bytes.decode_u32( array_start )
+		array_start += 4
+		var array: Array
+		if array.resize( array_size ) != OK: return []
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+		return array
 
 	func documentation_size() -> int:
 		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
+
+	func documentation_at( index: int ) -> String:
+		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
+		if not array_start: return ''
+		array_start += 4
+		var string_start: int = array_start + index * 4
+		string_start += _fb_bytes.decode_u32( string_start )
+		return decode_variant( string_start, TYPE_STRING )
 
 	func documentation() -> PackedStringArray:
 		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
@@ -769,14 +904,6 @@ class Field extends FlatBuffer:
 			var element_start: int = idx + _fb_bytes.decode_u32( idx )
 			array[i] = decode_variant( element_start, TYPE_STRING )
 		return array
-
-	func documentation_at( index: int ) -> String:
-		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
-		if not array_start: return ''
-		array_start += 4
-		var string_start: int = array_start + index * 4
-		string_start += _fb_bytes.decode_u32( string_start )
-		return decode_variant( string_start, TYPE_STRING )
 
 	## Return true if optional is present in the buffer, else false
 	func optional_is_present() -> bool:
@@ -914,8 +1041,34 @@ class Object_ extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			# TODO required field
+			and verify_offset(verifier, VT_NAME)
+			and verify_string( verifier, VT_NAME )
+			# TODO required field
+			and verify_offset(verifier, VT_FIELDS)
+			and verify_vector_u32(verifier, VT_FIELDS)
+			and verify_fields(verifier)
+			and verify_field_u8(verifier, VT_IS_STRUCT, 1)
+			and verify_field_s32(verifier, VT_MINALIGN, 4)
+			and verify_field_s32(verifier, VT_BYTESIZE, 4)
+			and verify_offset(verifier, VT_ATTRIBUTES)
+			and verify_vector_u32(verifier, VT_ATTRIBUTES)
+			and verify_attributes(verifier)
+			and verify_offset(verifier, VT_DOCUMENTATION)
+			and verify_vector_u32(verifier, VT_DOCUMENTATION)
+			# TODO and verifier.verify_vector_of_strings(documentation())
+			and verify_offset(verifier, VT_DECLARATION_FILE)
+			and verify_string( verifier, VT_DECLARATION_FILE )
+			and verify_end_table(verifier)
+		)
 
 	## Return true if name is present in the buffer, else false
 	## attribute: required
@@ -927,22 +1080,17 @@ class Object_ extends FlatBuffer:
 		if not field_start: return ''
 		return decode_variant( field_start, TYPE_STRING )
 
+	func verify_fields(verifier:FlatBufferVerifier) -> bool:
+		var tmp := _Reflection_schema.Field.new()
+		for i in fields_size():
+			if not fields_at(i, tmp).verify(verifier):
+				return false
+		return true
+
 	func fields_size() -> int:
 		var array_start: int = get_offset_field_start( VT_FIELDS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
-
-	func fields() -> Array:
-		var array_start: int = get_offset_field_start( VT_FIELDS )
-		if not array_start: return []
-		var array_size: int = _fb_bytes.decode_u32( array_start )
-		array_start += 4
-		var array: Array
-		if array.resize( array_size ) != OK: return []
-		for i: int in array_size:
-			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.Field.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
-		return array
 
 	func fields_at( idx: int, into: Field = null ) -> Field:
 		var field_start: int = get_offset_field_start( VT_FIELDS )
@@ -958,10 +1106,21 @@ class Object_ extends FlatBuffer:
 		var element_pos: int = array_start + idx * 4
 		var element_offset: int = _fb_bytes.decode_u32(element_pos)
 		if into:
-			into._fb_bytes = _fb_bytes
-			into._fb_start = element_pos + element_offset
+			into.assign_buffer(_fb_bytes, element_pos + element_offset)
 			return into
 		return _Reflection_schema.Field.new( _fb_bytes, element_pos + element_offset )
+
+	func fields() -> Array:
+		var array_start: int = get_offset_field_start( VT_FIELDS )
+		if not array_start: return []
+		var array_size: int = _fb_bytes.decode_u32( array_start )
+		array_start += 4
+		var array: Array
+		if array.resize( array_size ) != OK: return []
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.Field.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+		return array
 
 	## Return true if is_struct is present in the buffer, else false
 	func is_struct_is_present() -> bool:
@@ -990,22 +1149,17 @@ class Object_ extends FlatBuffer:
 		if not field_start: return 0
 		return _fb_bytes.decode_s32( field_start )
 
+	func verify_attributes(verifier:FlatBufferVerifier) -> bool:
+		var tmp := _Reflection_schema.KeyValue.new()
+		for i in attributes_size():
+			if not attributes_at(i, tmp).verify(verifier):
+				return false
+		return true
+
 	func attributes_size() -> int:
 		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
-
-	func attributes() -> Array:
-		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
-		if not array_start: return []
-		var array_size: int = _fb_bytes.decode_u32( array_start )
-		array_start += 4
-		var array: Array
-		if array.resize( array_size ) != OK: return []
-		for i: int in array_size:
-			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
-		return array
 
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
 		var field_start: int = get_offset_field_start( VT_ATTRIBUTES )
@@ -1021,15 +1175,34 @@ class Object_ extends FlatBuffer:
 		var element_pos: int = array_start + idx * 4
 		var element_offset: int = _fb_bytes.decode_u32(element_pos)
 		if into:
-			into._fb_bytes = _fb_bytes
-			into._fb_start = element_pos + element_offset
+			into.assign_buffer(_fb_bytes, element_pos + element_offset)
 			return into
 		return _Reflection_schema.KeyValue.new( _fb_bytes, element_pos + element_offset )
+
+	func attributes() -> Array:
+		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
+		if not array_start: return []
+		var array_size: int = _fb_bytes.decode_u32( array_start )
+		array_start += 4
+		var array: Array
+		if array.resize( array_size ) != OK: return []
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+		return array
 
 	func documentation_size() -> int:
 		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
+
+	func documentation_at( index: int ) -> String:
+		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
+		if not array_start: return ''
+		array_start += 4
+		var string_start: int = array_start + index * 4
+		string_start += _fb_bytes.decode_u32( string_start )
+		return decode_variant( string_start, TYPE_STRING )
 
 	func documentation() -> PackedStringArray:
 		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
@@ -1043,14 +1216,6 @@ class Object_ extends FlatBuffer:
 			var element_start: int = idx + _fb_bytes.decode_u32( idx )
 			array[i] = decode_variant( element_start, TYPE_STRING )
 		return array
-
-	func documentation_at( index: int ) -> String:
-		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
-		if not array_start: return ''
-		array_start += 4
-		var string_start: int = array_start + index * 4
-		string_start += _fb_bytes.decode_u32( string_start )
-		return decode_variant( string_start, TYPE_STRING )
 
 	## Return true if declaration_file is present in the buffer, else false
 	func declaration_file_is_present() -> bool:
@@ -1145,8 +1310,31 @@ class RPCCall extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			# TODO required field
+			and verify_offset(verifier, VT_NAME)
+			and verify_string( verifier, VT_NAME )
+			# TODO required field
+			and verify_offset(verifier, VT_REQUEST)
+			and request().verify(verifier)
+			# TODO required field
+			and verify_offset(verifier, VT_RESPONSE)
+			and response().verify(verifier)
+			and verify_offset(verifier, VT_ATTRIBUTES)
+			and verify_vector_u32(verifier, VT_ATTRIBUTES)
+			and verify_attributes(verifier)
+			and verify_offset(verifier, VT_DOCUMENTATION)
+			and verify_vector_u32(verifier, VT_DOCUMENTATION)
+			# TODO and verifier.verify_vector_of_strings(documentation())
+			and verify_end_table(verifier)
+		)
 
 	## Return true if name is present in the buffer, else false
 	## attribute: required
@@ -1178,22 +1366,17 @@ class RPCCall extends FlatBuffer:
 		if not field_start: return null
 		return _Reflection_schema.Object_.new( _fb_bytes, field_start )
 
+	func verify_attributes(verifier:FlatBufferVerifier) -> bool:
+		var tmp := _Reflection_schema.KeyValue.new()
+		for i in attributes_size():
+			if not attributes_at(i, tmp).verify(verifier):
+				return false
+		return true
+
 	func attributes_size() -> int:
 		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
-
-	func attributes() -> Array:
-		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
-		if not array_start: return []
-		var array_size: int = _fb_bytes.decode_u32( array_start )
-		array_start += 4
-		var array: Array
-		if array.resize( array_size ) != OK: return []
-		for i: int in array_size:
-			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
-		return array
 
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
 		var field_start: int = get_offset_field_start( VT_ATTRIBUTES )
@@ -1209,15 +1392,34 @@ class RPCCall extends FlatBuffer:
 		var element_pos: int = array_start + idx * 4
 		var element_offset: int = _fb_bytes.decode_u32(element_pos)
 		if into:
-			into._fb_bytes = _fb_bytes
-			into._fb_start = element_pos + element_offset
+			into.assign_buffer(_fb_bytes, element_pos + element_offset)
 			return into
 		return _Reflection_schema.KeyValue.new( _fb_bytes, element_pos + element_offset )
+
+	func attributes() -> Array:
+		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
+		if not array_start: return []
+		var array_size: int = _fb_bytes.decode_u32( array_start )
+		array_start += 4
+		var array: Array
+		if array.resize( array_size ) != OK: return []
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+		return array
 
 	func documentation_size() -> int:
 		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
+
+	func documentation_at( index: int ) -> String:
+		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
+		if not array_start: return ''
+		array_start += 4
+		var string_start: int = array_start + index * 4
+		string_start += _fb_bytes.decode_u32( string_start )
+		return decode_variant( string_start, TYPE_STRING )
 
 	func documentation() -> PackedStringArray:
 		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
@@ -1231,14 +1433,6 @@ class RPCCall extends FlatBuffer:
 			var element_start: int = idx + _fb_bytes.decode_u32( idx )
 			array[i] = decode_variant( element_start, TYPE_STRING )
 		return array
-
-	func documentation_at( index: int ) -> String:
-		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
-		if not array_start: return ''
-		array_start += 4
-		var string_start: int = array_start + index * 4
-		string_start += _fb_bytes.decode_u32( string_start )
-		return decode_variant( string_start, TYPE_STRING )
 
 
 ## TODO: Write a Doc Comment for the builder
@@ -1307,8 +1501,30 @@ class Service extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			# TODO required field
+			and verify_offset(verifier, VT_NAME)
+			and verify_string( verifier, VT_NAME )
+			and verify_offset(verifier, VT_CALLS)
+			and verify_vector_u32(verifier, VT_CALLS)
+			and verify_calls(verifier)
+			and verify_offset(verifier, VT_ATTRIBUTES)
+			and verify_vector_u32(verifier, VT_ATTRIBUTES)
+			and verify_attributes(verifier)
+			and verify_offset(verifier, VT_DOCUMENTATION)
+			and verify_vector_u32(verifier, VT_DOCUMENTATION)
+			# TODO and verifier.verify_vector_of_strings(documentation())
+			and verify_offset(verifier, VT_DECLARATION_FILE)
+			and verify_string( verifier, VT_DECLARATION_FILE )
+			and verify_end_table(verifier)
+		)
 
 	## Return true if name is present in the buffer, else false
 	## attribute: required
@@ -1320,22 +1536,17 @@ class Service extends FlatBuffer:
 		if not field_start: return ''
 		return decode_variant( field_start, TYPE_STRING )
 
+	func verify_calls(verifier:FlatBufferVerifier) -> bool:
+		var tmp := _Reflection_schema.RPCCall.new()
+		for i in calls_size():
+			if not calls_at(i, tmp).verify(verifier):
+				return false
+		return true
+
 	func calls_size() -> int:
 		var array_start: int = get_offset_field_start( VT_CALLS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
-
-	func calls() -> Array:
-		var array_start: int = get_offset_field_start( VT_CALLS )
-		if not array_start: return []
-		var array_size: int = _fb_bytes.decode_u32( array_start )
-		array_start += 4
-		var array: Array
-		if array.resize( array_size ) != OK: return []
-		for i: int in array_size:
-			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.RPCCall.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
-		return array
 
 	func calls_at( idx: int, into: RPCCall = null ) -> RPCCall:
 		var field_start: int = get_offset_field_start( VT_CALLS )
@@ -1351,18 +1562,12 @@ class Service extends FlatBuffer:
 		var element_pos: int = array_start + idx * 4
 		var element_offset: int = _fb_bytes.decode_u32(element_pos)
 		if into:
-			into._fb_bytes = _fb_bytes
-			into._fb_start = element_pos + element_offset
+			into.assign_buffer(_fb_bytes, element_pos + element_offset)
 			return into
 		return _Reflection_schema.RPCCall.new( _fb_bytes, element_pos + element_offset )
 
-	func attributes_size() -> int:
-		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
-		if not array_start: return 0
-		return _fb_bytes.decode_u32( array_start )
-
-	func attributes() -> Array:
-		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
+	func calls() -> Array:
+		var array_start: int = get_offset_field_start( VT_CALLS )
 		if not array_start: return []
 		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
@@ -1370,8 +1575,20 @@ class Service extends FlatBuffer:
 		if array.resize( array_size ) != OK: return []
 		for i: int in array_size:
 			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+			array[i] = _Reflection_schema.RPCCall.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
+
+	func verify_attributes(verifier:FlatBufferVerifier) -> bool:
+		var tmp := _Reflection_schema.KeyValue.new()
+		for i in attributes_size():
+			if not attributes_at(i, tmp).verify(verifier):
+				return false
+		return true
+
+	func attributes_size() -> int:
+		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
+		if not array_start: return 0
+		return _fb_bytes.decode_u32( array_start )
 
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
 		var field_start: int = get_offset_field_start( VT_ATTRIBUTES )
@@ -1387,15 +1604,34 @@ class Service extends FlatBuffer:
 		var element_pos: int = array_start + idx * 4
 		var element_offset: int = _fb_bytes.decode_u32(element_pos)
 		if into:
-			into._fb_bytes = _fb_bytes
-			into._fb_start = element_pos + element_offset
+			into.assign_buffer(_fb_bytes, element_pos + element_offset)
 			return into
 		return _Reflection_schema.KeyValue.new( _fb_bytes, element_pos + element_offset )
+
+	func attributes() -> Array:
+		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
+		if not array_start: return []
+		var array_size: int = _fb_bytes.decode_u32( array_start )
+		array_start += 4
+		var array: Array
+		if array.resize( array_size ) != OK: return []
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+		return array
 
 	func documentation_size() -> int:
 		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
+
+	func documentation_at( index: int ) -> String:
+		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
+		if not array_start: return ''
+		array_start += 4
+		var string_start: int = array_start + index * 4
+		string_start += _fb_bytes.decode_u32( string_start )
+		return decode_variant( string_start, TYPE_STRING )
 
 	func documentation() -> PackedStringArray:
 		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
@@ -1409,14 +1645,6 @@ class Service extends FlatBuffer:
 			var element_start: int = idx + _fb_bytes.decode_u32( idx )
 			array[i] = decode_variant( element_start, TYPE_STRING )
 		return array
-
-	func documentation_at( index: int ) -> String:
-		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
-		if not array_start: return ''
-		array_start += 4
-		var string_start: int = array_start + index * 4
-		string_start += _fb_bytes.decode_u32( string_start )
-		return decode_variant( string_start, TYPE_STRING )
 
 	## Return true if declaration_file is present in the buffer, else false
 	func declaration_file_is_present() -> bool:
@@ -1490,8 +1718,22 @@ class SchemaFile extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			# TODO required field
+			and verify_offset(verifier, VT_FILENAME)
+			and verify_string( verifier, VT_FILENAME )
+			and verify_offset(verifier, VT_INCLUDED_FILENAMES)
+			and verify_vector_u32(verifier, VT_INCLUDED_FILENAMES)
+			# TODO and verifier.verify_vector_of_strings(included_filenames())
+			and verify_end_table(verifier)
+		)
 
 	## Return true if filename is present in the buffer, else false
 	## attribute: required
@@ -1510,6 +1752,15 @@ class SchemaFile extends FlatBuffer:
 		return _fb_bytes.decode_u32( array_start )
 
 	## Names of included files, relative to project root.
+	func included_filenames_at( index: int ) -> String:
+		var array_start: int = get_offset_field_start( VT_INCLUDED_FILENAMES )
+		if not array_start: return ''
+		array_start += 4
+		var string_start: int = array_start + index * 4
+		string_start += _fb_bytes.decode_u32( string_start )
+		return decode_variant( string_start, TYPE_STRING )
+
+	## Names of included files, relative to project root.
 	func included_filenames() -> PackedStringArray:
 		var array_start: int = get_offset_field_start( VT_INCLUDED_FILENAMES )
 		if not array_start: return []
@@ -1522,15 +1773,6 @@ class SchemaFile extends FlatBuffer:
 			var element_start: int = idx + _fb_bytes.decode_u32( idx )
 			array[i] = decode_variant( element_start, TYPE_STRING )
 		return array
-
-	## Names of included files, relative to project root.
-	func included_filenames_at( index: int ) -> String:
-		var array_start: int = get_offset_field_start( VT_INCLUDED_FILENAMES )
-		if not array_start: return ''
-		array_start += 4
-		var string_start: int = array_start + index * 4
-		string_start += _fb_bytes.decode_u32( string_start )
-		return decode_variant( string_start, TYPE_STRING )
 
 
 ## TODO: Write a Doc Comment for the builder
@@ -1582,25 +1824,49 @@ class Schema extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			# TODO required field
+			and verify_offset(verifier, VT_OBJECTS)
+			and verify_vector_u32(verifier, VT_OBJECTS)
+			and verify_objects(verifier)
+			# TODO required field
+			and verify_offset(verifier, VT_ENUMS)
+			and verify_vector_u32(verifier, VT_ENUMS)
+			and verify_enums(verifier)
+			and verify_offset(verifier, VT_FILE_IDENT)
+			and verify_string( verifier, VT_FILE_IDENT )
+			and verify_offset(verifier, VT_FILE_EXT)
+			and verify_string( verifier, VT_FILE_EXT )
+			and verify_offset(verifier, VT_ROOT_TABLE)
+			and root_table().verify(verifier)
+			and verify_offset(verifier, VT_SERVICES)
+			and verify_vector_u32(verifier, VT_SERVICES)
+			and verify_services(verifier)
+			and verify_field_u64(verifier, VT_ADVANCED_FEATURES, 8)
+			and verify_offset(verifier, VT_FBS_FILES)
+			and verify_vector_u32(verifier, VT_FBS_FILES)
+			and verify_fbs_files(verifier)
+			and verify_end_table(verifier)
+		)
+
+	func verify_objects(verifier:FlatBufferVerifier) -> bool:
+		var tmp := _Reflection_schema.Object_.new()
+		for i in objects_size():
+			if not objects_at(i, tmp).verify(verifier):
+				return false
+		return true
 
 	func objects_size() -> int:
 		var array_start: int = get_offset_field_start( VT_OBJECTS )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
-
-	func objects() -> Array:
-		var array_start: int = get_offset_field_start( VT_OBJECTS )
-		if not array_start: return []
-		var array_size: int = _fb_bytes.decode_u32( array_start )
-		array_start += 4
-		var array: Array
-		if array.resize( array_size ) != OK: return []
-		for i: int in array_size:
-			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.Object_.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
-		return array
 
 	func objects_at( idx: int, into: Object_ = null ) -> Object_:
 		var field_start: int = get_offset_field_start( VT_OBJECTS )
@@ -1616,18 +1882,12 @@ class Schema extends FlatBuffer:
 		var element_pos: int = array_start + idx * 4
 		var element_offset: int = _fb_bytes.decode_u32(element_pos)
 		if into:
-			into._fb_bytes = _fb_bytes
-			into._fb_start = element_pos + element_offset
+			into.assign_buffer(_fb_bytes, element_pos + element_offset)
 			return into
 		return _Reflection_schema.Object_.new( _fb_bytes, element_pos + element_offset )
 
-	func enums_size() -> int:
-		var array_start: int = get_offset_field_start( VT_ENUMS )
-		if not array_start: return 0
-		return _fb_bytes.decode_u32( array_start )
-
-	func enums() -> Array:
-		var array_start: int = get_offset_field_start( VT_ENUMS )
+	func objects() -> Array:
+		var array_start: int = get_offset_field_start( VT_OBJECTS )
 		if not array_start: return []
 		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
@@ -1635,8 +1895,20 @@ class Schema extends FlatBuffer:
 		if array.resize( array_size ) != OK: return []
 		for i: int in array_size:
 			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.Enum.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+			array[i] = _Reflection_schema.Object_.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
+
+	func verify_enums(verifier:FlatBufferVerifier) -> bool:
+		var tmp := _Reflection_schema.Enum.new()
+		for i in enums_size():
+			if not enums_at(i, tmp).verify(verifier):
+				return false
+		return true
+
+	func enums_size() -> int:
+		var array_start: int = get_offset_field_start( VT_ENUMS )
+		if not array_start: return 0
+		return _fb_bytes.decode_u32( array_start )
 
 	func enums_at( idx: int, into: Enum = null ) -> Enum:
 		var field_start: int = get_offset_field_start( VT_ENUMS )
@@ -1652,10 +1924,21 @@ class Schema extends FlatBuffer:
 		var element_pos: int = array_start + idx * 4
 		var element_offset: int = _fb_bytes.decode_u32(element_pos)
 		if into:
-			into._fb_bytes = _fb_bytes
-			into._fb_start = element_pos + element_offset
+			into.assign_buffer(_fb_bytes, element_pos + element_offset)
 			return into
 		return _Reflection_schema.Enum.new( _fb_bytes, element_pos + element_offset )
+
+	func enums() -> Array:
+		var array_start: int = get_offset_field_start( VT_ENUMS )
+		if not array_start: return []
+		var array_size: int = _fb_bytes.decode_u32( array_start )
+		array_start += 4
+		var array: Array
+		if array.resize( array_size ) != OK: return []
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.Enum.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+		return array
 
 	## Return true if file_ident is present in the buffer, else false
 	func file_ident_is_present() -> bool:
@@ -1684,22 +1967,17 @@ class Schema extends FlatBuffer:
 		if not field_start: return null
 		return _Reflection_schema.Object_.new( _fb_bytes, field_start )
 
+	func verify_services(verifier:FlatBufferVerifier) -> bool:
+		var tmp := _Reflection_schema.Service.new()
+		for i in services_size():
+			if not services_at(i, tmp).verify(verifier):
+				return false
+		return true
+
 	func services_size() -> int:
 		var array_start: int = get_offset_field_start( VT_SERVICES )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
-
-	func services() -> Array:
-		var array_start: int = get_offset_field_start( VT_SERVICES )
-		if not array_start: return []
-		var array_size: int = _fb_bytes.decode_u32( array_start )
-		array_start += 4
-		var array: Array
-		if array.resize( array_size ) != OK: return []
-		for i: int in array_size:
-			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.Service.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
-		return array
 
 	func services_at( idx: int, into: Service = null ) -> Service:
 		var field_start: int = get_offset_field_start( VT_SERVICES )
@@ -1715,10 +1993,21 @@ class Schema extends FlatBuffer:
 		var element_pos: int = array_start + idx * 4
 		var element_offset: int = _fb_bytes.decode_u32(element_pos)
 		if into:
-			into._fb_bytes = _fb_bytes
-			into._fb_start = element_pos + element_offset
+			into.assign_buffer(_fb_bytes, element_pos + element_offset)
 			return into
 		return _Reflection_schema.Service.new( _fb_bytes, element_pos + element_offset )
+
+	func services() -> Array:
+		var array_start: int = get_offset_field_start( VT_SERVICES )
+		if not array_start: return []
+		var array_size: int = _fb_bytes.decode_u32( array_start )
+		array_start += 4
+		var array: Array
+		if array.resize( array_size ) != OK: return []
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.Service.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+		return array
 
 	## Return true if advanced_features is present in the buffer, else false
 	func advanced_features_is_present() -> bool:
@@ -1732,24 +2021,19 @@ class Schema extends FlatBuffer:
 
 	## All the files used in this compilation. Files are relative to where
 ## flatc was invoked.
+	func verify_fbs_files(verifier:FlatBufferVerifier) -> bool:
+		var tmp := _Reflection_schema.SchemaFile.new()
+		for i in fbs_files_size():
+			if not fbs_files_at(i, tmp).verify(verifier):
+				return false
+		return true
+
+	## All the files used in this compilation. Files are relative to where
+## flatc was invoked.
 	func fbs_files_size() -> int:
 		var array_start: int = get_offset_field_start( VT_FBS_FILES )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
-
-	## All the files used in this compilation. Files are relative to where
-## flatc was invoked.
-	func fbs_files() -> Array:
-		var array_start: int = get_offset_field_start( VT_FBS_FILES )
-		if not array_start: return []
-		var array_size: int = _fb_bytes.decode_u32( array_start )
-		array_start += 4
-		var array: Array
-		if array.resize( array_size ) != OK: return []
-		for i: int in array_size:
-			var p: int = array_start + i * 4
-			array[i] = _Reflection_schema.SchemaFile.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
-		return array
 
 	## All the files used in this compilation. Files are relative to where
 ## flatc was invoked.
@@ -1767,10 +2051,23 @@ class Schema extends FlatBuffer:
 		var element_pos: int = array_start + idx * 4
 		var element_offset: int = _fb_bytes.decode_u32(element_pos)
 		if into:
-			into._fb_bytes = _fb_bytes
-			into._fb_start = element_pos + element_offset
+			into.assign_buffer(_fb_bytes, element_pos + element_offset)
 			return into
 		return _Reflection_schema.SchemaFile.new( _fb_bytes, element_pos + element_offset )
+
+	## All the files used in this compilation. Files are relative to where
+## flatc was invoked.
+	func fbs_files() -> Array:
+		var array_start: int = get_offset_field_start( VT_FBS_FILES )
+		if not array_start: return []
+		var array_size: int = _fb_bytes.decode_u32( array_start )
+		array_start += 4
+		var array: Array
+		if array.resize( array_size ) != OK: return []
+		for i: int in array_size:
+			var p: int = array_start + i * 4
+			array[i] = _Reflection_schema.SchemaFile.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
+		return array
 
 
 ## TODO: Write a Doc Comment for the builder

@@ -16,6 +16,7 @@ var phases:Array[Dictionary] = [{
 		&"name":"Decoding",
 		&"strategies":[decode_function, decode_manual]
 	}
+	# TODO implement a use function.
 ]
 
 var test_string : String = "This is a string that I am adding to te flatbuffer"
@@ -82,16 +83,17 @@ func _flow( selection:Array[int] ) -> void:
 		"result of encoding should not be empty"): return
 	test.logd("bytes: %s" % TestBase.bytes_view(packed) )
 
-	# validate
-	#var verifier := FlatBufferVerifier.new()
-	#verifier.set_buffer(bytes)
-	# TODO requires code generation changes
-	# TEST_TRUE(fb_table.verify(verifier), "verifying fb_table")
-
 	# decode
 	var decode:Callable = get_strategy(DECODING, selection[DECODING])
 	test.logp(" --- %s ---" % decode.get_method().capitalize())
-	decode.call(packed)
+	var unpacked:Schema.RootTable = decode.call(packed)
+
+	# Verify
+	test.logp(" --- %s ---" % "verify".capitalize())
+	var verifier := FlatBufferVerifier.new()
+	if not test.TEST_TRUE_RET(unpacked.verify(verifier),
+			"verifying decoded table must pass"):
+		return
 
 #               ██████  ██   ██  █████  ███████ ███████ ███████                #
 #               ██   ██ ██   ██ ██   ██ ██      ██      ██                     #
@@ -161,7 +163,7 @@ func                        __Decode_________________              ()->void:pass
 ##
 ## Decode Description
 
-func decode_manual(buf:PackedByteArray) -> void:
+func decode_manual(buf:PackedByteArray) -> Schema.RootTable:
 	var rtl:int = buf.decode_u32(0)
 	test.logd("root_table_pos: %d" % rtl)
 	var vtl:int = rtl - buf.decode_s32(rtl)
@@ -203,9 +205,12 @@ func decode_manual(buf:PackedByteArray) -> void:
 	var fbo : Schema.RootTable = Schema.get_RootTable(buf)
 	test.TEST_EQ( fbo.my_string(), test_string, "my_string()" )
 
+	return fbo
 
-func decode_function(buf:PackedByteArray) -> void:
+
+func decode_function(buf:PackedByteArray) -> Schema.RootTable:
 	var fbo : Schema.RootTable = Schema.get_RootTable(buf)
 	test.TEST_EQ( fbo.my_string(), test_string, "my_string()" )
+	return fbo
 
 #endregion Decode

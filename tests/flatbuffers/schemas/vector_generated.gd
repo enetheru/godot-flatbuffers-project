@@ -305,7 +305,7 @@ class RootTable extends FlatBuffer:
 		assert( idx < array_size, 'index is out of bounds')
 
 		var array_start: int = field_start + 4
-		var element_offset: int = array_start + idx * 4
+		var element_offset: int = array_start + idx * 12
 		return decode_variant( element_offset, TYPE_VECTOR3 )
 
 	## Vector of Godot Structs
@@ -334,7 +334,7 @@ class RootTable extends FlatBuffer:
 		assert( idx < array_size, 'index is out of bounds')
 
 		var array_start: int = field_start + 4
-		var element_offset: int = array_start + idx * 4
+		var element_offset: int = array_start + idx * 8
 		if into:
 			into.assign_buffer(_fb_bytes, element_offset)
 			return into
@@ -556,4 +556,3 @@ static func create_RootTable( _fbb: FlatBufferBuilder,
 static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
 	assert(not _bytes.is_empty())
 	return RootTable.new(_bytes, _bytes.decode_u32(0))
-

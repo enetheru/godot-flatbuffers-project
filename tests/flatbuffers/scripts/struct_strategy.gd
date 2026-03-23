@@ -5,7 +5,6 @@ const Schema = preload("../schemas/struct_generated.gd")
 
 enum {
 	ENCODING = 0,
-	VERIFYING,
 	DECODING,
 	USING
 }
@@ -14,9 +13,6 @@ var phases:Array[Dictionary] = [{
 		&"name":"Encoding",
 		&"strategies":[encode_a]
 		# TODO: I want some way to create dependencies between the strategies
-	},{
-		&"name":"Verifying",
-		&"strategies":[verify_a]
 	},{
 		&"name":"Decoding",
 		&"strategies":[decode_a]
@@ -33,12 +29,19 @@ var value:Dictionary = {
 	&'w': Vector3(4,5,6),
 }
 
+
+var test:TestBase
+
 #      ██████  ██    ██ ███████ ██████  ██████  ██ ██████  ███████ ███████     #
 #     ██    ██ ██    ██ ██      ██   ██ ██   ██ ██ ██   ██ ██      ██          #
 #     ██    ██ ██    ██ █████   ██████  ██████  ██ ██   ██ █████   ███████     #
 #     ██    ██  ██  ██  ██      ██   ██ ██   ██ ██ ██   ██ ██           ██     #
 #      ██████    ████   ███████ ██   ██ ██   ██ ██ ██████  ███████ ███████     #
 func                        ________OVERRIDES________              ()->void:pass
+
+
+func _init(initiator:TestBase) -> void:
+	test = initiator
 
 func _get_phase_count() -> int: return phases.size()
 
@@ -72,6 +75,7 @@ func                        __________FLOW___________              ()->void:pass
 ## A selection is an array of strategies, one for each phase.
 func _flow( selection:Array[int] ) -> void:
 	test.logp("[b]== Flow ==[/b]")
+
 	# encode
 	var encode:Callable = get_strategy(ENCODING, selection[ENCODING])
 	test.logp(" --- %s ---" % encode.get_method().capitalize())
@@ -79,15 +83,19 @@ func _flow( selection:Array[int] ) -> void:
 	if not test.TEST_FALSE_RET(packed.is_empty(),
 		"result of encoding should not be empty"): return
 	test.logd("bytes: %s" % TestBase.bytes_view(packed) )
-	# validate
-	var verify:Callable = get_strategy(VERIFYING, selection[VERIFYING])
-	test.logp(" --- %s ---" % verify.get_method().capitalize())
-	var is_verified:bool = verify.call(packed)
-	if not is_verified: return
+
 	# decode
 	var decode:Callable = get_strategy(DECODING, selection[DECODING])
 	test.logp(" --- %s ---" % decode.get_method().capitalize())
-	var unpacked:Variant = decode.call(packed)
+	var unpacked:Schema.CustomStruct = decode.call(packed)
+
+	# Verify
+	test.logp(" --- %s ---" % "verify".capitalize())
+	var verifier := FlatBufferVerifier.new()
+	if not test.TEST_TRUE_RET(unpacked.verify(verifier),
+			"verifying decoded table must pass"):
+		return
+
 	# use
 	var use:Callable = get_strategy(USING, selection[USING])
 	test.logp(" --- %s ---" % use.get_method().capitalize())
@@ -111,20 +119,7 @@ func encode_a() -> PackedByteArray:
 	return cs.get_bytes()
 
 
-func verify_a( buf:PackedByteArray ) -> int:
-	test.logp("[b]== Verification ==[/b]")
-	test.TEST_FALSE(buf.is_empty(), "buffer should have data")
-	print( buf.is_empty() )
-	print( buf )
-	#var verifier := FlatBufferVerifier.new()
-	#verifier.set_buffer(bytes)
-
-	# TODO requires code generation changes
-	# TEST_TRUE(fb_table.verify(verifier), "verifying fb_table")
-	return test.runcode
-
-
-func decode_a(buf:PackedByteArray) -> Variant:
+func decode_a(buf:PackedByteArray) -> Schema.CustomStruct:
 	# Decode buffer
 	var struct:Schema.CustomStruct = Schema.CustomStruct.new(buf)
 	print( "decode.is_true: ", struct.is_true )
@@ -137,8 +132,8 @@ func decode_a(buf:PackedByteArray) -> Variant:
 	return struct
 
 
-func use_a( variant:Variant ) -> int:
-	var _decoded:Schema.CustomStruct = variant
+func use_a( _variant:Schema.CustomStruct ) -> int:
+	test.TEST_TRUE(true, "todo")
 	return TestBase.RetCode.TEST_OK
 
 
@@ -155,8 +150,6 @@ func                        __BoilerPlate____________              ()->void:pass
 ## that this script can preload and use it properly.
 ## It's a bit convoluted yes.
 
-var test:TestBase
-func _init(initiator:TestBase) -> void:
-	test = initiator
+
 
 #endregion BoilerPlate

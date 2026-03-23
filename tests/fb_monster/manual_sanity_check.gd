@@ -10,7 +10,7 @@ extends EditorScript
 
 
 const Print = preload("uid://cbluyr4ifn8g3")
-const Schema = preload("uid://d08seaooakblg")
+const Schema = preload("uid://nqwnoigb86oo")
 
 func _run() -> void:
 	print("New Builder")

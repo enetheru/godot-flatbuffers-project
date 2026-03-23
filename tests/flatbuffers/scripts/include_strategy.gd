@@ -3,6 +3,7 @@ extends TestStrategy
 
 const Print = preload("uid://cbluyr4ifn8g3")
 const Schema = preload("../schemas/include_generated.gd")
+const MinimumSchema = preload("../schemas/minimum_generated.gd")
 
 const u32 = TestBase.u32
 const u32_ = TestBase.u32_
@@ -11,7 +12,6 @@ const u64_ = TestBase.u64_
 
 enum {
 	ENCODING = 0,
-	VERIFYING,
 	DECODING,
 	USING
 }
@@ -20,9 +20,6 @@ var phases:Array[Dictionary] = [{
 		&"name":"Encoding",
 		&"strategies":[encode_a]
 		# TODO: I want some way to create dependencies between the strategies
-	},{
-		&"name":"Verifying",
-		&"strategies":[verify_a]
 	},{
 		&"name":"Decoding",
 		&"strategies":[decode_a]
@@ -34,12 +31,19 @@ var phases:Array[Dictionary] = [{
 
 var initial_value:int = 42
 
+var test:TestBase
+
 #      ██████  ██    ██ ███████ ██████  ██████  ██ ██████  ███████ ███████     #
 #     ██    ██ ██    ██ ██      ██   ██ ██   ██ ██ ██   ██ ██      ██          #
 #     ██    ██ ██    ██ █████   ██████  ██████  ██ ██   ██ █████   ███████     #
 #     ██    ██  ██  ██  ██      ██   ██ ██   ██ ██ ██   ██ ██           ██     #
 #      ██████    ████   ███████ ██   ██ ██   ██ ██ ██████  ███████ ███████     #
 func                        ________OVERRIDES________              ()->void:pass
+
+
+func _init(initiator:TestBase) -> void:
+	test = initiator
+
 
 func _get_phase_count() -> int: return phases.size()
 
@@ -73,6 +77,7 @@ func                        __________FLOW___________              ()->void:pass
 ## A selection is an array of strategies, one for each phase.
 func _flow( selection:Array[int] ) -> void:
 	test.logp("[b]== Flow ==[/b]")
+
 	# encode
 	var encode:Callable = get_strategy(ENCODING, selection[ENCODING])
 	test.logp(" --- %s ---" % encode.get_method().capitalize())
@@ -80,20 +85,25 @@ func _flow( selection:Array[int] ) -> void:
 	if not test.TEST_FALSE_RET(packed.is_empty(),
 		"result of encoding should not be empty"): return
 	test.logd("bytes: %s" % TestBase.bytes_view(packed) )
-	# validate
-	var verify:Callable = get_strategy(VERIFYING, selection[VERIFYING])
-	test.logp(" --- %s ---" % verify.get_method().capitalize())
-	var is_verified:bool = verify.call(packed)
-	if is_verified: pass
+
 	# decode
 	var decode:Callable = get_strategy(DECODING, selection[DECODING])
 	test.logp(" --- %s ---" % decode.get_method().capitalize())
-	var unpacked:Variant = decode.call(packed)
+	var unpacked:Schema.minimum_schema.Minimum = decode.call(packed)
+
+	# Verify
+	test.logp(" --- %s ---" % "verify".capitalize())
+	var verifier := FlatBufferVerifier.new()
+	if not test.TEST_TRUE_RET(unpacked.verify(verifier),
+			"verifying decoded table must pass"):
+		return
+
 	# use
 	var use:Callable = get_strategy(USING, selection[USING])
 	test.logp(" --- %s ---" % use.get_method().capitalize())
 	var can_use:bool = use.call(unpacked)
 	if can_use: pass
+
 
 #               ██████  ██   ██  █████  ███████ ███████ ███████                #
 #               ██   ██ ██   ██ ██   ██ ██      ██      ██                     #
@@ -109,43 +119,12 @@ func encode_a() -> PackedByteArray:
 	return fbb.get_buffer()
 
 
-func verify_a( _buf:PackedByteArray ) -> int:
-	#logp("[b]== Verification ==[/b]")
-	#var verifier := FlatBufferVerifier.new()
-	#verifier.set_buffer(bytes)
-
-	# TODO requires code generation changes
-	# TEST_TRUE(fb_table.verify(verifier), "verifying fb_table")
-	return TestBase.RetCode.TEST_OK
-
-
 func decode_a(buf:PackedByteArray) -> Variant:
 	var mininum:Schema.minimum_schema.Minimum = Schema.minimum_schema.get_Minimum(buf)
 	return mininum
 
 
-func use_a( variant:Variant ) -> int:
-	var mininum:Schema.minimum_schema.Minimum = variant
-	test.TEST_EQ(initial_value, mininum.my_field(),
+func use_a( minimum:Schema.minimum_schema.Minimum ) -> int:
+	test.TEST_EQ(initial_value, minimum.my_field(),
 			"Initial value and decompiled value should be the same")
 	return TestBase.RetCode.TEST_OK
-
-
-func                        __BoilerPlate____________              ()->void:pass
-#region BoilerPlate
-#MARK: BoilerPlate
-## │ ___      _ _         ___ _      _          [br]
-## │| _ ) ___(_) |___ _ _| _ \ |__ _| |_ ___    [br]
-## │| _ \/ _ \ | / -_) '_|  _/ / _` |  _/ -_)   [br]
-## │|___/\___/_|_\___|_| |_| |_\__,_|\__\___|   [br]
-## ╰─────────────────────────────────────────── [br]
-## Because we cannot pre-load a script that hasnt been generated yet, the test
-## script must load this script after the generated script has been created so
-## that this script can preload and use it properly.
-## It's a bit convoluted yes.
-
-var test:TestBase
-func _init(initiator:TestBase) -> void:
-	test = initiator
-
-#endregion BoilerPlate

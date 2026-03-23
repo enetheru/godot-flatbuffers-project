@@ -12,7 +12,6 @@ const TestUnion = Schema.TestUnion
 
 enum {
 	ENCODING = 0,
-	VERIFYING,
 	DECODING,
 	USING
 }
@@ -21,9 +20,6 @@ var phases:Array[Dictionary] = [{
 		&"name":"Encoding",
 		&"strategies":[encode_builder]
 		# TODO: I want some way to create dependencies between the strategies
-	},{
-		&"name":"Verifying",
-		&"strategies":[verify_a]
 	},{
 		&"name":"Decoding",
 		&"strategies":[decode_a]
@@ -146,6 +142,7 @@ func                        __________FLOW___________              ()->void:pass
 ## A selection is an array of strategies, one for each phase.
 func _flow( selection:Array[int] ) -> void:
 	test.logp("[b]== Flow ==[/b]")
+
 	# encode
 	var encode:Callable = get_strategy(ENCODING, selection[ENCODING])
 	test.logp(" --- %s ---" % encode.get_method().capitalize())
@@ -153,15 +150,19 @@ func _flow( selection:Array[int] ) -> void:
 	if not test.TEST_FALSE_RET(packed.is_empty(),
 		"result of encoding should not be empty"): return
 	test.logd("bytes: %s" % TestBase.bytes_view(packed) )
-	# validate
-	var verify:Callable = get_strategy(VERIFYING, selection[VERIFYING])
-	test.logp(" --- %s ---" % verify.get_method().capitalize())
-	var is_verified:bool = verify.call(packed)
-	if is_verified: pass
+
 	# decode
 	var decode:Callable = get_strategy(DECODING, selection[DECODING])
 	test.logp(" --- %s ---" % decode.get_method().capitalize())
-	var unpacked:Variant = decode.call(packed)
+	var unpacked:Schema.RootTable = decode.call(packed)
+
+	# Verify
+	test.logp(" --- %s ---" % "verify".capitalize())
+	var verifier := FlatBufferVerifier.new()
+	if not test.TEST_TRUE_RET(unpacked.verify(verifier),
+			"verifying decoded table must pass"):
+		return
+
 	# use
 	var use:Callable = get_strategy(USING, selection[USING])
 	test.logp(" --- %s ---" % use.get_method().capitalize())
@@ -243,24 +244,11 @@ func encode_builder() -> PackedByteArray:
 	return fbb.get_buffer()
 
 
-func verify_a( _buf:PackedByteArray ) -> int:
-	#logp("[b]== Verification ==[/b]")
-	#var verifier := FlatBufferVerifier.new()
-	#verifier.set_buffer(bytes)
-
-	# TODO requires code generation changes
-	# TEST_TRUE(fb_table.verify(verifier), "verifying fb_table")
-	return TestBase.RetCode.TEST_OK
-
-
-func decode_a(buf:PackedByteArray) -> Variant:
+func decode_a(buf:PackedByteArray) -> Schema.RootTable:
 	return Schema.get_RootTable(buf)
 
 
-func use_a( variant:Variant ) -> int:
-	## bag is the root of this buffer.
-	var rtb:Schema.RootTable = variant
-
+func use_a( rtb:Schema.RootTable ) -> int:
 	# vector of scalars
 	#if test.TEST_TRUE_RET(rtb.scalars_is_present()):
 	var rtb_scalars:Array = rtb.scalars() # transform to basic array so we can compare

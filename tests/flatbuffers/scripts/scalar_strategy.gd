@@ -5,7 +5,6 @@ const Schema = preload("../schemas/scalar_generated.gd")
 
 enum {
 	ENCODING = 0,
-	VERIFYING,
 	DECODING,
 	USING
 }
@@ -13,9 +12,6 @@ enum {
 var phases:Array[Dictionary] = [{
 		&"name":"Encoding",
 		&"strategies":[encode_a]
-	},{
-		&"name":"Verifying",
-		&"strategies":[verify_a]
 	},{
 		&"name":"Decoding",
 		&"strategies":[decode_a]
@@ -26,6 +22,7 @@ var phases:Array[Dictionary] = [{
 ]
 
 var value:int = TestBase.u32
+var test:TestBase
 
 #      ██████  ██    ██ ███████ ██████  ██████  ██ ██████  ███████ ███████     #
 #     ██    ██ ██    ██ ██      ██   ██ ██   ██ ██ ██   ██ ██      ██          #
@@ -33,6 +30,9 @@ var value:int = TestBase.u32
 #     ██    ██  ██  ██  ██      ██   ██ ██   ██ ██ ██   ██ ██           ██     #
 #      ██████    ████   ███████ ██   ██ ██   ██ ██ ██████  ███████ ███████     #
 func                        ________OVERRIDES________              ()->void:pass
+
+func _init(initiator:TestBase) -> void:
+	test = initiator
 
 func _get_phase_count() -> int:
 	return phases.size()
@@ -70,6 +70,7 @@ func                        __________FLOW___________              ()->void:pass
 ## A selection is an array of strategies, one for each phase.
 func _flow( selection:Array[int] ) -> void:
 	test.logp("[b]== Flow ==[/b]")
+
 	# encode
 	var encode:Callable = get_strategy(ENCODING, selection[ENCODING])
 	test.logp(" --- %s ---" % encode.get_method().capitalize())
@@ -77,15 +78,19 @@ func _flow( selection:Array[int] ) -> void:
 	if not test.TEST_FALSE_RET(packed.is_empty(),
 		"result of encoding should not be empty"): return
 	test.logd("bytes: %s" % TestBase.bytes_view(packed) )
-	# validate
-	var verify:Callable = get_strategy(VERIFYING, selection[VERIFYING])
-	test.logp(" --- %s ---" % verify.get_method().capitalize())
-	var is_verified:bool = verify.call(packed)
-	if is_verified: pass
+
 	# decode
 	var decode:Callable = get_strategy(DECODING, selection[DECODING])
 	test.logp(" --- %s ---" % decode.get_method().capitalize())
-	var unpacked:Variant = decode.call(packed)
+	var unpacked:Schema.RootTable = decode.call(packed)
+
+	# Verify
+	test.logp(" --- %s ---" % "verify".capitalize())
+	var verifier := FlatBufferVerifier.new()
+	if not test.TEST_TRUE_RET(unpacked.verify(verifier),
+			"verifying decoded table must pass"):
+		return
+
 	# use
 	var use:Callable = get_strategy(USING, selection[USING])
 	test.logp(" --- %s ---" % use.get_method().capitalize())
@@ -119,18 +124,7 @@ func encode_a() -> PackedByteArray:
 	fbb.finish(offset)
 	return fbb.get_buffer()
 
-
-func verify_a( _buf:PackedByteArray ) -> int:
-	#logp("[b]== Verification ==[/b]")
-	#var verifier := FlatBufferVerifier.new()
-	#verifier.set_buffer(bytes)
-
-	# TODO requires code generation changes
-	# TEST_TRUE(fb_table.verify(verifier), "verifying fb_table")
-	return TestBase.RetCode.TEST_OK
-
-
-func decode_a(data:PackedByteArray) -> Variant:
+func decode_a(data:PackedByteArray) -> Schema.RootTable:
 	# Decode buffer
 	var fbo : Schema.RootTable = Schema.get_RootTable(data)
 	test.TEST_TRUE( fbo.f_bool(), " f_bool()")
@@ -147,29 +141,7 @@ func decode_a(data:PackedByteArray) -> Variant:
 	return fbo
 
 
-func use_a( variant:Variant ) -> int:
-	var decoded:Schema.RootTable = variant
+func use_a( decoded:Schema.RootTable ) -> int:
 	test.TEST_EQ(-1, decoded.f_double(), "rt.f_double()")
 	test.logd("decoded value: %X" % decoded.f_double() )
 	return TestBase.RetCode.TEST_OK
-
-
-
-func                        __BoilerPlate____________              ()->void:pass
-#region BoilerPlate
-#MARK: BoilerPlate
-## │ ___      _ _         ___ _      _          [br]
-## │| _ ) ___(_) |___ _ _| _ \ |__ _| |_ ___    [br]
-## │| _ \/ _ \ | / -_) '_|  _/ / _` |  _/ -_)   [br]
-## │|___/\___/_|_\___|_| |_| |_\__,_|\__\___|   [br]
-## ╰─────────────────────────────────────────── [br]
-## Because we cannot pre-load a script that hasnt been generated yet, the test
-## script must load this script after the generated script has been created so
-## that this script can preload and use it properly.
-## It's a bit convoluted yes.
-
-var test:TestBase
-func _init(initiator:TestBase) -> void:
-	test = initiator
-
-#endregion BoilerPlate

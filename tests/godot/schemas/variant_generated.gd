@@ -40,8 +40,58 @@ class RootTable extends FlatBuffer:
 	}
 
 	## TODO: create a useful doc comment for the init function
-	func _init( bytes_: PackedByteArray = [], start_: int = 0) -> void:
-		_fb_bytes = bytes_; _fb_start = start_
+	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
+		assign_buffer( packed_bytes, offset )
+
+	## TODO: create a useful doc comment for the verify function
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return (
+			verify_table_start(verifier)
+			and verify_field_u8(verifier, VT_BOOLEAN, 1)
+			and verify_field_s64(verifier, VT_INTEGER, 8)
+			and verify_field_double(verifier, VT_FLOATING_POINT, 8)
+			and verify_offset(verifier, VT_STRING)
+			and verify_string( verifier, VT_STRING )
+			and verify_variant(verifier, VT_VECTOR2, TYPE_VECTOR2)
+			and verify_variant(verifier, VT_VECTOR2I, TYPE_VECTOR2I)
+			and verify_variant(verifier, VT_RECT2, TYPE_RECT2)
+			and verify_variant(verifier, VT_RECT2I, TYPE_RECT2I)
+			and verify_variant(verifier, VT_VECTOR3, TYPE_VECTOR3)
+			and verify_variant(verifier, VT_VECTOR3I, TYPE_VECTOR3I)
+			and verify_variant(verifier, VT_TRANSFORM2D, TYPE_TRANSFORM2D)
+			and verify_variant(verifier, VT_VECTOR4, TYPE_VECTOR4)
+			and verify_variant(verifier, VT_VECTOR4I, TYPE_VECTOR4I)
+			and verify_variant(verifier, VT_PLANE, TYPE_PLANE)
+			and verify_variant(verifier, VT_QUATERNION, TYPE_QUATERNION)
+			and verify_variant(verifier, VT_AABB, TYPE_AABB)
+			and verify_variant(verifier, VT_BASIS, TYPE_BASIS)
+			and verify_variant(verifier, VT_TRANSFORM3D, TYPE_TRANSFORM3D)
+			and verify_variant(verifier, VT_PROJECTION, TYPE_PROJECTION)
+			and verify_variant(verifier, VT_COLOR, TYPE_COLOR)
+			and verify_offset(verifier, VT_PACKED_BYTE_ARRAY_)
+			and verify_vector_u8(verifier, VT_PACKED_BYTE_ARRAY_)
+			and verify_offset(verifier, VT_PACKED_INT32_ARRAY_)
+			and verify_vector_s32(verifier, VT_PACKED_INT32_ARRAY_)
+			and verify_offset(verifier, VT_PACKED_INT64_ARRAY_)
+			and verify_vector_s64(verifier, VT_PACKED_INT64_ARRAY_)
+			and verify_offset(verifier, VT_PACKED_FLOAT32_ARRAY_)
+			and verify_vector_float(verifier, VT_PACKED_FLOAT32_ARRAY_)
+			and verify_offset(verifier, VT_PACKED_FLOAT64_ARRAY_)
+			and verify_vector_double(verifier, VT_PACKED_FLOAT64_ARRAY_)
+			and verify_offset(verifier, VT_PACKED_STRING_ARRAY_)
+			and verify_vector_u32(verifier, VT_PACKED_STRING_ARRAY_)
+			# TODO and verifier.verify_vector_of_strings(packed_string_array_())
+			and verify_offset(verifier, VT_PACKED_VECTOR2_ARRAY_)
+			and verify_vector_u32(verifier, VT_PACKED_VECTOR2_ARRAY_)
+			and verify_offset(verifier, VT_PACKED_VECTOR3_ARRAY_)
+			and verify_vector_u32(verifier, VT_PACKED_VECTOR3_ARRAY_)
+			and verify_offset(verifier, VT_PACKED_COLOR_ARRAY_)
+			and verify_vector_u32(verifier, VT_PACKED_COLOR_ARRAY_)
+			and verify_offset(verifier, VT_PACKED_VECTOR4_ARRAY_)
+			and verify_vector_u32(verifier, VT_PACKED_VECTOR4_ARRAY_)
+			and verify_end_table(verifier)
+		)
 
 	## Return true if boolean is present in the buffer, else false
 	func boolean_is_present() -> bool:
@@ -212,6 +262,13 @@ class RootTable extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## Access elements of packed_byte_array_ by [param index]
+	func packed_byte_array__at( index: int ) -> int:
+		var array_start: int = get_offset_field_start( VT_PACKED_BYTE_ARRAY_ )
+		assert(array_start, 'access to invalid vector of enum')
+		array_start += 4
+		return _fb_bytes[array_start + index]
+
 	## Decode and return all elements of packed_byte_array_ as an [PackedByteArray]
 	func packed_byte_array_() -> PackedByteArray:
 		var array_start: int = get_offset_field_start( VT_PACKED_BYTE_ARRAY_ )
@@ -220,17 +277,17 @@ class RootTable extends FlatBuffer:
 		array_start += 4
 		return _fb_bytes.slice( array_start, array_start + array_size )
 
-	## Access elements of packed_byte_array_ by [param index]
-	func packed_byte_array__at( index: int ) -> int:
-		var array_start: int = get_offset_field_start( VT_PACKED_BYTE_ARRAY_ )
-		assert(array_start, 'access to invalid vector of enum')
-		array_start += 4
-		return _fb_bytes[array_start + index]
-
 	func packed_int32_array__size() -> int:
 		var array_start: int = get_offset_field_start( VT_PACKED_INT32_ARRAY_ )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
+
+	## Access elements of packed_int32_array_ by [param index]
+	func packed_int32_array__at( index: int ) -> int:
+		var array_start: int = get_offset_field_start( VT_PACKED_INT32_ARRAY_ )
+		assert(array_start, 'access to invalid vector of enum')
+		array_start += 4
+		return _fb_bytes.decode_s32( array_start + index * 4)
 
 	## Decode and return all elements of packed_int32_array_ as an [PackedInt32Array]
 	func packed_int32_array_() -> PackedInt32Array:
@@ -241,17 +298,17 @@ class RootTable extends FlatBuffer:
 		var array_end: int = array_start + array_size * 4
 		return _fb_bytes.slice( array_start, array_end ).to_int32_array()
 
-	## Access elements of packed_int32_array_ by [param index]
-	func packed_int32_array__at( index: int ) -> int:
-		var array_start: int = get_offset_field_start( VT_PACKED_INT32_ARRAY_ )
-		assert(array_start, 'access to invalid vector of enum')
-		array_start += 4
-		return _fb_bytes.decode_s32( array_start + index * 4)
-
 	func packed_int64_array__size() -> int:
 		var array_start: int = get_offset_field_start( VT_PACKED_INT64_ARRAY_ )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
+
+	## Access elements of packed_int64_array_ by [param index]
+	func packed_int64_array__at( index: int ) -> int:
+		var array_start: int = get_offset_field_start( VT_PACKED_INT64_ARRAY_ )
+		assert(array_start, 'access to invalid vector of enum')
+		array_start += 4
+		return _fb_bytes.decode_s64( array_start + index * 8)
 
 	## Decode and return all elements of packed_int64_array_ as an [PackedInt64Array]
 	func packed_int64_array_() -> PackedInt64Array:
@@ -262,17 +319,17 @@ class RootTable extends FlatBuffer:
 		var array_end: int = array_start + array_size * 8
 		return _fb_bytes.slice( array_start, array_end ).to_int64_array()
 
-	## Access elements of packed_int64_array_ by [param index]
-	func packed_int64_array__at( index: int ) -> int:
-		var array_start: int = get_offset_field_start( VT_PACKED_INT64_ARRAY_ )
-		assert(array_start, 'access to invalid vector of enum')
-		array_start += 4
-		return _fb_bytes.decode_s64( array_start + index * 8)
-
 	func packed_float32_array__size() -> int:
 		var array_start: int = get_offset_field_start( VT_PACKED_FLOAT32_ARRAY_ )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
+
+	## Access elements of packed_float32_array_ by [param index]
+	func packed_float32_array__at( index: int ) -> float:
+		var array_start: int = get_offset_field_start( VT_PACKED_FLOAT32_ARRAY_ )
+		assert(array_start, 'access to invalid vector of enum')
+		array_start += 4
+		return _fb_bytes.decode_float( array_start + index * 4)
 
 	## Decode and return all elements of packed_float32_array_ as an [PackedFloat32Array]
 	func packed_float32_array_() -> PackedFloat32Array:
@@ -283,17 +340,17 @@ class RootTable extends FlatBuffer:
 		var array_end: int = array_start + array_size * 4
 		return _fb_bytes.slice( array_start, array_end ).to_float32_array()
 
-	## Access elements of packed_float32_array_ by [param index]
-	func packed_float32_array__at( index: int ) -> float:
-		var array_start: int = get_offset_field_start( VT_PACKED_FLOAT32_ARRAY_ )
-		assert(array_start, 'access to invalid vector of enum')
-		array_start += 4
-		return _fb_bytes.decode_float( array_start + index * 4)
-
 	func packed_float64_array__size() -> int:
 		var array_start: int = get_offset_field_start( VT_PACKED_FLOAT64_ARRAY_ )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
+
+	## Access elements of packed_float64_array_ by [param index]
+	func packed_float64_array__at( index: int ) -> float:
+		var array_start: int = get_offset_field_start( VT_PACKED_FLOAT64_ARRAY_ )
+		assert(array_start, 'access to invalid vector of enum')
+		array_start += 4
+		return _fb_bytes.decode_double( array_start + index * 8)
 
 	## Decode and return all elements of packed_float64_array_ as an [PackedFloat64Array]
 	func packed_float64_array_() -> PackedFloat64Array:
@@ -304,17 +361,18 @@ class RootTable extends FlatBuffer:
 		var array_end: int = array_start + array_size * 8
 		return _fb_bytes.slice( array_start, array_end ).to_float64_array()
 
-	## Access elements of packed_float64_array_ by [param index]
-	func packed_float64_array__at( index: int ) -> float:
-		var array_start: int = get_offset_field_start( VT_PACKED_FLOAT64_ARRAY_ )
-		assert(array_start, 'access to invalid vector of enum')
-		array_start += 4
-		return _fb_bytes.decode_double( array_start + index * 8)
-
 	func packed_string_array__size() -> int:
 		var array_start: int = get_offset_field_start( VT_PACKED_STRING_ARRAY_ )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
+
+	func packed_string_array__at( index: int ) -> String:
+		var array_start: int = get_offset_field_start( VT_PACKED_STRING_ARRAY_ )
+		if not array_start: return ''
+		array_start += 4
+		var string_start: int = array_start + index * 4
+		string_start += _fb_bytes.decode_u32( string_start )
+		return decode_variant( string_start, TYPE_STRING )
 
 	func packed_string_array_() -> PackedStringArray:
 		var array_start: int = get_offset_field_start( VT_PACKED_STRING_ARRAY_ )
@@ -329,28 +387,10 @@ class RootTable extends FlatBuffer:
 			array[i] = decode_variant( element_start, TYPE_STRING )
 		return array
 
-	func packed_string_array__at( index: int ) -> String:
-		var array_start: int = get_offset_field_start( VT_PACKED_STRING_ARRAY_ )
-		if not array_start: return ''
-		array_start += 4
-		var string_start: int = array_start + index * 4
-		string_start += _fb_bytes.decode_u32( string_start )
-		return decode_variant( string_start, TYPE_STRING )
-
 	func packed_vector2_array__size() -> int:
 		var array_start: int = get_offset_field_start( VT_PACKED_VECTOR2_ARRAY_ )
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
-
-	func packed_vector2_array_() -> PackedVector2Array:
-		var field_start: int = get_offset_field_start( VT_PACKED_VECTOR2_ARRAY_ )
-		if not field_start: return []
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		var array_start:int = field_start + 4
-		return _fb_bytes.slice(
-				array_start, array_start + array_size * 8 ) \
-				.to_vector2_array()
 
 	func packed_vector2_array__at( idx: int ) -> Vector2:
 		var field_start: int = get_offset_field_start( VT_PACKED_VECTOR2_ARRAY_ )
@@ -363,20 +403,20 @@ class RootTable extends FlatBuffer:
 		var element_offset: int = array_start + idx * 8
 		return decode_variant( element_offset, TYPE_VECTOR2 )
 
-	func packed_vector3_array__size() -> int:
-		var array_start: int = get_offset_field_start( VT_PACKED_VECTOR3_ARRAY_ )
-		if not array_start: return 0
-		return _fb_bytes.decode_u32( array_start )
-
-	func packed_vector3_array_() -> PackedVector3Array:
-		var field_start: int = get_offset_field_start( VT_PACKED_VECTOR3_ARRAY_ )
+	func packed_vector2_array_() -> PackedVector2Array:
+		var field_start: int = get_offset_field_start( VT_PACKED_VECTOR2_ARRAY_ )
 		if not field_start: return []
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
 		var array_start:int = field_start + 4
 		return _fb_bytes.slice(
-				array_start, array_start + array_size * 12 ) \
-				.to_vector3_array()
+				array_start, array_start + array_size * 8 ) \
+				.to_vector2_array()
+
+	func packed_vector3_array__size() -> int:
+		var array_start: int = get_offset_field_start( VT_PACKED_VECTOR3_ARRAY_ )
+		if not array_start: return 0
+		return _fb_bytes.decode_u32( array_start )
 
 	func packed_vector3_array__at( idx: int ) -> Vector3:
 		var field_start: int = get_offset_field_start( VT_PACKED_VECTOR3_ARRAY_ )
@@ -389,20 +429,20 @@ class RootTable extends FlatBuffer:
 		var element_offset: int = array_start + idx * 12
 		return decode_variant( element_offset, TYPE_VECTOR3 )
 
-	func packed_color_array__size() -> int:
-		var array_start: int = get_offset_field_start( VT_PACKED_COLOR_ARRAY_ )
-		if not array_start: return 0
-		return _fb_bytes.decode_u32( array_start )
-
-	func packed_color_array_() -> PackedColorArray:
-		var field_start: int = get_offset_field_start( VT_PACKED_COLOR_ARRAY_ )
+	func packed_vector3_array_() -> PackedVector3Array:
+		var field_start: int = get_offset_field_start( VT_PACKED_VECTOR3_ARRAY_ )
 		if not field_start: return []
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
 		var array_start:int = field_start + 4
 		return _fb_bytes.slice(
-				array_start, array_start + array_size * 16 ) \
-				.to_color_array()
+				array_start, array_start + array_size * 12 ) \
+				.to_vector3_array()
+
+	func packed_color_array__size() -> int:
+		var array_start: int = get_offset_field_start( VT_PACKED_COLOR_ARRAY_ )
+		if not array_start: return 0
+		return _fb_bytes.decode_u32( array_start )
 
 	func packed_color_array__at( idx: int ) -> Color:
 		var field_start: int = get_offset_field_start( VT_PACKED_COLOR_ARRAY_ )
@@ -415,20 +455,20 @@ class RootTable extends FlatBuffer:
 		var element_offset: int = array_start + idx * 16
 		return decode_variant( element_offset, TYPE_COLOR )
 
-	func packed_vector4_array__size() -> int:
-		var array_start: int = get_offset_field_start( VT_PACKED_VECTOR4_ARRAY_ )
-		if not array_start: return 0
-		return _fb_bytes.decode_u32( array_start )
-
-	func packed_vector4_array_() -> PackedVector4Array:
-		var field_start: int = get_offset_field_start( VT_PACKED_VECTOR4_ARRAY_ )
+	func packed_color_array_() -> PackedColorArray:
+		var field_start: int = get_offset_field_start( VT_PACKED_COLOR_ARRAY_ )
 		if not field_start: return []
 
 		var array_size: int = _fb_bytes.decode_u32( field_start )
 		var array_start:int = field_start + 4
 		return _fb_bytes.slice(
 				array_start, array_start + array_size * 16 ) \
-				.to_vector4_array()
+				.to_color_array()
+
+	func packed_vector4_array__size() -> int:
+		var array_start: int = get_offset_field_start( VT_PACKED_VECTOR4_ARRAY_ )
+		if not array_start: return 0
+		return _fb_bytes.decode_u32( array_start )
 
 	func packed_vector4_array__at( idx: int ) -> Vector4:
 		var field_start: int = get_offset_field_start( VT_PACKED_VECTOR4_ARRAY_ )
@@ -440,6 +480,16 @@ class RootTable extends FlatBuffer:
 		var array_start: int = field_start + 4
 		var element_offset: int = array_start + idx * 16
 		return decode_variant( element_offset, TYPE_VECTOR4 )
+
+	func packed_vector4_array_() -> PackedVector4Array:
+		var field_start: int = get_offset_field_start( VT_PACKED_VECTOR4_ARRAY_ )
+		if not field_start: return []
+
+		var array_size: int = _fb_bytes.decode_u32( field_start )
+		var array_start:int = field_start + 4
+		return _fb_bytes.slice(
+				array_start, array_start + array_size * 16 ) \
+				.to_vector4_array()
 
 
 ## TODO: Write a Doc Comment for the builder

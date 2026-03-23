@@ -6,7 +6,6 @@ const Schema = preload("../schemas/variant_generated.gd")
 
 enum {
 	ENCODING = 0,
-	VERIFYING,
 	DECODING,
 }
 
@@ -14,9 +13,6 @@ var phases:Array[Dictionary] = [{
 		&"name":"Encoding",
 		&"strategies":[encode_builder]
 		# TODO: I want some way to create dependencies between the strategies
-	},{
-		&"name":"Verifying",
-		&"strategies":[verify_a]
 	},{
 		&"name":"Decoding",
 		&"strategies":[decode_a]
@@ -125,6 +121,7 @@ func                        __________FLOW___________              ()->void:pass
 ## A selection is an array of strategies, one for each phase.
 func _flow( selection:Array[int] ) -> void:
 	test.logp("[b]== Flow ==[/b]")
+
 	# encode
 	var encode:Callable = get_strategy(ENCODING, selection[ENCODING])
 	test.logp(" --- %s ---" % encode.get_method().capitalize())
@@ -132,17 +129,20 @@ func _flow( selection:Array[int] ) -> void:
 	if not test.TEST_FALSE_RET(packed.is_empty(),
 		"result of encoding should not be empty"): return
 	test.logd("bytes: %s" % TestBase.bytes_view(packed) )
-	# validate
-	var verify:Callable = get_strategy(VERIFYING, selection[VERIFYING])
-	test.logp(" --- %s ---" % verify.get_method().capitalize())
-	var is_verified:bool = verify.call(packed)
-	if is_verified: pass
+
 	# decode
 	var decode:Callable = get_strategy(DECODING, selection[DECODING])
 	test.logp(" --- %s ---" % decode.get_method().capitalize())
-	var unpacked:Variant = decode.call(packed)
+	var unpacked:Schema.RootTable = decode.call(packed)
 	test.TEST_TRUE(is_instance_valid(unpacked),
 		"result of decode should be a valid instance")
+
+	# Verify
+	test.logp(" --- %s ---" % "verify".capitalize())
+	var verifier := FlatBufferVerifier.new()
+	if not test.TEST_TRUE_RET(unpacked.verify(verifier),
+			"verifying decoded table must pass"):
+		return
 
 
 #               ██████  ██   ██  █████  ███████ ███████ ███████                #
@@ -227,19 +227,7 @@ func encode_builder() -> PackedByteArray:
 
 	return fbb.get_buffer()
 
-
-func verify_a( buf:PackedByteArray ) -> int:
-	#logp("[b]== Verification ==[/b]")
-	test.TEST_OP(buf.size(), OP_GREATER, 0, "buffer should be larger than zero")
-	#var verifier := FlatBufferVerifier.new()
-	#verifier.set_buffer(bytes)
-
-	# TODO requires code generation changes
-	# TEST_TRUE(fb_table.verify(verifier), "verifying fb_table")
-	return TestBase.RetCode.TEST_OK
-
-
-func decode_a(buf:PackedByteArray) -> Variant:
+func decode_a(buf:PackedByteArray) -> Schema.RootTable:
 	var rto := Schema.get_RootTable(buf)
 
 	test.TEST_EQ(initial.boolean, rto.boolean(), "decode and initial data should be identical")

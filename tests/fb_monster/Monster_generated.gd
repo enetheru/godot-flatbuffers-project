@@ -201,7 +201,7 @@ class Monster extends FlatBuffer:
 		assert( idx < array_size, 'index is out of bounds')
 
 		var array_start: int = field_start + 4
-		var element_offset: int = array_start + idx * 4
+		var element_offset: int = array_start + idx * 12
 		return decode_variant( element_offset, TYPE_VECTOR3 )
 
 	func path() -> PackedVector3Array:
