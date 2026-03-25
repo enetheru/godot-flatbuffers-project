@@ -12,7 +12,7 @@ config_version=5
 
 config/name="FlatBuffers Extension Project"
 config/tags=PackedStringArray("enetheru")
-run/main_scene="uid://dmx2xuigcpvt4"
+run/main_scene="uid://fb786i4j7ky7"
 config/features=PackedStringArray("4.6")
 config/icon="uid://cfc5vxnc2fm05"
 
