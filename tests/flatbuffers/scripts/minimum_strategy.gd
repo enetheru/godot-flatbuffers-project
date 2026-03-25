@@ -182,7 +182,7 @@ func                        __Decoding_______________              ()->void:pass
 ## Decoding Description
 
 func decode_a( buf:PackedByteArray ) -> Schema.Minimum:
-	return Schema.get_Minimum(buf)
+	return FlatBuffer.get_root(buf, Schema.Minimum )
 
 #endregion Decoding
 

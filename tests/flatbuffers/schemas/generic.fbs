@@ -1,5 +1,7 @@
 // A generic set of items used in testing.
 
+attribute "tool";
+
 enum TestEnum:uint8 {
 	ZERO,
 	ONE

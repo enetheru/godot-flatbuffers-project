@@ -1,5 +1,7 @@
 // The smallest example I can think of.
 
+attribute "tool";
+
 table Minimum {
 	my_field : int;
 }

@@ -15,6 +15,7 @@ include "godot.fbs";
 // ATTRIBUTE_DECL
 attribute ident;
 attribute "</tt>ident<tt>";
+attribute "tool";
 
 // FILE_EXTENSION_DECL - unimplemented
 // file_extension "string_constant";
@@ -34,14 +35,14 @@ enum Enum2:short {
 enum Enum3:short
 {
 }
-enum Enum4:short //comment   
+enum Enum4:short //comment
 { }
 enum Fruit:short { // Comment
 	// Plain Enum
 	APPLES,
 	BANNAS,MORE_BANNANAS, EVEN_MORE_BANANNAS = 4,
 	ORANGES = 1,
-	// commasep( enumval_decl ) 
+	// commasep( enumval_decl )
 }
 
 // UNION_DECL, # = ( enum ident : type | union ident ) metadata { commasep( enumval_decl ) }

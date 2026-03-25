@@ -1,6 +1,8 @@
 include "godot.fbs";
 // testing the vector field
 
+attribute "tool";
+
 /// Enum Used for testing
 enum TestEnum:uint8 {
 	/// Zero

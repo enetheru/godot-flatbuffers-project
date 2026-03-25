@@ -4,6 +4,8 @@
 include "minimum.fbs";
 include "godot.fbs";
 
+attribute "tool";
+
 table RootTable {
 	external:Minimum;
 	external_array:[Minimum];

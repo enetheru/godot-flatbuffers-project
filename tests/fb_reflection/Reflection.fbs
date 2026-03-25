@@ -5,6 +5,8 @@
 
 namespace reflection;
 
+attribute "tool";
+
 // These must correspond to the enum in idl.h.
 enum BaseType : byte {
 	None,

@@ -1,6 +1,8 @@
 // Example IDL file for our monster's schema.
 include "godot.fbs";
 
+attribute "tool";
+
 namespace MyGame.Sample;
 
 enum Color:byte { Red = 0, Green, Blue = 2 }

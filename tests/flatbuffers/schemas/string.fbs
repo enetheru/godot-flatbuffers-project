@@ -1,3 +1,6 @@
+
+attribute "tool";
+
 table RootTable{
 	my_string:string;
 }

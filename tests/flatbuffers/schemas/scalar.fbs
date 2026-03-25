@@ -1,5 +1,7 @@
 // Scalar Fields
 
+attribute "tool";
+
 table RootTable {
 	f_bool:bool;
 	f_byte:byte;

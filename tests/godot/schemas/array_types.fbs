@@ -2,6 +2,8 @@ include "godot.fbs";
 // This test is to show how scalar, struct arrays, and lastly strings are
 // transformed into gdscript deserialisation code
 
+attribute "tool";
+
 // I'll skip the aliased types and simply use the [u]int[width] versions
 table TestTable {
 	// scalars

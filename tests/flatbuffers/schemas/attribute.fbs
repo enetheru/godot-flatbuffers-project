@@ -1,5 +1,7 @@
 // for attribute testing
 
+attribute "tool";
+
 table Attribute {
 	deprecated_field:int (deprecated);
 }

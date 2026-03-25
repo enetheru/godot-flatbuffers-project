@@ -1,5 +1,7 @@
 include "godot.fbs";
 
+attribute "tool";
+
 table RootTable {
 	//nil:Nil;
 	boolean:bool;

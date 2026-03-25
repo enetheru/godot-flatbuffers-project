@@ -1,5 +1,7 @@
 include "godot.fbs";
 
+attribute "tool";
+
 struct CustomStruct {
 	is_true:bool;
 	x : int;
