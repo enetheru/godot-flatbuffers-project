@@ -35,13 +35,13 @@ class Initial:
 	var scalars:Array = [0,1,2,3,4,5,6,7,8,9]
 
 	# Vector of Enums
-	var enums:Array[TestEnum] = [TestEnum.ZERO, TestEnum.ONE, TestEnum.ZERO ]
+	var enums:PackedByteArray = [TestEnum.ZERO, TestEnum.ONE, TestEnum.ZERO ]
 
 	# Vector of Strings
-	var strings:Array[String] = ["An", "Array", "Of", "Strings"]
+	var strings:PackedStringArray = ["An", "Array", "Of", "Strings"]
 
 	# Vector of Godot Structs
-	var godot_structs:Array[Vector3] = [
+	var godot_structs:PackedVector3Array = [
 		Vector3(1,2,3),
 		Vector3(4,5,6),
 		Vector3(7,8,9),
@@ -222,6 +222,9 @@ func encode_builder() -> PackedByteArray:
 	#unions:[TestUnion];
 	var unions_ofs_pair:Array = fbb.create_vector_of_union(
 			initial.unions_data, initial.unions_creator )
+	if not test.TEST_OP_RET(unions_ofs_pair.size(), OP_GREATER, 0,
+			"union_offset_pairs.size() should be greater than zero"):
+		return []
 	var unions_values_ofs:int = unions_ofs_pair[0]
 	var unions_types_ofs:int = unions_ofs_pair[1]
 	test.TEST_OP(unions_values_ofs, OP_GREATER, 0,
@@ -229,6 +232,7 @@ func encode_builder() -> PackedByteArray:
 	test.TEST_OP(unions_types_ofs, OP_GREATER, 0,
 			"union_types_ofs should be greater than zero")
 
+	print(fbb)
 	var rtb := Schema.RootTableBuilder.new(fbb)
 	rtb.add_scalars(scalars_ofs)
 	rtb.add_enums(enums_ofs)
@@ -241,7 +245,8 @@ func encode_builder() -> PackedByteArray:
 	var rtb_ofs:int = rtb.finish()
 	fbb.finish(rtb_ofs)
 
-	return fbb.get_buffer()
+	var buf:PackedByteArray = fbb.get_buffer()
+	return buf
 
 
 func decode_a(buf:PackedByteArray) -> Schema.RootTable:
@@ -256,7 +261,7 @@ func use_a( rtb:Schema.RootTable ) -> int:
 		"contents of initial scalars should match the decoded scalars()")
 
 	# vector of enum
-	var rtb_enums:Array = rtb.enums() # transform to basic array so we can compare
+	var rtb_enums:PackedByteArray = rtb.enums() # transform to basic array so we can compare
 	test.TEST_EQ(initial.enums, rtb_enums,
 		"contents of initial enums should match the decoded enums()")
 

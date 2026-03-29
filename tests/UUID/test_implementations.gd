@@ -39,8 +39,8 @@ func _run_test() -> int:
 	TEST_TRUE(v4_str.begins_with("xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".substr(0,8).replace("x","")),
 						 "uuidv4 looks like v4 (version byte)")
 
-	TEST_EQ(UUID.get_version(std_str), 4, "stduuid version == 4")
-	TEST_EQ(UUID.get_version(v4_str),  4, "uuidv4 version == 4")
+	TEST_EQ(UUID.get_uuid_version(std_str), 4, "stduuid version == 4")
+	TEST_EQ(UUID.get_uuid_version(v4_str),  4, "uuidv4 version == 4")
 
 	TEST_EQ(UUID.get_uuid_variant(std_str), 1, "stduuid variant == 1 (RFC 9562)")
 	TEST_EQ(UUID.get_uuid_variant(v4_str),  1, "uuidv4 variant == 1 (RFC 9562)")
