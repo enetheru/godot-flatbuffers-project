@@ -17,6 +17,14 @@ enum Equipment {
 	WEAPON = 1
 }
 
+## TODO: create a doc comment for the verify_Equipment function
+static func equipment_verify(verifier:FlatBufferVerifier, value:Variant, type:Equipment) -> bool: 
+	match type:
+		Equipment.WEAPON:
+			var weapon: Weapon = value
+			return weapon.verify(verifier)
+	return false
+
 class Monster extends FlatBuffer:
 	const _Monster_schema = preload( 'Monster_generated.gd' )
 
@@ -53,11 +61,10 @@ class Monster extends FlatBuffer:
 			and verify_field_s8(verifier, VT_COLOR, 1)
 			and verify_offset(verifier, VT_WEAPONS)
 			and verify_vector_u32(verifier, VT_WEAPONS)
-			and verify_weapons(verifier)
+			and weapons_verify(verifier)
 			and verify_field_u8(verifier, VT_EQUIPPED_TYPE, 1)
 			and verify_offset(verifier, VT_EQUIPPED)
-			# TODO: implement verification for a union
-			#  and verify_Equipment(verifier, equipped(), equipped_type())
+			and _Monster_schema.equipment_verify(verifier, equipped(), equipped_type())
 			and verify_offset(verifier, VT_PATH)
 			and verify_vector_u32(verifier, VT_PATH)
 			and verify_end_table(verifier)
@@ -128,7 +135,7 @@ class Monster extends FlatBuffer:
 		var decoded: Color_ = _fb_bytes.decode_s8( field_start )
 		return decoded
 
-	func verify_weapons(verifier:FlatBufferVerifier) -> bool:
+	func weapons_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Monster_schema.Weapon.new()
 		for i in weapons_size():
 			if not weapons_at(i, tmp).verify(verifier):

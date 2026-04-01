@@ -23,6 +23,17 @@ enum TestUnion {
 	TEST_TABLE_B = 2
 }
 
+## TODO: create a doc comment for the verify_TestUnion function
+static func test_union_verify(verifier:FlatBufferVerifier, value:Variant, type:TestUnion) -> bool: 
+	match type:
+		TestUnion.TEST_TABLE_A:
+			var test_table_a: TestTableA = value
+			return test_table_a.verify(verifier)
+		TestUnion.TEST_TABLE_B:
+			var test_table_b: TestTableB = value
+			return test_table_b.verify(verifier)
+	return false
+
 ## Struct Used for testing
 class TestStruct extends FlatBuffer:
 	const _fb_struct_size: int = 8
@@ -31,7 +42,8 @@ class TestStruct extends FlatBuffer:
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		if packed_bytes.is_empty():
 			packed_bytes = PackedByteArray()
-			packed_bytes.resize( _fb_struct_size )
+			if packed_bytes.resize( _fb_struct_size ) != OK:
+				printerr('unable to resize byte array')
 		assert(offset + _fb_struct_size <= packed_bytes.size())
 		assign_buffer( packed_bytes, offset )
 
@@ -206,12 +218,12 @@ class RootTable extends FlatBuffer:
 			and verify_vector_u32(verifier, VT_CUSTOM_STRUCTS)
 			and verify_offset(verifier, VT_TABLES)
 			and verify_vector_u32(verifier, VT_TABLES)
-			and verify_tables(verifier)
+			and tables_verify(verifier)
 			and verify_offset(verifier, VT_UNIONS_TYPE)
 			and verify_vector_u8(verifier, VT_UNIONS_TYPE)
 			and verify_offset(verifier, VT_UNIONS)
 			and verify_vector_u32(verifier, VT_UNIONS)
-			# TODO and verify_TestUnion_vector(verifier, unions(), unions_type())
+			and unions_verify(verifier)
 			and verify_end_table(verifier)
 		)
 
@@ -355,7 +367,7 @@ class RootTable extends FlatBuffer:
 		return array
 
 	## Vector of Tables
-	func verify_tables(verifier:FlatBufferVerifier) -> bool:
+	func tables_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _vector_schema.TestTableA.new()
 		for i in tables_size():
 			if not tables_at(i, tmp).verify(verifier):
@@ -420,6 +432,17 @@ class RootTable extends FlatBuffer:
 		array_start += 4
 		return _fb_bytes.slice( array_start, array_start + array_size )
 
+	## Return true if unions is present in the buffer, else false
+	func unions_is_present() -> bool:
+		return get_field_offset( VT_UNIONS )
+
+	## Vector of Unions
+	func unions_verify(verifier:FlatBufferVerifier) -> bool:
+		for i:int in unions_size():
+			if not _vector_schema.test_union_verify(verifier, unions_at(i), unions_type_at(i)):
+				return false
+		return true
+
 	## Vector of Unions
 	func unions_size() -> int:
 		var array_start: int = get_offset_field_start( VT_UNIONS )
@@ -449,9 +472,9 @@ class RootTable extends FlatBuffer:
 
 		match type:
 			TestUnion.TEST_TABLE_A:
-				return TestTableA.new( _fb_bytes, element_pos + element_offset )
+				return _vector_schema.TestTableA.new( _fb_bytes, element_pos + element_offset )
 			TestUnion.TEST_TABLE_B:
-				return TestTableB.new( _fb_bytes, element_pos + element_offset )
+				return _vector_schema.TestTableB.new( _fb_bytes, element_pos + element_offset )
 		return null
 
 	## Vector of Unions
@@ -478,9 +501,9 @@ class RootTable extends FlatBuffer:
 			var element_offset: int = _fb_bytes.decode_u32(element_pos)
 			match type:
 				TestUnion.TEST_TABLE_A:
-					result[i] = TestTableA.new( _fb_bytes, element_pos + element_offset )
+					result[i] = _vector_schema.TestTableA.new( _fb_bytes, element_pos + element_offset )
 				TestUnion.TEST_TABLE_B:
-					result[i] = TestTableB.new( _fb_bytes, element_pos + element_offset )
+					result[i] = _vector_schema.TestTableB.new( _fb_bytes, element_pos + element_offset )
 		return result
 
 
