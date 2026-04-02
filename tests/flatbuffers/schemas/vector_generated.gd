@@ -24,7 +24,7 @@ enum TestUnion {
 }
 
 ## Verify the integrity of the TestUnion union data
-static func test_union_verify(verifier:FlatBufferVerifier, value:Variant, type:TestUnion) -> bool: 
+static func test_union_verify(verifier:FlatBufferVerifier, value:Variant, type:TestUnion) -> bool:
 	match type:
 		TestUnion.TEST_TABLE_A:
 			var test_table_a: TestTableA = value
@@ -580,4 +580,3 @@ static func create_RootTable( _fbb: FlatBufferBuilder,
 static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
 	assert(not _bytes.is_empty())
 	return RootTable.new(_bytes, _bytes.decode_u32(0))
-

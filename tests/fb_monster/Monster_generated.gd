@@ -18,7 +18,7 @@ enum Equipment {
 }
 
 ## Verify the integrity of the Equipment union data
-static func equipment_verify(verifier:FlatBufferVerifier, value:Variant, type:Equipment) -> bool: 
+static func equipment_verify(verifier:FlatBufferVerifier, value:Variant, type:Equipment) -> bool:
 	match type:
 		Equipment.WEAPON:
 			var weapon: Weapon = value
@@ -381,4 +381,3 @@ static func create_Weapon( _fbb: FlatBufferBuilder,
 static func get_Monster( _bytes: PackedByteArray ) -> Monster:
 	assert(not _bytes.is_empty())
 	return Monster.new(_bytes, _bytes.decode_u32(0))
-
