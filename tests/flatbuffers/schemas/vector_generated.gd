@@ -23,7 +23,7 @@ enum TestUnion {
 	TEST_TABLE_B = 2
 }
 
-## TODO: create a doc comment for the verify_TestUnion function
+## Verify the integrity of the TestUnion union data
 static func test_union_verify(verifier:FlatBufferVerifier, value:Variant, type:TestUnion) -> bool: 
 	match type:
 		TestUnion.TEST_TABLE_A:
@@ -38,7 +38,7 @@ static func test_union_verify(verifier:FlatBufferVerifier, value:Variant, type:T
 class TestStruct extends FlatBuffer:
 	const _fb_struct_size: int = 8
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the TestStruct with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		if packed_bytes.is_empty():
 			packed_bytes = PackedByteArray()
@@ -58,7 +58,7 @@ class TestStruct extends FlatBuffer:
 		set(v): _fb_bytes.encode_s32(_fb_start + 4, v)
 
 
-## TODO: create a useful doc comment for the static creation function
+## Create a new TestStruct with the provided field values
 static func create_TestStruct(
 		_a: int,
 		_b: int ) -> TestStruct :
@@ -73,11 +73,11 @@ class TestTableA extends FlatBuffer:
 		VT_A = 4
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the TestStruct with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the TestStruct data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -97,27 +97,27 @@ class TestTableA extends FlatBuffer:
 		return _fb_bytes.decode_s32( field_start )
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for TestTableA
 class TestTableABuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the a field to the TestTableA table
 	func add_a( a: int ) -> void:
 		fbb_.add_element_int_default( TestTableA.VT_A, a, 0 )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the TestTableA table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a TestTableA table in one go using the provided [param _fbb]
 static func create_TestTableA( _fbb: FlatBufferBuilder,
 		a: int ) -> int :
 	var builder: TestTableABuilder = TestTableABuilder.new( _fbb );
@@ -130,11 +130,11 @@ class TestTableB extends FlatBuffer:
 		VT_B = 4
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the TestTableA with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the TestTableA data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -154,27 +154,27 @@ class TestTableB extends FlatBuffer:
 		return _fb_bytes.decode_s32( field_start )
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for TestTableB
 class TestTableBBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the b field to the TestTableB table
 	func add_b( b: int ) -> void:
 		fbb_.add_element_int_default( TestTableB.VT_B, b, 0 )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the TestTableB table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a TestTableB table in one go using the provided [param _fbb]
 static func create_TestTableB( _fbb: FlatBufferBuilder,
 		b: int ) -> int :
 	var builder: TestTableBBuilder = TestTableBBuilder.new( _fbb );
@@ -196,11 +196,11 @@ class RootTable extends FlatBuffer:
 		VT_UNIONS = 18
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the TestTableB with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the TestTableB data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -211,11 +211,11 @@ class RootTable extends FlatBuffer:
 			and verify_vector_u8(verifier, VT_ENUMS)
 			and verify_offset(verifier, VT_STRINGS)
 			and verify_vector_u32(verifier, VT_STRINGS)
-			# TODO and verifier.verify_vector_of_strings(strings())
+			and verify_vector_of_variant(verifier, VT_STRINGS, TYPE_STRING)
 			and verify_offset(verifier, VT_GODOT_STRUCTS)
-			and verify_vector_u32(verifier, VT_GODOT_STRUCTS)
+			and verify_vector_of_variant(verifier, VT_GODOT_STRUCTS, TYPE_VECTOR3)
 			and verify_offset(verifier, VT_CUSTOM_STRUCTS)
-			and verify_vector_u32(verifier, VT_CUSTOM_STRUCTS)
+			and verify_vector(verifier, VT_CUSTOM_STRUCTS, 8, false )
 			and verify_offset(verifier, VT_TABLES)
 			and verify_vector_u32(verifier, VT_TABLES)
 			and tables_verify(verifier)
@@ -507,55 +507,55 @@ class RootTable extends FlatBuffer:
 		return result
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for RootTable
 class RootTableBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the scalars field to the RootTable table
 	func add_scalars( scalars_offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_SCALARS, scalars_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the enums field to the RootTable table
 	func add_enums( enums_offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_ENUMS, enums_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the strings field to the RootTable table
 	func add_strings( strings_offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_STRINGS, strings_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the godot_structs field to the RootTable table
 	func add_godot_structs( godot_structs_offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_GODOT_STRUCTS, godot_structs_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the custom_structs field to the RootTable table
 	func add_custom_structs( custom_structs_offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_CUSTOM_STRUCTS, custom_structs_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the tables field to the RootTable table
 	func add_tables( tables_offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_TABLES, tables_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the unions_type field to the RootTable table
 	func add_unions_type( unions_type_offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_UNIONS_TYPE, unions_type_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the unions field to the RootTable table
 	func add_unions( unions_offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_UNIONS, unions_offset )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the RootTable table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a RootTable table in one go using the provided [param _fbb]
 static func create_RootTable( _fbb: FlatBufferBuilder,
 		scalars: int,
 		enums: int,
@@ -576,7 +576,7 @@ static func create_RootTable( _fbb: FlatBufferBuilder,
 	builder.add_scalars( scalars );
 	return builder.finish();
 
-## TODO: create a doc comment for the get_RootTable function
+## Get the RootTable from the provided [param _bytes]
 static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
 	assert(not _bytes.is_empty())
 	return RootTable.new(_bytes, _bytes.decode_u32(0))

@@ -40,11 +40,11 @@ class RootTable extends FlatBuffer:
 		VT_PACKED_VECTOR4_ARRAY_ = 62
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the STRUCT_NAME with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the STRUCT_NAME data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -82,15 +82,15 @@ class RootTable extends FlatBuffer:
 			and verify_vector_double(verifier, VT_PACKED_FLOAT64_ARRAY_)
 			and verify_offset(verifier, VT_PACKED_STRING_ARRAY_)
 			and verify_vector_u32(verifier, VT_PACKED_STRING_ARRAY_)
-			# TODO and verifier.verify_vector_of_strings(packed_string_array_())
+			and verify_vector_of_variant(verifier, VT_PACKED_STRING_ARRAY_, TYPE_STRING)
 			and verify_offset(verifier, VT_PACKED_VECTOR2_ARRAY_)
-			and verify_vector_u32(verifier, VT_PACKED_VECTOR2_ARRAY_)
+			and verify_vector_of_variant(verifier, VT_PACKED_VECTOR2_ARRAY_, TYPE_VECTOR2)
 			and verify_offset(verifier, VT_PACKED_VECTOR3_ARRAY_)
-			and verify_vector_u32(verifier, VT_PACKED_VECTOR3_ARRAY_)
+			and verify_vector_of_variant(verifier, VT_PACKED_VECTOR3_ARRAY_, TYPE_VECTOR3)
 			and verify_offset(verifier, VT_PACKED_COLOR_ARRAY_)
-			and verify_vector_u32(verifier, VT_PACKED_COLOR_ARRAY_)
+			and verify_vector_of_variant(verifier, VT_PACKED_COLOR_ARRAY_, TYPE_COLOR)
 			and verify_offset(verifier, VT_PACKED_VECTOR4_ARRAY_)
-			and verify_vector_u32(verifier, VT_PACKED_VECTOR4_ARRAY_)
+			and verify_vector_of_variant(verifier, VT_PACKED_VECTOR4_ARRAY_, TYPE_VECTOR4)
 			and verify_end_table(verifier)
 		)
 
@@ -493,143 +493,143 @@ class RootTable extends FlatBuffer:
 				.to_vector4_array()
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for RootTable
 class RootTableBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the boolean field to the RootTable table
 	func add_boolean( boolean: bool ) -> void:
 		fbb_.add_element_bool_default( RootTable.VT_BOOLEAN, boolean, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the integer field to the RootTable table
 	func add_integer( integer: int ) -> void:
 		fbb_.add_element_long_default( RootTable.VT_INTEGER, integer, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the floating_point field to the RootTable table
 	func add_floating_point( floating_point: float ) -> void:
 		fbb_.add_element_double_default( RootTable.VT_FLOATING_POINT, floating_point, 0.0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the string field to the RootTable table
 	func add_string( string_offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_STRING, string_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the vector2 field to the RootTable table
 	func add_vector2( vector2: Vector2 ) -> void:
 		fbb_.add_variant( RootTable.VT_VECTOR2, vector2, TYPE_VECTOR2 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the vector2i field to the RootTable table
 	func add_vector2i( vector2i: Vector2i ) -> void:
 		fbb_.add_variant( RootTable.VT_VECTOR2I, vector2i, TYPE_VECTOR2I )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the rect2 field to the RootTable table
 	func add_rect2( rect2: Rect2 ) -> void:
 		fbb_.add_variant( RootTable.VT_RECT2, rect2, TYPE_RECT2 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the rect2i field to the RootTable table
 	func add_rect2i( rect2i: Rect2i ) -> void:
 		fbb_.add_variant( RootTable.VT_RECT2I, rect2i, TYPE_RECT2I )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the vector3 field to the RootTable table
 	func add_vector3( vector3: Vector3 ) -> void:
 		fbb_.add_variant( RootTable.VT_VECTOR3, vector3, TYPE_VECTOR3 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the vector3i field to the RootTable table
 	func add_vector3i( vector3i: Vector3i ) -> void:
 		fbb_.add_variant( RootTable.VT_VECTOR3I, vector3i, TYPE_VECTOR3I )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the transform2d field to the RootTable table
 	func add_transform2d( transform2d: Transform2D ) -> void:
 		fbb_.add_variant( RootTable.VT_TRANSFORM2D, transform2d, TYPE_TRANSFORM2D )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the vector4 field to the RootTable table
 	func add_vector4( vector4: Vector4 ) -> void:
 		fbb_.add_variant( RootTable.VT_VECTOR4, vector4, TYPE_VECTOR4 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the vector4i field to the RootTable table
 	func add_vector4i( vector4i: Vector4i ) -> void:
 		fbb_.add_variant( RootTable.VT_VECTOR4I, vector4i, TYPE_VECTOR4I )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the plane field to the RootTable table
 	func add_plane( plane: Plane ) -> void:
 		fbb_.add_variant( RootTable.VT_PLANE, plane, TYPE_PLANE )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the quaternion field to the RootTable table
 	func add_quaternion( quaternion: Quaternion ) -> void:
 		fbb_.add_variant( RootTable.VT_QUATERNION, quaternion, TYPE_QUATERNION )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the aabb field to the RootTable table
 	func add_aabb( aabb: AABB ) -> void:
 		fbb_.add_variant( RootTable.VT_AABB, aabb, TYPE_AABB )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the basis field to the RootTable table
 	func add_basis( basis: Basis ) -> void:
 		fbb_.add_variant( RootTable.VT_BASIS, basis, TYPE_BASIS )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the transform3d field to the RootTable table
 	func add_transform3d( transform3d: Transform3D ) -> void:
 		fbb_.add_variant( RootTable.VT_TRANSFORM3D, transform3d, TYPE_TRANSFORM3D )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the projection field to the RootTable table
 	func add_projection( projection: Projection ) -> void:
 		fbb_.add_variant( RootTable.VT_PROJECTION, projection, TYPE_PROJECTION )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the color field to the RootTable table
 	func add_color( color: Color ) -> void:
 		fbb_.add_variant( RootTable.VT_COLOR, color, TYPE_COLOR )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the packed_byte_array_ field to the RootTable table
 	func add_packed_byte_array_( packed_byte_array__offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_PACKED_BYTE_ARRAY_, packed_byte_array__offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the packed_int32_array_ field to the RootTable table
 	func add_packed_int32_array_( packed_int32_array__offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_PACKED_INT32_ARRAY_, packed_int32_array__offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the packed_int64_array_ field to the RootTable table
 	func add_packed_int64_array_( packed_int64_array__offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_PACKED_INT64_ARRAY_, packed_int64_array__offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the packed_float32_array_ field to the RootTable table
 	func add_packed_float32_array_( packed_float32_array__offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_PACKED_FLOAT32_ARRAY_, packed_float32_array__offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the packed_float64_array_ field to the RootTable table
 	func add_packed_float64_array_( packed_float64_array__offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_PACKED_FLOAT64_ARRAY_, packed_float64_array__offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the packed_string_array_ field to the RootTable table
 	func add_packed_string_array_( packed_string_array__offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_PACKED_STRING_ARRAY_, packed_string_array__offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the packed_vector2_array_ field to the RootTable table
 	func add_packed_vector2_array_( packed_vector2_array__offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_PACKED_VECTOR2_ARRAY_, packed_vector2_array__offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the packed_vector3_array_ field to the RootTable table
 	func add_packed_vector3_array_( packed_vector3_array__offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_PACKED_VECTOR3_ARRAY_, packed_vector3_array__offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the packed_color_array_ field to the RootTable table
 	func add_packed_color_array_( packed_color_array__offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_PACKED_COLOR_ARRAY_, packed_color_array__offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the packed_vector4_array_ field to the RootTable table
 	func add_packed_vector4_array_( packed_vector4_array__offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_PACKED_VECTOR4_ARRAY_, packed_vector4_array__offset )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the RootTable table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a RootTable table in one go using the provided [param _fbb]
 static func create_RootTable( _fbb: FlatBufferBuilder,
 		boolean: bool,
 		integer: int,
@@ -694,7 +694,7 @@ static func create_RootTable( _fbb: FlatBufferBuilder,
 	builder.add_boolean( boolean );
 	return builder.finish();
 
-## TODO: create a doc comment for the get_RootTable function
+## Get the RootTable from the provided [param _bytes]
 static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
 	assert(not _bytes.is_empty())
 	return RootTable.new(_bytes, _bytes.decode_u32(0))

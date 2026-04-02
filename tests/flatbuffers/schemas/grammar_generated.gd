@@ -39,11 +39,11 @@ class TableDecl extends FlatBuffer:
 		VT_IDENT5 = 10
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the STRUCT_NAME with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the STRUCT_NAME data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -109,39 +109,39 @@ class TableDecl extends FlatBuffer:
 		return array
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for TableDecl
 class TableDeclBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the scalar_bool field to the TableDecl table
 	func add_scalar_bool( scalar_bool: bool ) -> void:
 		fbb_.add_element_bool_default( TableDecl.VT_SCALAR_BOOL, scalar_bool, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the scalar_int field to the TableDecl table
 	func add_scalar_int( scalar_int: int ) -> void:
 		fbb_.add_element_int_default( TableDecl.VT_SCALAR_INT, scalar_int, 32 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the scalar_float field to the TableDecl table
 	func add_scalar_float( scalar_float: float ) -> void:
 		fbb_.add_element_float_default( TableDecl.VT_SCALAR_FLOAT, scalar_float, 5.3 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the ident5 field to the TableDecl table
 	func add_ident5( ident5_offset: int ) -> void:
 		fbb_.add_offset( TableDecl.VT_IDENT5, ident5_offset )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the TableDecl table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a TableDecl table in one go using the provided [param _fbb]
 static func create_TableDecl( _fbb: FlatBufferBuilder,
 		scalar_bool: bool,
 		scalar_int: int,

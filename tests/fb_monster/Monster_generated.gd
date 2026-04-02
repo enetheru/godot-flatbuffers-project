@@ -17,7 +17,7 @@ enum Equipment {
 	WEAPON = 1
 }
 
-## TODO: create a doc comment for the verify_Equipment function
+## Verify the integrity of the Equipment union data
 static func equipment_verify(verifier:FlatBufferVerifier, value:Variant, type:Equipment) -> bool: 
 	match type:
 		Equipment.WEAPON:
@@ -42,11 +42,11 @@ class Monster extends FlatBuffer:
 		VT_PATH = 24
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the STRUCT_NAME with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the STRUCT_NAME data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -66,7 +66,7 @@ class Monster extends FlatBuffer:
 			and verify_offset(verifier, VT_EQUIPPED)
 			and _Monster_schema.equipment_verify(verifier, equipped(), equipped_type())
 			and verify_offset(verifier, VT_PATH)
-			and verify_vector_u32(verifier, VT_PATH)
+			and verify_vector_of_variant(verifier, VT_PATH, TYPE_VECTOR3)
 			and verify_end_table(verifier)
 		)
 
@@ -181,7 +181,7 @@ class Monster extends FlatBuffer:
 	func equipped_is_present() -> bool:
 		return get_field_offset( VT_EQUIPPED )
 
-	## TODO: Write a doc comment for the union_type accessor
+	## Get the union type of the equipped_type field
 	func equipped_type() -> Equipment:
 		var field_start: int = get_inline_field_start( VT_EQUIPPED_TYPE )
 		if not field_start: return 0 as Equipment
@@ -223,63 +223,63 @@ class Monster extends FlatBuffer:
 				.to_vector3_array()
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for Monster
 class MonsterBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the pos field to the Monster table
 	func add_pos( pos: Vector3 ) -> void:
 		fbb_.add_variant( Monster.VT_POS, pos, TYPE_VECTOR3 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the mana field to the Monster table
 	func add_mana( mana: int ) -> void:
 		fbb_.add_element_short_default( Monster.VT_MANA, mana, 150 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the hp field to the Monster table
 	func add_hp( hp: int ) -> void:
 		fbb_.add_element_short_default( Monster.VT_HP, hp, 100 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the name field to the Monster table
 	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( Monster.VT_NAME, name_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the inventory field to the Monster table
 	func add_inventory( inventory_offset: int ) -> void:
 		fbb_.add_offset( Monster.VT_INVENTORY, inventory_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the color field to the Monster table
 	func add_color( color: Color_ ) -> void:
 		fbb_.add_element_byte( Monster.VT_COLOR, color )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the weapons field to the Monster table
 	func add_weapons( weapons_offset: int ) -> void:
 		fbb_.add_offset( Monster.VT_WEAPONS, weapons_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the equipped_type field to the Monster table
 	func add_equipped_type( equipped_type: Equipment ) -> void:
 		fbb_.add_element_ubyte( Monster.VT_EQUIPPED_TYPE, equipped_type )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the equipped field to the Monster table
 	func add_equipped( equipped_offset: int ) -> void:
 		fbb_.add_offset( Monster.VT_EQUIPPED, equipped_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the path field to the Monster table
 	func add_path( path_offset: int ) -> void:
 		fbb_.add_offset( Monster.VT_PATH, path_offset )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the Monster table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a Monster table in one go using the provided [param _fbb]
 static func create_Monster( _fbb: FlatBufferBuilder,
 		pos: Vector3,
 		mana: int,
@@ -310,11 +310,11 @@ class Weapon extends FlatBuffer:
 		VT_DAMAGE = 6
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the Monster with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the Monster data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -344,31 +344,31 @@ class Weapon extends FlatBuffer:
 		return _fb_bytes.decode_s16( field_start )
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for Weapon
 class WeaponBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the name field to the Weapon table
 	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( Weapon.VT_NAME, name_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the damage field to the Weapon table
 	func add_damage( damage: int ) -> void:
 		fbb_.add_element_short_default( Weapon.VT_DAMAGE, damage, 0 )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the Weapon table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a Weapon table in one go using the provided [param _fbb]
 static func create_Weapon( _fbb: FlatBufferBuilder,
 		name: int,
 		damage: int ) -> int :
@@ -377,7 +377,7 @@ static func create_Weapon( _fbb: FlatBufferBuilder,
 	builder.add_damage( damage );
 	return builder.finish();
 
-## TODO: create a doc comment for the get_Monster function
+## Get the Monster from the provided [param _bytes]
 static func get_Monster( _bytes: PackedByteArray ) -> Monster:
 	assert(not _bytes.is_empty())
 	return Monster.new(_bytes, _bytes.decode_u32(0))

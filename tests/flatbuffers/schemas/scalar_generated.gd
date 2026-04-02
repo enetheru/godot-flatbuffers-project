@@ -21,11 +21,11 @@ class RootTable extends FlatBuffer:
 		VT_F_DOUBLE = 24
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the STRUCT_NAME with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the STRUCT_NAME data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -144,67 +144,67 @@ class RootTable extends FlatBuffer:
 		return _fb_bytes.decode_double( field_start )
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for RootTable
 class RootTableBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the f_bool field to the RootTable table
 	func add_f_bool( f_bool: bool ) -> void:
 		fbb_.add_element_bool_default( RootTable.VT_F_BOOL, f_bool, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the f_byte field to the RootTable table
 	func add_f_byte( f_byte: int ) -> void:
 		fbb_.add_element_byte_default( RootTable.VT_F_BYTE, f_byte, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the f_ubyte field to the RootTable table
 	func add_f_ubyte( f_ubyte: int ) -> void:
 		fbb_.add_element_ubyte_default( RootTable.VT_F_UBYTE, f_ubyte, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the f_short field to the RootTable table
 	func add_f_short( f_short: int ) -> void:
 		fbb_.add_element_short_default( RootTable.VT_F_SHORT, f_short, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the f_ushort field to the RootTable table
 	func add_f_ushort( f_ushort: int ) -> void:
 		fbb_.add_element_ushort_default( RootTable.VT_F_USHORT, f_ushort, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the f_int field to the RootTable table
 	func add_f_int( f_int: int ) -> void:
 		fbb_.add_element_int_default( RootTable.VT_F_INT, f_int, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the f_uint field to the RootTable table
 	func add_f_uint( f_uint: int ) -> void:
 		fbb_.add_element_uint_default( RootTable.VT_F_UINT, f_uint, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the f_long field to the RootTable table
 	func add_f_long( f_long: int ) -> void:
 		fbb_.add_element_long_default( RootTable.VT_F_LONG, f_long, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the f_ulong field to the RootTable table
 	func add_f_ulong( f_ulong: int ) -> void:
 		fbb_.add_element_ulong_default( RootTable.VT_F_ULONG, f_ulong, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the f_float field to the RootTable table
 	func add_f_float( f_float: float ) -> void:
 		fbb_.add_element_float_default( RootTable.VT_F_FLOAT, f_float, 0.0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the f_double field to the RootTable table
 	func add_f_double( f_double: float ) -> void:
 		fbb_.add_element_double_default( RootTable.VT_F_DOUBLE, f_double, 0.0 )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the RootTable table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a RootTable table in one go using the provided [param _fbb]
 static func create_RootTable( _fbb: FlatBufferBuilder,
 		f_bool: bool,
 		f_byte: int,
@@ -231,7 +231,7 @@ static func create_RootTable( _fbb: FlatBufferBuilder,
 	builder.add_f_bool( f_bool );
 	return builder.finish();
 
-## TODO: create a doc comment for the get_RootTable function
+## Get the RootTable from the provided [param _bytes]
 static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
 	assert(not _bytes.is_empty())
 	return RootTable.new(_bytes, _bytes.decode_u32(0))

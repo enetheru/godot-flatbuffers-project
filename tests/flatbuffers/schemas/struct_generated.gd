@@ -9,11 +9,12 @@
 class CustomStruct extends FlatBuffer:
 	const _fb_struct_size: int = 24
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the CustomStruct with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		if packed_bytes.is_empty():
 			packed_bytes = PackedByteArray()
-			packed_bytes.resize( _fb_struct_size )
+			if packed_bytes.resize( _fb_struct_size ) != OK:
+				printerr('unable to resize byte array')
 		assert(offset + _fb_struct_size <= packed_bytes.size())
 		assign_buffer( packed_bytes, offset )
 
@@ -34,7 +35,7 @@ class CustomStruct extends FlatBuffer:
 		set(v): encode_variant(_fb_start + 12, v, TYPE_VECTOR3)
 
 
-## TODO: create a useful doc comment for the static creation function
+## Create a new CustomStruct with the provided field values
 static func create_CustomStruct(
 		_is_true: bool,
 		_x: int,
@@ -55,11 +56,11 @@ class RootTable extends FlatBuffer:
 		VT_Z = 6
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the CustomStruct with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the CustomStruct data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -89,31 +90,31 @@ class RootTable extends FlatBuffer:
 		return _fb_bytes.decode_s32( field_start )
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for RootTable
 class RootTableBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the custom_struct field to the RootTable table
 	func add_custom_struct( custom_struct: CustomStruct ) -> void:
 		fbb_.add_bytes( RootTable.VT_CUSTOM_STRUCT, custom_struct._fb_bytes ) 
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the z field to the RootTable table
 	func add_z( z: int ) -> void:
 		fbb_.add_element_int_default( RootTable.VT_Z, z, 0 )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the RootTable table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a RootTable table in one go using the provided [param _fbb]
 static func create_RootTable( _fbb: FlatBufferBuilder,
 		custom_struct: CustomStruct,
 		z: int ) -> int :
@@ -122,7 +123,7 @@ static func create_RootTable( _fbb: FlatBufferBuilder,
 	builder.add_custom_struct( custom_struct );
 	return builder.finish();
 
-## TODO: create a doc comment for the get_RootTable function
+## Get the RootTable from the provided [param _bytes]
 static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
 	assert(not _bytes.is_empty())
 	return RootTable.new(_bytes, _bytes.decode_u32(0))

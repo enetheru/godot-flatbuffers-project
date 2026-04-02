@@ -17,11 +17,11 @@ class RootTable extends FlatBuffer:
 		VT_EXTERNAL_ARRAY = 6
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the STRUCT_NAME with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the STRUCT_NAME data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -30,7 +30,7 @@ class RootTable extends FlatBuffer:
 			and external().verify(verifier)
 			and verify_offset(verifier, VT_EXTERNAL_ARRAY)
 			and verify_vector_u32(verifier, VT_EXTERNAL_ARRAY)
-			and verify_external_array(verifier)
+			and external_array_verify(verifier)
 			and verify_end_table(verifier)
 		)
 
@@ -43,7 +43,7 @@ class RootTable extends FlatBuffer:
 		if not field_start: return null
 		return _minimum_schema.Minimum.new( _fb_bytes, field_start )
 
-	func verify_external_array(verifier:FlatBufferVerifier) -> bool:
+	func external_array_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _minimum_schema.Minimum.new()
 		for i in external_array_size():
 			if not external_array_at(i, tmp).verify(verifier):
@@ -86,31 +86,31 @@ class RootTable extends FlatBuffer:
 		return array
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for RootTable
 class RootTableBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the external field to the RootTable table
 	func add_external( external_offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_EXTERNAL, external_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the external_array field to the RootTable table
 	func add_external_array( external_array_offset: int ) -> void:
 		fbb_.add_offset( RootTable.VT_EXTERNAL_ARRAY, external_array_offset )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the RootTable table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a RootTable table in one go using the provided [param _fbb]
 static func create_RootTable( _fbb: FlatBufferBuilder,
 		external: int,
 		external_array: int ) -> int :
@@ -119,7 +119,7 @@ static func create_RootTable( _fbb: FlatBufferBuilder,
 	builder.add_external( external );
 	return builder.finish();
 
-## TODO: create a doc comment for the get_RootTable function
+## Get the RootTable from the provided [param _bytes]
 static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
 	assert(not _bytes.is_empty())
 	return RootTable.new(_bytes, _bytes.decode_u32(0))

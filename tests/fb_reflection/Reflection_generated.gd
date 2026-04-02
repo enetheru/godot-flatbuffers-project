@@ -48,11 +48,11 @@ class Type extends FlatBuffer:
 		VT_ELEMENT_SIZE = 14
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the STRUCT_NAME with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the STRUCT_NAME data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -125,47 +125,47 @@ class Type extends FlatBuffer:
 		return _fb_bytes.decode_u32( field_start )
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for Type
 class TypeBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the base_type field to the Type table
 	func add_base_type( base_type: BaseType ) -> void:
 		fbb_.add_element_byte( Type.VT_BASE_TYPE, base_type )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the element field to the Type table
 	func add_element( element: BaseType ) -> void:
 		fbb_.add_element_byte( Type.VT_ELEMENT, element )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the index field to the Type table
 	func add_index( index: int ) -> void:
 		fbb_.add_element_int_default( Type.VT_INDEX, index, -1 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the fixed_length field to the Type table
 	func add_fixed_length( fixed_length: int ) -> void:
 		fbb_.add_element_ushort_default( Type.VT_FIXED_LENGTH, fixed_length, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the base_size field to the Type table
 	func add_base_size( base_size: int ) -> void:
 		fbb_.add_element_uint_default( Type.VT_BASE_SIZE, base_size, 4 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the element_size field to the Type table
 	func add_element_size( element_size: int ) -> void:
 		fbb_.add_element_uint_default( Type.VT_ELEMENT_SIZE, element_size, 0 )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the Type table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a Type table in one go using the provided [param _fbb]
 static func create_Type( _fbb: FlatBufferBuilder,
 		base_type: BaseType,
 		element: BaseType,
@@ -188,11 +188,11 @@ class KeyValue extends FlatBuffer:
 		VT_VALUE = 6
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the Type with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the Type data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -225,32 +225,32 @@ class KeyValue extends FlatBuffer:
 		return decode_variant( field_start, TYPE_STRING )
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for KeyValue
 class KeyValueBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the key field to the KeyValue table
 	func add_key( key_offset: int ) -> void:
 		fbb_.add_offset( KeyValue.VT_KEY, key_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the value field to the KeyValue table
 	func add_value( value_offset: int ) -> void:
 		fbb_.add_offset( KeyValue.VT_VALUE, value_offset )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the KeyValue table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		fbb_.Required(o, KeyValue.VT_KEY);
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a KeyValue table in one go using the provided [param _fbb]
 static func create_KeyValue( _fbb: FlatBufferBuilder,
 		key: int,
 		value: int ) -> int :
@@ -271,11 +271,11 @@ class EnumVal extends FlatBuffer:
 		VT_ATTRIBUTES = 14
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the KeyValue with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the KeyValue data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -288,10 +288,10 @@ class EnumVal extends FlatBuffer:
 			and union_type().verify(verifier)
 			and verify_offset(verifier, VT_DOCUMENTATION)
 			and verify_vector_u32(verifier, VT_DOCUMENTATION)
-			# TODO and verifier.verify_vector_of_strings(documentation())
+			and verify_vector_of_variant(verifier, VT_DOCUMENTATION, TYPE_STRING)
 			and verify_offset(verifier, VT_ATTRIBUTES)
 			and verify_vector_u32(verifier, VT_ATTRIBUTES)
-			and verify_attributes(verifier)
+			and attributes_verify(verifier)
 			and verify_end_table(verifier)
 		)
 
@@ -349,7 +349,7 @@ class EnumVal extends FlatBuffer:
 			array[i] = decode_variant( element_start, TYPE_STRING )
 		return array
 
-	func verify_attributes(verifier:FlatBufferVerifier) -> bool:
+	func attributes_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.KeyValue.new()
 		for i in attributes_size():
 			if not attributes_at(i, tmp).verify(verifier):
@@ -392,44 +392,44 @@ class EnumVal extends FlatBuffer:
 		return array
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for EnumVal
 class EnumValBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the name field to the EnumVal table
 	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( EnumVal.VT_NAME, name_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the value field to the EnumVal table
 	func add_value( value: int ) -> void:
 		fbb_.add_element_long_default( EnumVal.VT_VALUE, value, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the union_type field to the EnumVal table
 	func add_union_type( union_type_offset: int ) -> void:
 		fbb_.add_offset( EnumVal.VT_UNION_TYPE, union_type_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the documentation field to the EnumVal table
 	func add_documentation( documentation_offset: int ) -> void:
 		fbb_.add_offset( EnumVal.VT_DOCUMENTATION, documentation_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the attributes field to the EnumVal table
 	func add_attributes( attributes_offset: int ) -> void:
 		fbb_.add_offset( EnumVal.VT_ATTRIBUTES, attributes_offset )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the EnumVal table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		fbb_.Required(o, EnumVal.VT_NAME);
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a EnumVal table in one go using the provided [param _fbb]
 static func create_EnumVal( _fbb: FlatBufferBuilder,
 		name: int,
 		value: int,
@@ -457,11 +457,11 @@ class Enum extends FlatBuffer:
 		VT_DECLARATION_FILE = 16
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the EnumVal with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the EnumVal data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -472,17 +472,17 @@ class Enum extends FlatBuffer:
 			# TODO required field
 			and verify_offset(verifier, VT_VALUES)
 			and verify_vector_u32(verifier, VT_VALUES)
-			and verify_values(verifier)
+			and values_verify(verifier)
 			and verify_field_u8(verifier, VT_IS_UNION, 1)
 			# TODO required field
 			and verify_offset(verifier, VT_UNDERLYING_TYPE)
 			and underlying_type().verify(verifier)
 			and verify_offset(verifier, VT_ATTRIBUTES)
 			and verify_vector_u32(verifier, VT_ATTRIBUTES)
-			and verify_attributes(verifier)
+			and attributes_verify(verifier)
 			and verify_offset(verifier, VT_DOCUMENTATION)
 			and verify_vector_u32(verifier, VT_DOCUMENTATION)
-			# TODO and verifier.verify_vector_of_strings(documentation())
+			and verify_vector_of_variant(verifier, VT_DOCUMENTATION, TYPE_STRING)
 			and verify_offset(verifier, VT_DECLARATION_FILE)
 			and verify_string( verifier, VT_DECLARATION_FILE )
 			and verify_end_table(verifier)
@@ -498,7 +498,7 @@ class Enum extends FlatBuffer:
 		if not field_start: return ''
 		return decode_variant( field_start, TYPE_STRING )
 
-	func verify_values(verifier:FlatBufferVerifier) -> bool:
+	func values_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.EnumVal.new()
 		for i in values_size():
 			if not values_at(i, tmp).verify(verifier):
@@ -559,7 +559,7 @@ class Enum extends FlatBuffer:
 		if not field_start: return null
 		return _Reflection_schema.Type.new( _fb_bytes, field_start )
 
-	func verify_attributes(verifier:FlatBufferVerifier) -> bool:
+	func attributes_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.KeyValue.new()
 		for i in attributes_size():
 			if not attributes_at(i, tmp).verify(verifier):
@@ -637,45 +637,45 @@ class Enum extends FlatBuffer:
 		return decode_variant( field_start, TYPE_STRING )
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for Enum
 class EnumBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the name field to the Enum table
 	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( Enum.VT_NAME, name_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the values field to the Enum table
 	func add_values( values_offset: int ) -> void:
 		fbb_.add_offset( Enum.VT_VALUES, values_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the is_union field to the Enum table
 	func add_is_union( is_union: bool ) -> void:
 		fbb_.add_element_bool_default( Enum.VT_IS_UNION, is_union, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the underlying_type field to the Enum table
 	func add_underlying_type( underlying_type_offset: int ) -> void:
 		fbb_.add_offset( Enum.VT_UNDERLYING_TYPE, underlying_type_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the attributes field to the Enum table
 	func add_attributes( attributes_offset: int ) -> void:
 		fbb_.add_offset( Enum.VT_ATTRIBUTES, attributes_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the documentation field to the Enum table
 	func add_documentation( documentation_offset: int ) -> void:
 		fbb_.add_offset( Enum.VT_DOCUMENTATION, documentation_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the declaration_file field to the Enum table
 	func add_declaration_file( declaration_file_offset: int ) -> void:
 		fbb_.add_offset( Enum.VT_DECLARATION_FILE, declaration_file_offset )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the Enum table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
@@ -684,7 +684,7 @@ class EnumBuilder extends RefCounted:
 		fbb_.Required(o, Enum.VT_UNDERLYING_TYPE);
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a Enum table in one go using the provided [param _fbb]
 static func create_Enum( _fbb: FlatBufferBuilder,
 		name: int,
 		values: int,
@@ -722,11 +722,11 @@ class Field extends FlatBuffer:
 		VT_PADDING = 28
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the Enum with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the Enum data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -746,10 +746,10 @@ class Field extends FlatBuffer:
 			and verify_field_u8(verifier, VT_KEY, 1)
 			and verify_offset(verifier, VT_ATTRIBUTES)
 			and verify_vector_u32(verifier, VT_ATTRIBUTES)
-			and verify_attributes(verifier)
+			and attributes_verify(verifier)
 			and verify_offset(verifier, VT_DOCUMENTATION)
 			and verify_vector_u32(verifier, VT_DOCUMENTATION)
-			# TODO and verifier.verify_vector_of_strings(documentation())
+			and verify_vector_of_variant(verifier, VT_DOCUMENTATION, TYPE_STRING)
 			and verify_field_u8(verifier, VT_OPTIONAL, 1)
 			and verify_field_u16(verifier, VT_PADDING, 2)
 			and verify_end_table(verifier)
@@ -838,7 +838,7 @@ class Field extends FlatBuffer:
 		if not field_start: return 0
 		return _fb_bytes.decode_u8( field_start )
 
-	func verify_attributes(verifier:FlatBufferVerifier) -> bool:
+	func attributes_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.KeyValue.new()
 		for i in attributes_size():
 			if not attributes_at(i, tmp).verify(verifier):
@@ -926,69 +926,69 @@ class Field extends FlatBuffer:
 		return _fb_bytes.decode_u16( field_start )
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for Field
 class FieldBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the name field to the Field table
 	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( Field.VT_NAME, name_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the type field to the Field table
 	func add_type( type_offset: int ) -> void:
 		fbb_.add_offset( Field.VT_TYPE, type_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the id field to the Field table
 	func add_id( id: int ) -> void:
 		fbb_.add_element_ushort_default( Field.VT_ID, id, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the offset field to the Field table
 	func add_offset( offset: int ) -> void:
 		fbb_.add_element_ushort_default( Field.VT_OFFSET, offset, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the default_integer field to the Field table
 	func add_default_integer( default_integer: int ) -> void:
 		fbb_.add_element_long_default( Field.VT_DEFAULT_INTEGER, default_integer, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the default_real field to the Field table
 	func add_default_real( default_real: float ) -> void:
 		fbb_.add_element_double_default( Field.VT_DEFAULT_REAL, default_real, 0.0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the deprecated field to the Field table
 	func add_deprecated( deprecated: bool ) -> void:
 		fbb_.add_element_bool_default( Field.VT_DEPRECATED, deprecated, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the required field to the Field table
 	func add_required( required: bool ) -> void:
 		fbb_.add_element_bool_default( Field.VT_REQUIRED, required, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the key field to the Field table
 	func add_key( key: bool ) -> void:
 		fbb_.add_element_bool_default( Field.VT_KEY, key, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the attributes field to the Field table
 	func add_attributes( attributes_offset: int ) -> void:
 		fbb_.add_offset( Field.VT_ATTRIBUTES, attributes_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the documentation field to the Field table
 	func add_documentation( documentation_offset: int ) -> void:
 		fbb_.add_offset( Field.VT_DOCUMENTATION, documentation_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the optional field to the Field table
 	func add_optional( optional: bool ) -> void:
 		fbb_.add_element_bool_default( Field.VT_OPTIONAL, optional, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the padding field to the Field table
 	func add_padding( padding: int ) -> void:
 		fbb_.add_element_ushort_default( Field.VT_PADDING, padding, 0 )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the Field table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
@@ -996,7 +996,7 @@ class FieldBuilder extends RefCounted:
 		fbb_.Required(o, Field.VT_TYPE);
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a Field table in one go using the provided [param _fbb]
 static func create_Field( _fbb: FlatBufferBuilder,
 		name: int,
 		type: int,
@@ -1041,11 +1041,11 @@ class Object_ extends FlatBuffer:
 		VT_DECLARATION_FILE = 18
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the Field with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the Field data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -1056,16 +1056,16 @@ class Object_ extends FlatBuffer:
 			# TODO required field
 			and verify_offset(verifier, VT_FIELDS)
 			and verify_vector_u32(verifier, VT_FIELDS)
-			and verify_fields(verifier)
+			and fields_verify(verifier)
 			and verify_field_u8(verifier, VT_IS_STRUCT, 1)
 			and verify_field_s32(verifier, VT_MINALIGN, 4)
 			and verify_field_s32(verifier, VT_BYTESIZE, 4)
 			and verify_offset(verifier, VT_ATTRIBUTES)
 			and verify_vector_u32(verifier, VT_ATTRIBUTES)
-			and verify_attributes(verifier)
+			and attributes_verify(verifier)
 			and verify_offset(verifier, VT_DOCUMENTATION)
 			and verify_vector_u32(verifier, VT_DOCUMENTATION)
-			# TODO and verifier.verify_vector_of_strings(documentation())
+			and verify_vector_of_variant(verifier, VT_DOCUMENTATION, TYPE_STRING)
 			and verify_offset(verifier, VT_DECLARATION_FILE)
 			and verify_string( verifier, VT_DECLARATION_FILE )
 			and verify_end_table(verifier)
@@ -1081,7 +1081,7 @@ class Object_ extends FlatBuffer:
 		if not field_start: return ''
 		return decode_variant( field_start, TYPE_STRING )
 
-	func verify_fields(verifier:FlatBufferVerifier) -> bool:
+	func fields_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.Field.new()
 		for i in fields_size():
 			if not fields_at(i, tmp).verify(verifier):
@@ -1150,7 +1150,7 @@ class Object_ extends FlatBuffer:
 		if not field_start: return 0
 		return _fb_bytes.decode_s32( field_start )
 
-	func verify_attributes(verifier:FlatBufferVerifier) -> bool:
+	func attributes_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.KeyValue.new()
 		for i in attributes_size():
 			if not attributes_at(i, tmp).verify(verifier):
@@ -1228,49 +1228,49 @@ class Object_ extends FlatBuffer:
 		return decode_variant( field_start, TYPE_STRING )
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for Object_
 class Object_Builder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the name field to the Object_ table
 	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( Object_.VT_NAME, name_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the fields field to the Object_ table
 	func add_fields( fields_offset: int ) -> void:
 		fbb_.add_offset( Object_.VT_FIELDS, fields_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the is_struct field to the Object_ table
 	func add_is_struct( is_struct: bool ) -> void:
 		fbb_.add_element_bool_default( Object_.VT_IS_STRUCT, is_struct, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the minalign field to the Object_ table
 	func add_minalign( minalign: int ) -> void:
 		fbb_.add_element_int_default( Object_.VT_MINALIGN, minalign, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the bytesize field to the Object_ table
 	func add_bytesize( bytesize: int ) -> void:
 		fbb_.add_element_int_default( Object_.VT_BYTESIZE, bytesize, 0 )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the attributes field to the Object_ table
 	func add_attributes( attributes_offset: int ) -> void:
 		fbb_.add_offset( Object_.VT_ATTRIBUTES, attributes_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the documentation field to the Object_ table
 	func add_documentation( documentation_offset: int ) -> void:
 		fbb_.add_offset( Object_.VT_DOCUMENTATION, documentation_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the declaration_file field to the Object_ table
 	func add_declaration_file( declaration_file_offset: int ) -> void:
 		fbb_.add_offset( Object_.VT_DECLARATION_FILE, declaration_file_offset )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the Object_ table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
@@ -1278,7 +1278,7 @@ class Object_Builder extends RefCounted:
 		fbb_.Required(o, Object_.VT_FIELDS);
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a Object_ table in one go using the provided [param _fbb]
 static func create_Object_( _fbb: FlatBufferBuilder,
 		name: int,
 		fields: int,
@@ -1310,11 +1310,11 @@ class RPCCall extends FlatBuffer:
 		VT_DOCUMENTATION = 12
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the Object_ with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the Object_ data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -1330,10 +1330,10 @@ class RPCCall extends FlatBuffer:
 			and response().verify(verifier)
 			and verify_offset(verifier, VT_ATTRIBUTES)
 			and verify_vector_u32(verifier, VT_ATTRIBUTES)
-			and verify_attributes(verifier)
+			and attributes_verify(verifier)
 			and verify_offset(verifier, VT_DOCUMENTATION)
 			and verify_vector_u32(verifier, VT_DOCUMENTATION)
-			# TODO and verifier.verify_vector_of_strings(documentation())
+			and verify_vector_of_variant(verifier, VT_DOCUMENTATION, TYPE_STRING)
 			and verify_end_table(verifier)
 		)
 
@@ -1367,7 +1367,7 @@ class RPCCall extends FlatBuffer:
 		if not field_start: return null
 		return _Reflection_schema.Object_.new( _fb_bytes, field_start )
 
-	func verify_attributes(verifier:FlatBufferVerifier) -> bool:
+	func attributes_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.KeyValue.new()
 		for i in attributes_size():
 			if not attributes_at(i, tmp).verify(verifier):
@@ -1436,37 +1436,37 @@ class RPCCall extends FlatBuffer:
 		return array
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for RPCCall
 class RPCCallBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the name field to the RPCCall table
 	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( RPCCall.VT_NAME, name_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the request field to the RPCCall table
 	func add_request( request_offset: int ) -> void:
 		fbb_.add_offset( RPCCall.VT_REQUEST, request_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the response field to the RPCCall table
 	func add_response( response_offset: int ) -> void:
 		fbb_.add_offset( RPCCall.VT_RESPONSE, response_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the attributes field to the RPCCall table
 	func add_attributes( attributes_offset: int ) -> void:
 		fbb_.add_offset( RPCCall.VT_ATTRIBUTES, attributes_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the documentation field to the RPCCall table
 	func add_documentation( documentation_offset: int ) -> void:
 		fbb_.add_offset( RPCCall.VT_DOCUMENTATION, documentation_offset )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the RPCCall table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
@@ -1475,7 +1475,7 @@ class RPCCallBuilder extends RefCounted:
 		fbb_.Required(o, RPCCall.VT_RESPONSE);
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a RPCCall table in one go using the provided [param _fbb]
 static func create_RPCCall( _fbb: FlatBufferBuilder,
 		name: int,
 		request: int,
@@ -1501,11 +1501,11 @@ class Service extends FlatBuffer:
 		VT_DECLARATION_FILE = 12
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the RPCCall with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the RPCCall data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -1515,13 +1515,13 @@ class Service extends FlatBuffer:
 			and verify_string( verifier, VT_NAME )
 			and verify_offset(verifier, VT_CALLS)
 			and verify_vector_u32(verifier, VT_CALLS)
-			and verify_calls(verifier)
+			and calls_verify(verifier)
 			and verify_offset(verifier, VT_ATTRIBUTES)
 			and verify_vector_u32(verifier, VT_ATTRIBUTES)
-			and verify_attributes(verifier)
+			and attributes_verify(verifier)
 			and verify_offset(verifier, VT_DOCUMENTATION)
 			and verify_vector_u32(verifier, VT_DOCUMENTATION)
-			# TODO and verifier.verify_vector_of_strings(documentation())
+			and verify_vector_of_variant(verifier, VT_DOCUMENTATION, TYPE_STRING)
 			and verify_offset(verifier, VT_DECLARATION_FILE)
 			and verify_string( verifier, VT_DECLARATION_FILE )
 			and verify_end_table(verifier)
@@ -1537,7 +1537,7 @@ class Service extends FlatBuffer:
 		if not field_start: return ''
 		return decode_variant( field_start, TYPE_STRING )
 
-	func verify_calls(verifier:FlatBufferVerifier) -> bool:
+	func calls_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.RPCCall.new()
 		for i in calls_size():
 			if not calls_at(i, tmp).verify(verifier):
@@ -1579,7 +1579,7 @@ class Service extends FlatBuffer:
 			array[i] = _Reflection_schema.RPCCall.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func verify_attributes(verifier:FlatBufferVerifier) -> bool:
+	func attributes_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.KeyValue.new()
 		for i in attributes_size():
 			if not attributes_at(i, tmp).verify(verifier):
@@ -1657,44 +1657,44 @@ class Service extends FlatBuffer:
 		return decode_variant( field_start, TYPE_STRING )
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for Service
 class ServiceBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the name field to the Service table
 	func add_name( name_offset: int ) -> void:
 		fbb_.add_offset( Service.VT_NAME, name_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the calls field to the Service table
 	func add_calls( calls_offset: int ) -> void:
 		fbb_.add_offset( Service.VT_CALLS, calls_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the attributes field to the Service table
 	func add_attributes( attributes_offset: int ) -> void:
 		fbb_.add_offset( Service.VT_ATTRIBUTES, attributes_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the documentation field to the Service table
 	func add_documentation( documentation_offset: int ) -> void:
 		fbb_.add_offset( Service.VT_DOCUMENTATION, documentation_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the declaration_file field to the Service table
 	func add_declaration_file( declaration_file_offset: int ) -> void:
 		fbb_.add_offset( Service.VT_DECLARATION_FILE, declaration_file_offset )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the Service table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		fbb_.Required(o, Service.VT_NAME);
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a Service table in one go using the provided [param _fbb]
 static func create_Service( _fbb: FlatBufferBuilder,
 		name: int,
 		calls: int,
@@ -1718,11 +1718,11 @@ class SchemaFile extends FlatBuffer:
 		VT_INCLUDED_FILENAMES = 6
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the Service with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the Service data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -1732,7 +1732,7 @@ class SchemaFile extends FlatBuffer:
 			and verify_string( verifier, VT_FILENAME )
 			and verify_offset(verifier, VT_INCLUDED_FILENAMES)
 			and verify_vector_u32(verifier, VT_INCLUDED_FILENAMES)
-			# TODO and verifier.verify_vector_of_strings(included_filenames())
+			and verify_vector_of_variant(verifier, VT_INCLUDED_FILENAMES, TYPE_STRING)
 			and verify_end_table(verifier)
 		)
 
@@ -1776,32 +1776,32 @@ class SchemaFile extends FlatBuffer:
 		return array
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for SchemaFile
 class SchemaFileBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the filename field to the SchemaFile table
 	func add_filename( filename_offset: int ) -> void:
 		fbb_.add_offset( SchemaFile.VT_FILENAME, filename_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the included_filenames field to the SchemaFile table
 	func add_included_filenames( included_filenames_offset: int ) -> void:
 		fbb_.add_offset( SchemaFile.VT_INCLUDED_FILENAMES, included_filenames_offset )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the SchemaFile table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		fbb_.Required(o, SchemaFile.VT_FILENAME);
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a SchemaFile table in one go using the provided [param _fbb]
 static func create_SchemaFile( _fbb: FlatBufferBuilder,
 		filename: int,
 		included_filenames: int ) -> int :
@@ -1824,11 +1824,11 @@ class Schema extends FlatBuffer:
 		VT_FBS_FILES = 18
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the SchemaFile with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the SchemaFile data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -1836,11 +1836,11 @@ class Schema extends FlatBuffer:
 			# TODO required field
 			and verify_offset(verifier, VT_OBJECTS)
 			and verify_vector_u32(verifier, VT_OBJECTS)
-			and verify_objects(verifier)
+			and objects_verify(verifier)
 			# TODO required field
 			and verify_offset(verifier, VT_ENUMS)
 			and verify_vector_u32(verifier, VT_ENUMS)
-			and verify_enums(verifier)
+			and enums_verify(verifier)
 			and verify_offset(verifier, VT_FILE_IDENT)
 			and verify_string( verifier, VT_FILE_IDENT )
 			and verify_offset(verifier, VT_FILE_EXT)
@@ -1849,15 +1849,15 @@ class Schema extends FlatBuffer:
 			and root_table().verify(verifier)
 			and verify_offset(verifier, VT_SERVICES)
 			and verify_vector_u32(verifier, VT_SERVICES)
-			and verify_services(verifier)
+			and services_verify(verifier)
 			and verify_field_u64(verifier, VT_ADVANCED_FEATURES, 8)
 			and verify_offset(verifier, VT_FBS_FILES)
 			and verify_vector_u32(verifier, VT_FBS_FILES)
-			and verify_fbs_files(verifier)
+			and fbs_files_verify(verifier)
 			and verify_end_table(verifier)
 		)
 
-	func verify_objects(verifier:FlatBufferVerifier) -> bool:
+	func objects_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.Object_.new()
 		for i in objects_size():
 			if not objects_at(i, tmp).verify(verifier):
@@ -1899,7 +1899,7 @@ class Schema extends FlatBuffer:
 			array[i] = _Reflection_schema.Object_.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func verify_enums(verifier:FlatBufferVerifier) -> bool:
+	func enums_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.Enum.new()
 		for i in enums_size():
 			if not enums_at(i, tmp).verify(verifier):
@@ -1968,7 +1968,7 @@ class Schema extends FlatBuffer:
 		if not field_start: return null
 		return _Reflection_schema.Object_.new( _fb_bytes, field_start )
 
-	func verify_services(verifier:FlatBufferVerifier) -> bool:
+	func services_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.Service.new()
 		for i in services_size():
 			if not services_at(i, tmp).verify(verifier):
@@ -2022,7 +2022,7 @@ class Schema extends FlatBuffer:
 
 	## All the files used in this compilation. Files are relative to where
 ## flatc was invoked.
-	func verify_fbs_files(verifier:FlatBufferVerifier) -> bool:
+	func fbs_files_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.SchemaFile.new()
 		for i in fbs_files_size():
 			if not fbs_files_at(i, tmp).verify(verifier):
@@ -2071,49 +2071,49 @@ class Schema extends FlatBuffer:
 		return array
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for Schema
 class SchemaBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the objects field to the Schema table
 	func add_objects( objects_offset: int ) -> void:
 		fbb_.add_offset( Schema.VT_OBJECTS, objects_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the enums field to the Schema table
 	func add_enums( enums_offset: int ) -> void:
 		fbb_.add_offset( Schema.VT_ENUMS, enums_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the file_ident field to the Schema table
 	func add_file_ident( file_ident_offset: int ) -> void:
 		fbb_.add_offset( Schema.VT_FILE_IDENT, file_ident_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the file_ext field to the Schema table
 	func add_file_ext( file_ext_offset: int ) -> void:
 		fbb_.add_offset( Schema.VT_FILE_EXT, file_ext_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the root_table field to the Schema table
 	func add_root_table( root_table_offset: int ) -> void:
 		fbb_.add_offset( Schema.VT_ROOT_TABLE, root_table_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the services field to the Schema table
 	func add_services( services_offset: int ) -> void:
 		fbb_.add_offset( Schema.VT_SERVICES, services_offset )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the advanced_features field to the Schema table
 	func add_advanced_features( advanced_features: AdvancedFeatures ) -> void:
 		fbb_.add_element_ulong( Schema.VT_ADVANCED_FEATURES, advanced_features )
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the fbs_files field to the Schema table
 	func add_fbs_files( fbs_files_offset: int ) -> void:
 		fbb_.add_offset( Schema.VT_FBS_FILES, fbs_files_offset )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the Schema table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
@@ -2121,7 +2121,7 @@ class SchemaBuilder extends RefCounted:
 		fbb_.Required(o, Schema.VT_ENUMS);
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a Schema table in one go using the provided [param _fbb]
 static func create_Schema( _fbb: FlatBufferBuilder,
 		objects: int,
 		enums: int,
@@ -2142,7 +2142,7 @@ static func create_Schema( _fbb: FlatBufferBuilder,
 	builder.add_objects( objects );
 	return builder.finish();
 
-## TODO: create a doc comment for the get_Schema function
+## Get the Schema from the provided [param _bytes]
 static func get_Schema( _bytes: PackedByteArray ) -> Schema:
 	assert(not _bytes.is_empty())
 	return Schema.new(_bytes, _bytes.decode_u32(0))

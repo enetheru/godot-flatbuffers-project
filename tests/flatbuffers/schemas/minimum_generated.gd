@@ -11,11 +11,11 @@ class Minimum extends FlatBuffer:
 		VT_MY_FIELD = 4
 	}
 
-	## TODO: create a useful doc comment for the init function
+	## Initialize the STRUCT_NAME with the provided [param packed_bytes] at the given [param offset]
 	func _init( packed_bytes: PackedByteArray = [], offset: int = 0) -> void:
 		assign_buffer( packed_bytes, offset )
 
-	## TODO: create a useful doc comment for the verify function
+	## Verify the integrity of the STRUCT_NAME data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
@@ -34,34 +34,34 @@ class Minimum extends FlatBuffer:
 		return _fb_bytes.decode_s32( field_start )
 
 
-## TODO: Write a Doc Comment for the builder
+## Builder class for Minimum
 class MinimumBuilder extends RefCounted:
 	var fbb_: FlatBufferBuilder
 	var start_: int
 
-	## TODO: Write a Doc Comment for the builder's init function
+	## Initialize the builder with the provided [param _fbb]
 	func _init( _fbb: FlatBufferBuilder ) -> void:
 		fbb_ = _fbb
 		start_ = _fbb.start_table()
 
-	## TODO: Write a Doc Comment for the builder's add functions
+	## Add the my_field field to the Minimum table
 	func add_my_field( my_field: int ) -> void:
 		fbb_.add_element_int_default( Minimum.VT_MY_FIELD, my_field, 0 )
 
-	## TODO: Write a Doc Comment for the builder's finish function
+	## Finish building the Minimum table and return the offset
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
 		return o;
 
-## TODO: Write a Doc Comment for the static table create function
+## Create a Minimum table in one go using the provided [param _fbb]
 static func create_Minimum( _fbb: FlatBufferBuilder,
 		my_field: int ) -> int :
 	var builder: MinimumBuilder = MinimumBuilder.new( _fbb );
 	builder.add_my_field( my_field );
 	return builder.finish();
 
-## TODO: create a doc comment for the get_Minimum function
+## Get the Minimum from the provided [param _bytes]
 static func get_Minimum( _bytes: PackedByteArray ) -> Minimum:
 	assert(not _bytes.is_empty())
 	return Minimum.new(_bytes, _bytes.decode_u32(0))
