@@ -43,6 +43,10 @@ class RootTable extends FlatBuffer:
 		if not field_start: return null
 		return _minimum_schema.Minimum.new( _fb_bytes, field_start )
 
+	## Return true if external_array is present in the buffer, else false
+	func external_array_is_present() -> bool:
+		return get_field_offset( VT_EXTERNAL_ARRAY )
+
 	func external_array_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _minimum_schema.Minimum.new()
 		for i in external_array_size():

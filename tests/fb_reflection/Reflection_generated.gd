@@ -247,7 +247,7 @@ class KeyValueBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.Required(o, KeyValue.VT_KEY);
+		fbb_.required(o, KeyValue.VT_KEY)
 		return o;
 
 ## Create a KeyValue table in one go using the provided [param _fbb]
@@ -323,6 +323,10 @@ class EnumVal extends FlatBuffer:
 		if not field_start: return null
 		return _Reflection_schema.Type.new( _fb_bytes, field_start )
 
+	## Return true if documentation is present in the buffer, else false
+	func documentation_is_present() -> bool:
+		return get_field_offset( VT_DOCUMENTATION )
+
 	func documentation_size() -> int:
 		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
 		if not array_start: return 0
@@ -348,6 +352,10 @@ class EnumVal extends FlatBuffer:
 			var element_start: int = idx + _fb_bytes.decode_u32( idx )
 			array[i] = decode_variant( element_start, TYPE_STRING )
 		return array
+
+	## Return true if attributes is present in the buffer, else false
+	func attributes_is_present() -> bool:
+		return get_field_offset( VT_ATTRIBUTES )
 
 	func attributes_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.KeyValue.new()
@@ -426,7 +434,7 @@ class EnumValBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.Required(o, EnumVal.VT_NAME);
+		fbb_.required(o, EnumVal.VT_NAME)
 		return o;
 
 ## Create a EnumVal table in one go using the provided [param _fbb]
@@ -498,6 +506,11 @@ class Enum extends FlatBuffer:
 		if not field_start: return ''
 		return decode_variant( field_start, TYPE_STRING )
 
+	## Return true if values is present in the buffer, else false
+	## attribute: required
+	func values_is_present() -> bool:
+		return get_field_offset( VT_VALUES )
+
 	func values_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.EnumVal.new()
 		for i in values_size():
@@ -559,6 +572,10 @@ class Enum extends FlatBuffer:
 		if not field_start: return null
 		return _Reflection_schema.Type.new( _fb_bytes, field_start )
 
+	## Return true if attributes is present in the buffer, else false
+	func attributes_is_present() -> bool:
+		return get_field_offset( VT_ATTRIBUTES )
+
 	func attributes_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.KeyValue.new()
 		for i in attributes_size():
@@ -600,6 +617,10 @@ class Enum extends FlatBuffer:
 			var p: int = array_start + i * 4
 			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
+
+	## Return true if documentation is present in the buffer, else false
+	func documentation_is_present() -> bool:
+		return get_field_offset( VT_DOCUMENTATION )
 
 	func documentation_size() -> int:
 		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
@@ -679,9 +700,9 @@ class EnumBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.Required(o, Enum.VT_NAME);
-		fbb_.Required(o, Enum.VT_VALUES);
-		fbb_.Required(o, Enum.VT_UNDERLYING_TYPE);
+		fbb_.required(o, Enum.VT_NAME)
+		fbb_.required(o, Enum.VT_VALUES)
+		fbb_.required(o, Enum.VT_UNDERLYING_TYPE)
 		return o;
 
 ## Create a Enum table in one go using the provided [param _fbb]
@@ -838,6 +859,10 @@ class Field extends FlatBuffer:
 		if not field_start: return 0
 		return _fb_bytes.decode_u8( field_start )
 
+	## Return true if attributes is present in the buffer, else false
+	func attributes_is_present() -> bool:
+		return get_field_offset( VT_ATTRIBUTES )
+
 	func attributes_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.KeyValue.new()
 		for i in attributes_size():
@@ -879,6 +904,10 @@ class Field extends FlatBuffer:
 			var p: int = array_start + i * 4
 			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
+
+	## Return true if documentation is present in the buffer, else false
+	func documentation_is_present() -> bool:
+		return get_field_offset( VT_DOCUMENTATION )
 
 	func documentation_size() -> int:
 		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
@@ -992,8 +1021,8 @@ class FieldBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.Required(o, Field.VT_NAME);
-		fbb_.Required(o, Field.VT_TYPE);
+		fbb_.required(o, Field.VT_NAME)
+		fbb_.required(o, Field.VT_TYPE)
 		return o;
 
 ## Create a Field table in one go using the provided [param _fbb]
@@ -1081,6 +1110,11 @@ class Object_ extends FlatBuffer:
 		if not field_start: return ''
 		return decode_variant( field_start, TYPE_STRING )
 
+	## Return true if fields is present in the buffer, else false
+	## attribute: required
+	func fields_is_present() -> bool:
+		return get_field_offset( VT_FIELDS )
+
 	func fields_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.Field.new()
 		for i in fields_size():
@@ -1150,6 +1184,10 @@ class Object_ extends FlatBuffer:
 		if not field_start: return 0
 		return _fb_bytes.decode_s32( field_start )
 
+	## Return true if attributes is present in the buffer, else false
+	func attributes_is_present() -> bool:
+		return get_field_offset( VT_ATTRIBUTES )
+
 	func attributes_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.KeyValue.new()
 		for i in attributes_size():
@@ -1191,6 +1229,10 @@ class Object_ extends FlatBuffer:
 			var p: int = array_start + i * 4
 			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
+
+	## Return true if documentation is present in the buffer, else false
+	func documentation_is_present() -> bool:
+		return get_field_offset( VT_DOCUMENTATION )
 
 	func documentation_size() -> int:
 		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
@@ -1274,8 +1316,8 @@ class Object_Builder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.Required(o, Object_.VT_NAME);
-		fbb_.Required(o, Object_.VT_FIELDS);
+		fbb_.required(o, Object_.VT_NAME)
+		fbb_.required(o, Object_.VT_FIELDS)
 		return o;
 
 ## Create a Object_ table in one go using the provided [param _fbb]
@@ -1367,6 +1409,10 @@ class RPCCall extends FlatBuffer:
 		if not field_start: return null
 		return _Reflection_schema.Object_.new( _fb_bytes, field_start )
 
+	## Return true if attributes is present in the buffer, else false
+	func attributes_is_present() -> bool:
+		return get_field_offset( VT_ATTRIBUTES )
+
 	func attributes_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.KeyValue.new()
 		for i in attributes_size():
@@ -1408,6 +1454,10 @@ class RPCCall extends FlatBuffer:
 			var p: int = array_start + i * 4
 			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
+
+	## Return true if documentation is present in the buffer, else false
+	func documentation_is_present() -> bool:
+		return get_field_offset( VT_DOCUMENTATION )
 
 	func documentation_size() -> int:
 		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
@@ -1470,9 +1520,9 @@ class RPCCallBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.Required(o, RPCCall.VT_NAME);
-		fbb_.Required(o, RPCCall.VT_REQUEST);
-		fbb_.Required(o, RPCCall.VT_RESPONSE);
+		fbb_.required(o, RPCCall.VT_NAME)
+		fbb_.required(o, RPCCall.VT_REQUEST)
+		fbb_.required(o, RPCCall.VT_RESPONSE)
 		return o;
 
 ## Create a RPCCall table in one go using the provided [param _fbb]
@@ -1537,6 +1587,10 @@ class Service extends FlatBuffer:
 		if not field_start: return ''
 		return decode_variant( field_start, TYPE_STRING )
 
+	## Return true if calls is present in the buffer, else false
+	func calls_is_present() -> bool:
+		return get_field_offset( VT_CALLS )
+
 	func calls_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.RPCCall.new()
 		for i in calls_size():
@@ -1579,6 +1633,10 @@ class Service extends FlatBuffer:
 			array[i] = _Reflection_schema.RPCCall.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
+	## Return true if attributes is present in the buffer, else false
+	func attributes_is_present() -> bool:
+		return get_field_offset( VT_ATTRIBUTES )
+
 	func attributes_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.KeyValue.new()
 		for i in attributes_size():
@@ -1620,6 +1678,10 @@ class Service extends FlatBuffer:
 			var p: int = array_start + i * 4
 			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
+
+	## Return true if documentation is present in the buffer, else false
+	func documentation_is_present() -> bool:
+		return get_field_offset( VT_DOCUMENTATION )
 
 	func documentation_size() -> int:
 		var array_start: int = get_offset_field_start( VT_DOCUMENTATION )
@@ -1691,7 +1753,7 @@ class ServiceBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.Required(o, Service.VT_NAME);
+		fbb_.required(o, Service.VT_NAME)
 		return o;
 
 ## Create a Service table in one go using the provided [param _fbb]
@@ -1746,6 +1808,10 @@ class SchemaFile extends FlatBuffer:
 		if not field_start: return ''
 		return decode_variant( field_start, TYPE_STRING )
 
+	## Return true if included_filenames is present in the buffer, else false
+	func included_filenames_is_present() -> bool:
+		return get_field_offset( VT_INCLUDED_FILENAMES )
+
 	## Names of included files, relative to project root.
 	func included_filenames_size() -> int:
 		var array_start: int = get_offset_field_start( VT_INCLUDED_FILENAMES )
@@ -1798,7 +1864,7 @@ class SchemaFileBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.Required(o, SchemaFile.VT_FILENAME);
+		fbb_.required(o, SchemaFile.VT_FILENAME)
 		return o;
 
 ## Create a SchemaFile table in one go using the provided [param _fbb]
@@ -1857,6 +1923,11 @@ class Schema extends FlatBuffer:
 			and verify_end_table(verifier)
 		)
 
+	## Return true if objects is present in the buffer, else false
+	## attribute: required
+	func objects_is_present() -> bool:
+		return get_field_offset( VT_OBJECTS )
+
 	func objects_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.Object_.new()
 		for i in objects_size():
@@ -1898,6 +1969,11 @@ class Schema extends FlatBuffer:
 			var p: int = array_start + i * 4
 			array[i] = _Reflection_schema.Object_.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
+
+	## Return true if enums is present in the buffer, else false
+	## attribute: required
+	func enums_is_present() -> bool:
+		return get_field_offset( VT_ENUMS )
 
 	func enums_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.Enum.new()
@@ -1968,6 +2044,10 @@ class Schema extends FlatBuffer:
 		if not field_start: return null
 		return _Reflection_schema.Object_.new( _fb_bytes, field_start )
 
+	## Return true if services is present in the buffer, else false
+	func services_is_present() -> bool:
+		return get_field_offset( VT_SERVICES )
+
 	func services_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Reflection_schema.Service.new()
 		for i in services_size():
@@ -2019,6 +2099,10 @@ class Schema extends FlatBuffer:
 		if not field_start: return 0 as AdvancedFeatures
 		var decoded: AdvancedFeatures = _fb_bytes.decode_u64( field_start )
 		return decoded
+
+	## Return true if fbs_files is present in the buffer, else false
+	func fbs_files_is_present() -> bool:
+		return get_field_offset( VT_FBS_FILES )
 
 	## All the files used in this compilation. Files are relative to where
 ## flatc was invoked.
@@ -2117,8 +2201,8 @@ class SchemaBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.Required(o, Schema.VT_OBJECTS);
-		fbb_.Required(o, Schema.VT_ENUMS);
+		fbb_.required(o, Schema.VT_OBJECTS)
+		fbb_.required(o, Schema.VT_ENUMS)
 		return o;
 
 ## Create a Schema table in one go using the provided [param _fbb]

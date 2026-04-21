@@ -24,7 +24,7 @@ enum TestUnion {
 }
 
 ## Verify the integrity of the TestUnion union data
-static func test_union_verify(verifier:FlatBufferVerifier, value:Variant, type:TestUnion) -> bool:
+static func test_union_verify(verifier:FlatBufferVerifier, value:Variant, type:TestUnion) -> bool: 
 	match type:
 		TestUnion.TEST_TABLE_A:
 			var test_table_a: TestTableA = value
@@ -227,6 +227,10 @@ class RootTable extends FlatBuffer:
 			and verify_end_table(verifier)
 		)
 
+	## Return true if scalars is present in the buffer, else false
+	func scalars_is_present() -> bool:
+		return get_field_offset( VT_SCALARS )
+
 	## Vector of Scalars
 	func scalars_size() -> int:
 		var array_start: int = get_offset_field_start( VT_SCALARS )
@@ -251,6 +255,10 @@ class RootTable extends FlatBuffer:
 		var array_end: int = array_start + array_size * 4
 		return _fb_bytes.slice( array_start, array_end ).to_int32_array()
 
+	## Return true if enums is present in the buffer, else false
+	func enums_is_present() -> bool:
+		return get_field_offset( VT_ENUMS )
+
 	## Vector of Enums
 	func enums_size() -> int:
 		var array_start: int = get_offset_field_start( VT_ENUMS )
@@ -273,6 +281,10 @@ class RootTable extends FlatBuffer:
 		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
 		return _fb_bytes.slice( array_start, array_start + array_size )
+
+	## Return true if strings is present in the buffer, else false
+	func strings_is_present() -> bool:
+		return get_field_offset( VT_STRINGS )
 
 	## Vector of Strings
 	func strings_size() -> int:
@@ -303,6 +315,10 @@ class RootTable extends FlatBuffer:
 			array[i] = decode_variant( element_start, TYPE_STRING )
 		return array
 
+	## Return true if godot_structs is present in the buffer, else false
+	func godot_structs_is_present() -> bool:
+		return get_field_offset( VT_GODOT_STRUCTS )
+
 	## Vector of Godot Structs
 	func godot_structs_size() -> int:
 		var array_start: int = get_offset_field_start( VT_GODOT_STRUCTS )
@@ -331,6 +347,10 @@ class RootTable extends FlatBuffer:
 		return _fb_bytes.slice(
 				array_start, array_start + array_size * 12 ) \
 				.to_vector3_array()
+
+	## Return true if custom_structs is present in the buffer, else false
+	func custom_structs_is_present() -> bool:
+		return get_field_offset( VT_CUSTOM_STRUCTS )
 
 	## Vector of Custom Structs
 	func custom_structs_size() -> int:
@@ -365,6 +385,10 @@ class RootTable extends FlatBuffer:
 		for i: int in array_size:
 			array[i] = _vector_schema.TestStruct.new(_fb_bytes, array_start + i * 8 )
 		return array
+
+	## Return true if tables is present in the buffer, else false
+	func tables_is_present() -> bool:
+		return get_field_offset( VT_TABLES )
 
 	## Vector of Tables
 	func tables_verify(verifier:FlatBufferVerifier) -> bool:
@@ -411,6 +435,10 @@ class RootTable extends FlatBuffer:
 			var p: int = array_start + i * 4
 			array[i] = _vector_schema.TestTableA.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
+
+	## Return true if unions_type is present in the buffer, else false
+	func unions_type_is_present() -> bool:
+		return get_field_offset( VT_UNIONS_TYPE )
 
 	func unions_type_size() -> int:
 		var array_start: int = get_offset_field_start( VT_UNIONS_TYPE )
@@ -580,3 +608,4 @@ static func create_RootTable( _fbb: FlatBufferBuilder,
 static func get_RootTable( _bytes: PackedByteArray ) -> RootTable:
 	assert(not _bytes.is_empty())
 	return RootTable.new(_bytes, _bytes.decode_u32(0))
+

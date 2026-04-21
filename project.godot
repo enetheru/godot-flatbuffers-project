@@ -48,6 +48,12 @@ OutputLog/enable_ligatures=false
 OutputLog/add_rotate_bbcode_effect=false
 OutputLog/enable_output_search_bar=false
 OutputLog/enable_clickable_url_links=true
+OutputLog/Colours/notice_critical=Color(0.77, 0.35, 0.35, 1)
+OutputLog/Colours/notice_error=Color(0.77, 0.35, 0.35, 1)
+OutputLog/Colours/notice_warning=Color(0.72, 0.61, 0.48, 1)
+OutputLog/Colours/notice_notice=Color(0.56, 0.67, 0.51, 1)
+OutputLog/Colours/notice_debug=Color(0.6, 0.7, 0.8, 0.8)
+OutputLog/Colours/notice_trace=Color(1, 1, 1, 0.5)
 
 [flatbuffers]
 

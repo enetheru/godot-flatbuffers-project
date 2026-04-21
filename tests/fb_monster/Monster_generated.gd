@@ -18,7 +18,7 @@ enum Equipment {
 }
 
 ## Verify the integrity of the Equipment union data
-static func equipment_verify(verifier:FlatBufferVerifier, value:Variant, type:Equipment) -> bool:
+static func equipment_verify(verifier:FlatBufferVerifier, value:Variant, type:Equipment) -> bool: 
 	match type:
 		Equipment.WEAPON:
 			var weapon: Weapon = value
@@ -105,6 +105,10 @@ class Monster extends FlatBuffer:
 		if not field_start: return ''
 		return decode_variant( field_start, TYPE_STRING )
 
+	## Return true if inventory is present in the buffer, else false
+	func inventory_is_present() -> bool:
+		return get_field_offset( VT_INVENTORY )
+
 	func inventory_size() -> int:
 		var array_start: int = get_offset_field_start( VT_INVENTORY )
 		if not array_start: return 0
@@ -134,6 +138,10 @@ class Monster extends FlatBuffer:
 		if not field_start: return 2 as Color_
 		var decoded: Color_ = _fb_bytes.decode_s8( field_start )
 		return decoded
+
+	## Return true if weapons is present in the buffer, else false
+	func weapons_is_present() -> bool:
+		return get_field_offset( VT_WEAPONS )
 
 	func weapons_verify(verifier:FlatBufferVerifier) -> bool:
 		var tmp := _Monster_schema.Weapon.new()
@@ -195,6 +203,10 @@ class Monster extends FlatBuffer:
 			_Monster_schema.Equipment.WEAPON:
 				return _Monster_schema.Weapon.new( _fb_bytes, field_start )
 		return null
+
+	## Return true if path is present in the buffer, else false
+	func path_is_present() -> bool:
+		return get_field_offset( VT_PATH )
 
 	func path_size() -> int:
 		var array_start: int = get_offset_field_start( VT_PATH )
@@ -381,3 +393,4 @@ static func create_Weapon( _fbb: FlatBufferBuilder,
 static func get_Monster( _bytes: PackedByteArray ) -> Monster:
 	assert(not _bytes.is_empty())
 	return Monster.new(_bytes, _bytes.decode_u32(0))
+

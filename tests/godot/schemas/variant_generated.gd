@@ -258,6 +258,10 @@ class RootTable extends FlatBuffer:
 		var field_start: int = get_inline_field_start( VT_COLOR )
 		return decode_variant( field_start, TYPE_COLOR )
 
+	## Return true if packed_byte_array_ is present in the buffer, else false
+	func packed_byte_array__is_present() -> bool:
+		return get_field_offset( VT_PACKED_BYTE_ARRAY_ )
+
 	func packed_byte_array__size() -> int:
 		var array_start: int = get_offset_field_start( VT_PACKED_BYTE_ARRAY_ )
 		if not array_start: return 0
@@ -277,6 +281,10 @@ class RootTable extends FlatBuffer:
 		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
 		return _fb_bytes.slice( array_start, array_start + array_size )
+
+	## Return true if packed_int32_array_ is present in the buffer, else false
+	func packed_int32_array__is_present() -> bool:
+		return get_field_offset( VT_PACKED_INT32_ARRAY_ )
 
 	func packed_int32_array__size() -> int:
 		var array_start: int = get_offset_field_start( VT_PACKED_INT32_ARRAY_ )
@@ -299,6 +307,10 @@ class RootTable extends FlatBuffer:
 		var array_end: int = array_start + array_size * 4
 		return _fb_bytes.slice( array_start, array_end ).to_int32_array()
 
+	## Return true if packed_int64_array_ is present in the buffer, else false
+	func packed_int64_array__is_present() -> bool:
+		return get_field_offset( VT_PACKED_INT64_ARRAY_ )
+
 	func packed_int64_array__size() -> int:
 		var array_start: int = get_offset_field_start( VT_PACKED_INT64_ARRAY_ )
 		if not array_start: return 0
@@ -319,6 +331,10 @@ class RootTable extends FlatBuffer:
 		array_start += 4
 		var array_end: int = array_start + array_size * 8
 		return _fb_bytes.slice( array_start, array_end ).to_int64_array()
+
+	## Return true if packed_float32_array_ is present in the buffer, else false
+	func packed_float32_array__is_present() -> bool:
+		return get_field_offset( VT_PACKED_FLOAT32_ARRAY_ )
 
 	func packed_float32_array__size() -> int:
 		var array_start: int = get_offset_field_start( VT_PACKED_FLOAT32_ARRAY_ )
@@ -341,6 +357,10 @@ class RootTable extends FlatBuffer:
 		var array_end: int = array_start + array_size * 4
 		return _fb_bytes.slice( array_start, array_end ).to_float32_array()
 
+	## Return true if packed_float64_array_ is present in the buffer, else false
+	func packed_float64_array__is_present() -> bool:
+		return get_field_offset( VT_PACKED_FLOAT64_ARRAY_ )
+
 	func packed_float64_array__size() -> int:
 		var array_start: int = get_offset_field_start( VT_PACKED_FLOAT64_ARRAY_ )
 		if not array_start: return 0
@@ -361,6 +381,10 @@ class RootTable extends FlatBuffer:
 		array_start += 4
 		var array_end: int = array_start + array_size * 8
 		return _fb_bytes.slice( array_start, array_end ).to_float64_array()
+
+	## Return true if packed_string_array_ is present in the buffer, else false
+	func packed_string_array__is_present() -> bool:
+		return get_field_offset( VT_PACKED_STRING_ARRAY_ )
 
 	func packed_string_array__size() -> int:
 		var array_start: int = get_offset_field_start( VT_PACKED_STRING_ARRAY_ )
@@ -388,6 +412,10 @@ class RootTable extends FlatBuffer:
 			array[i] = decode_variant( element_start, TYPE_STRING )
 		return array
 
+	## Return true if packed_vector2_array_ is present in the buffer, else false
+	func packed_vector2_array__is_present() -> bool:
+		return get_field_offset( VT_PACKED_VECTOR2_ARRAY_ )
+
 	func packed_vector2_array__size() -> int:
 		var array_start: int = get_offset_field_start( VT_PACKED_VECTOR2_ARRAY_ )
 		if not array_start: return 0
@@ -413,6 +441,10 @@ class RootTable extends FlatBuffer:
 		return _fb_bytes.slice(
 				array_start, array_start + array_size * 8 ) \
 				.to_vector2_array()
+
+	## Return true if packed_vector3_array_ is present in the buffer, else false
+	func packed_vector3_array__is_present() -> bool:
+		return get_field_offset( VT_PACKED_VECTOR3_ARRAY_ )
 
 	func packed_vector3_array__size() -> int:
 		var array_start: int = get_offset_field_start( VT_PACKED_VECTOR3_ARRAY_ )
@@ -440,6 +472,10 @@ class RootTable extends FlatBuffer:
 				array_start, array_start + array_size * 12 ) \
 				.to_vector3_array()
 
+	## Return true if packed_color_array_ is present in the buffer, else false
+	func packed_color_array__is_present() -> bool:
+		return get_field_offset( VT_PACKED_COLOR_ARRAY_ )
+
 	func packed_color_array__size() -> int:
 		var array_start: int = get_offset_field_start( VT_PACKED_COLOR_ARRAY_ )
 		if not array_start: return 0
@@ -465,6 +501,10 @@ class RootTable extends FlatBuffer:
 		return _fb_bytes.slice(
 				array_start, array_start + array_size * 16 ) \
 				.to_color_array()
+
+	## Return true if packed_vector4_array_ is present in the buffer, else false
+	func packed_vector4_array__is_present() -> bool:
+		return get_field_offset( VT_PACKED_VECTOR4_ARRAY_ )
 
 	func packed_vector4_array__size() -> int:
 		var array_start: int = get_offset_field_start( VT_PACKED_VECTOR4_ARRAY_ )

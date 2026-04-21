@@ -83,6 +83,10 @@ class TableDecl extends FlatBuffer:
 		if not field_start: return 5.3
 		return _fb_bytes.decode_float( field_start )
 
+	## Return true if ident5 is present in the buffer, else false
+	func ident5_is_present() -> bool:
+		return get_field_offset( VT_IDENT5 )
+
 	func ident5_size() -> int:
 		var array_start: int = get_offset_field_start( VT_IDENT5 )
 		if not array_start: return 0
