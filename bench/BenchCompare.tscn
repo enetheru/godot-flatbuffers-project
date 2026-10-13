@@ -1,0 +1,87 @@
+[gd_scene format=3 uid="uid://c8n4tsc1i0du3"]
+
+[ext_resource type="Script" uid="uid://bvwnmhqogxj42" path="res://bench/bench_compare.gd" id="1_script"]
+
+[node name="BenchCompare" type="Control" unique_id=1720663043]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Margin" type="MarginContainer" parent="." unique_id=2143159415]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="Margin" unique_id=2140007323]
+layout_mode = 2
+
+[node name="Toolbar" type="HBoxContainer" parent="Margin/VBox" unique_id=721628868]
+layout_mode = 2
+
+[node name="Back" type="Button" parent="Margin/VBox/Toolbar" unique_id=967710364]
+layout_mode = 2
+text = "Bench list"
+
+[node name="Metric" type="OptionButton" parent="Margin/VBox/Toolbar" unique_id=202964740]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 2
+selected = 0
+item_count = 3
+popup/item_0/text = "Time"
+popup/item_0/id = 0
+popup/item_1/text = "Throughput"
+popup/item_1/id = 1
+popup/item_2/text = "Size"
+popup/item_2/id = 2
+
+[node name="Reload" type="Button" parent="Margin/VBox/Toolbar" unique_id=658469696]
+layout_mode = 2
+text = "Reload"
+
+[node name="Status" type="Label" parent="Margin/VBox/Toolbar" unique_id=1498027085]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "210 rows, 6 runs"
+
+[node name="Split" type="HSplitContainer" parent="Margin/VBox" unique_id=1601470242]
+layout_mode = 2
+size_flags_vertical = 3
+drag_area_highlight_in_editor = true
+
+[node name="Benchmarks" type="Tree" parent="Margin/VBox/Split" unique_id=1308006955]
+custom_minimum_size = Vector2(420, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 4
+column_titles_visible = true
+hide_root = true
+
+[node name="Right" type="VBoxContainer" parent="Margin/VBox/Split" unique_id=679183645]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Chart" type="Control" parent="Margin/VBox/Split/Right" unique_id=1380791737]
+custom_minimum_size = Vector2(0, 240)
+clip_contents = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Readout" type="Label" parent="Margin/VBox/Split/Right" unique_id=1796156214]
+custom_minimum_size = Vector2(0, 96)
+layout_mode = 2
+text = "BM_Flatbuffers_Encode
+editor    58.0 us    2026-10-13T17:13:16    11081 iters
+template_debug    54.1 us    2026-10-13T17:13:54    11614 iters
+template_release    46.0 us    2026-10-13T17:14:25    15750 iters"
+autowrap_mode = 3

@@ -8,6 +8,7 @@ const ConsoleReporter = preload("uid://cp6jwltd8s2ur")
 const Runner = preload("runner_suite.gd")
 const RunnerPrealloc = preload("uid://6s5qd6by3jri")
 const RunnerArraySize = preload("uid://c7t7mscufip1r")
+const Run = preload("run.gd")
 
 
 @onready var rich_text_label: RichTextLabel = $RichTextLabel
@@ -19,6 +20,11 @@ var reporter:ConsoleReporter = ConsoleReporter.new()
 func _on_meta_clicked( meta:String ) -> void:
 	if meta == "quit":
 		get_tree().quit()
+		return
+
+	if meta == "compare":
+		if get_tree().change_scene_to_file("res://bench/BenchCompare.tscn") != OK:
+			printerr("failed to open compare scene")
 		return
 
 	if meta == "pre-alloc":
@@ -51,7 +57,15 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	# Template binaries drop --script. The token after -- selects a suite and
+	# the process exits when that suite finishes. No token keeps the click list.
+	var args := OS.get_cmdline_user_args()
+	if args.size() > 0:
+		get_tree().quit(Run.run_from_args(args))
+		return
+
 	rich_text_label.text = "[url=quit]quit[/url]\n\n"
+	rich_text_label.append_text("[url=compare]compare results[/url]\n\n")
 	rich_text_label.append_text("[url=pre-alloc]pre-alloc[/url]\n\n")
 	rich_text_label.append_text("[url=array-size]array-size[/url]\n\n")
 	rich_text_label.append_text("[url=all]all[/url]\n\n")

@@ -1,8 +1,9 @@
 @tool
 extends EditorScript
-const Runner = preload("runner_suite.gd")
-const BenchGenerated = preload("uid://ddiycsgeokhmv")
+
+const Run = preload("run.gd")
+
 
 func _run() -> void:
-	var runner := Runner.new()
-	runner._run()
+	if Run.run_from_args(PackedStringArray()) != 0:
+		printerr("benchmark run failed")
