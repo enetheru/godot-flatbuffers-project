@@ -29,7 +29,7 @@ I did try to migrate to the more mainstream testing libraries like [GUT](https:/
 ### /bench
 I needed to benchmark, and in either a stroke of genius or madness ported as much as I needed from the google benchmark library directly to GDScript to perform rudimentary testing. This was all done manually, in a weeklong rush, without the use of AI, and yet somehow I got it working enough for my needs. I very much had my doubts that this project was worth the time, but after rudimentary benchmarking that showed 3x slower, but also 3x smaller, I decided that it was still worth the effort.
 - /bench/
-    - /BenchLib/ - The somewhat messy straight port of Google/[Benchmark](https://github.com/google/benchmark) to GDScript.
+    - The benchmark library is the `enetheru.gdsbench` addon (`class_name BenchLib`).
     - /editor_run.gd - right click and run, and wait. it will eventually spit out results.
     - /BenchScene.tscn - used to run the benchmarks in a template_release context, open the scene and press f6 to run.
 The rest of the items in the folder support the running of the benchmarks

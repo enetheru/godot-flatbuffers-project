@@ -1,9 +1,8 @@
 @tool
 
 const RegisterLib = preload("uid://ehhn1k7v0g6w")
-const State = BenchLib.State
-const Benchmark = BenchLib.Benchmark
-const FunctionBenchmark = BenchLib.FunctionBenchmark
+const Benchmark = RegisterLib.Benchmark
+const FunctionBenchmark = RegisterLib.FunctionBenchmark
 const ConsoleReporter = preload("uid://cp6jwltd8s2ur")
 
 # new checksum, should be the same for both 2524655701620245727
@@ -11,7 +10,7 @@ const ConsoleReporter = preload("uid://cp6jwltd8s2ur")
 
 
 func _init() -> void:
-	BenchLib.GetInstance()._families.clear()
+	RegisterLib.ClearRegisteredBenchmarks()
 	BenchLib.FLAGS_benchmark_list_tests = false
 	BenchLib.FLAGS_benchmark_dry_run = false
 	BenchLib.kMaxIterations = 1

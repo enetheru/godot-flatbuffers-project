@@ -1,10 +1,7 @@
 extends Node
 
-const BenchmarkFamilies = BenchLib.BenchmarkFamilies
-
-const Instlib = preload("uid://dl8f6nc1cjmw6")
-const BenchmarkInstance = Instlib.BenchmarkInstance
 const RegisterLib = preload("uid://ehhn1k7v0g6w")
+const BenchmarkFamilies = RegisterLib.BenchmarkFamilies
 
 const ConsoleReporter = preload("uid://cp6jwltd8s2ur")
 
@@ -49,7 +46,7 @@ func _on_meta_clicked( meta:String ) -> void:
 
 
 func _init() -> void:
-	bmf = BenchLib.GetInstance()
+	bmf = BenchmarkFamilies.GetInstance()
 	var _runner := Runner.new()
 
 
