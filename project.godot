@@ -32,7 +32,7 @@ gdscript/warnings/return_value_discarded=1
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/enetheru.command-server/plugin.cfg", "res://addons/enetheru.flatbuffers-addon/plugin.cfg", "res://addons/enetheru.gdsbench/plugin.cfg", "res://addons/enetheru.test-runner/plugin.cfg", "res://addons/enetheru.utils/plugin.cfg")
+enabled=PackedStringArray("res://addons/enetheru.command-server/plugin.cfg", "res://addons/enetheru.editor-tweaks/plugin.cfg", "res://addons/enetheru.flatbuffers-addon/plugin.cfg", "res://addons/enetheru.gdsbench/plugin.cfg", "res://addons/enetheru.test-runner/plugin.cfg", "res://addons/enetheru.utils/plugin.cfg")
 
 [editor_tweaks]
 
@@ -40,7 +40,7 @@ debug=true
 experimental=false
 CodeEditor/use_monospace_glyphs=true
 CodeEditor/add_rich_paste=true
-CodeEditor/enable_linespacing_tweaks=true
+CodeEditor/enable_linespacing_tweaks=false
 CodeEditor/adjust_linespacing_above=-4
 CodeEditor/adjust_linespacing_below=-5
 verbosity=65535
@@ -54,14 +54,14 @@ OutputLog/Colours/notice_warning=Color(0.72, 0.61, 0.48, 1)
 OutputLog/Colours/notice_notice=Color(0.56, 0.67, 0.51, 1)
 OutputLog/Colours/notice_debug=Color(0.6, 0.7, 0.8, 0.8)
 OutputLog/Colours/notice_trace=Color(1, 1, 1, 0.5)
-CodeEditor/make_method_trace_line=false
+CodeEditor/make_method_trace_line=true
+CodeEditor/metadata/_custom_type_script="uid://bknlnwba5l18x"
 
 [flatbuffers]
 
 debug=true
 experimental=false
 EditorLog/=true
-EditorLog/verbosity=5
 highlight_error=true
 Colours/Syntax/unknown=Color(1, 1, 1, 0.75)
 Colours/Syntax/comment=Color(1, 1, 1, 0.5)
@@ -79,6 +79,7 @@ Colours/Notice/warning=Color(0.72, 0.61, 0.48, 1)
 Colours/Notice/notice=Color(0.56, 0.67, 0.51, 1)
 Colours/Notice/debug=Color(0.6, 0.7, 0.8, 0.8)
 Colours/Notice/trace=Color(1, 1, 1, 0.5)
+EditorLog/verbosity=15
 
 [rendering]
 

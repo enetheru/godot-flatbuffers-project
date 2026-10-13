@@ -1,7 +1,6 @@
 @tool
 extends TestStrategy
 
-const Print = preload("uid://cbluyr4ifn8g3")
 const Schema = preload("../schemas/vector_generated.gd")
 
 const TestEnum = Schema.TestEnum
