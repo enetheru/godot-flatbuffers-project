@@ -13,7 +13,7 @@ config_version=5
 config/name="FlatBuffers Extension Project"
 config/tags=PackedStringArray("enetheru")
 run/main_scene="uid://fb786i4j7ky7"
-config/features=PackedStringArray("4.6")
+config/features=PackedStringArray("4.7")
 config/icon="uid://cfc5vxnc2fm05"
 
 [debug]
@@ -32,12 +32,12 @@ gdscript/warnings/return_value_discarded=1
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/enetheru.editor-tweaks/plugin.cfg", "res://addons/enetheru.flatbuffers-addon/plugin.cfg", "res://addons/enetheru.test-runner/plugin.cfg", "res://addons/enetheru.utils/plugin.cfg")
+enabled=PackedStringArray("res://addons/enetheru.command-server/plugin.cfg", "res://addons/enetheru.flatbuffers-addon/plugin.cfg", "res://addons/enetheru.gdsbench/plugin.cfg", "res://addons/enetheru.test-runner/plugin.cfg", "res://addons/enetheru.utils/plugin.cfg")
 
 [editor_tweaks]
 
 debug=true
-experimental=true
+experimental=false
 CodeEditor/use_monospace_glyphs=true
 CodeEditor/add_rich_paste=true
 CodeEditor/enable_linespacing_tweaks=true
@@ -54,11 +54,12 @@ OutputLog/Colours/notice_warning=Color(0.72, 0.61, 0.48, 1)
 OutputLog/Colours/notice_notice=Color(0.56, 0.67, 0.51, 1)
 OutputLog/Colours/notice_debug=Color(0.6, 0.7, 0.8, 0.8)
 OutputLog/Colours/notice_trace=Color(1, 1, 1, 0.5)
+CodeEditor/make_method_trace_line=false
 
 [flatbuffers]
 
 debug=true
-experimental=true
+experimental=false
 EditorLog/=true
 EditorLog/verbosity=5
 highlight_error=true

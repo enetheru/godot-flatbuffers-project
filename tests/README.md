@@ -128,10 +128,10 @@ attribute is the hashing algorithm to use, one of `fnv1_32` `fnv1_64`
 
 #### Brainstorming godot specific attributes
 - mark a flatbuffer generated script with annotations like @tool
-- 
+-
 ### Identifiers
 I need rules on how to handle naming collisions.
-so far I'm just adding an underscore to the name, but going forward I need to 
+so far I'm just adding an underscore to the name, but going forward I need to
 change the identifiers built-in to the extension such that they are less likely to collide. things like using names like 'start', are too generic.
 
 Testing such things would be to purposefully build a flatbuffer which collides and
@@ -142,7 +142,7 @@ I don't know if there is some specifics around this I should care about, perhaps
 including, or adding an attribute to include from another class or file, perhaps something like to prevent it from being generated.
 ```fbs
 enum Named:uint8 (native:"ExistingClass.ExistingEnum") {
-    ENUM_VAL = 0, // enum values can also have individual metadata
+	ENUM_VAL = 0, // enum values can also have individual metadata
 }
 ```
 
@@ -152,11 +152,11 @@ The documentation appears to be missing some information too, as the type alias 
 
 ```fbs
 union UnionIdent {
-    TypeAlias:Type,
+	TypeAlias:Type,
 }
 ```
 ### struct
-Because structs are not supported in godot at this time, it seems to me that 
+Because structs are not supported in godot at this time, it seems to me that
 the majority of how this will be expressed is in the flatbuffer side of things, and not so much the godot side of things.
 ### table
 I want to be able to add the object API to tables.
@@ -188,4 +188,3 @@ not the x,y,z of a geometric nature.
 
 #### Default
 #### Metadata/Atrributes
-
