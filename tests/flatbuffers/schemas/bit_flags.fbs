@@ -1,0 +1,22 @@
+attribute "tool";
+
+enum Flags:uint8 (bit_flags) {
+	A,
+	B,
+	C
+}
+
+enum Sparse:uint16 (bit_flags) {
+	F0,
+	F07 = 7,
+	F08,
+	F14 = 14,
+	F15
+}
+
+table Root {
+	flag:Flags;
+	sparse:Sparse;
+}
+
+root_type Root;
