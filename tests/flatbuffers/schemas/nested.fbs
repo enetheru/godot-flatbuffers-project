@@ -1,0 +1,11 @@
+attribute "tool";
+
+table Inner {
+	n:int;
+}
+
+table Root {
+	payload:[ubyte] (nested_flatbuffer: "Inner");
+}
+
+root_type Root;
