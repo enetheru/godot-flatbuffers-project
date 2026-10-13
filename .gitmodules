@@ -1,0 +1,24 @@
+[submodule "addons/enetheru.command-server"]
+	path = addons/enetheru.command-server
+	url = git@github.com:enetheru/godot-command-server.git
+	branch = master
+[submodule "addons/enetheru.editor-tweaks"]
+	path = addons/enetheru.editor-tweaks
+	url = git@github.com:enetheru/godot-editor-tweaks.git
+	branch = master
+[submodule "addons/enetheru.flatbuffers-addon"]
+	path = addons/enetheru.flatbuffers-addon
+	url = git@github.com:enetheru/godot-flatbuffers-addon.git
+	branch = main
+[submodule "addons/enetheru.gdsbench"]
+	path = addons/enetheru.gdsbench
+	url = git@gitlab.com:enetheru/godot-gdsbench.git
+	branch = master
+[submodule "addons/enetheru.test-runner"]
+	path = addons/enetheru.test-runner
+	url = git@github.com:enetheru/godot-test-runner.git
+	branch = main
+[submodule "addons/enetheru.utils"]
+	path = addons/enetheru.utils
+	url = git@github.com:enetheru/godot-utils.git
+	branch = master
