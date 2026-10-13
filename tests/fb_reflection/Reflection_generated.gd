@@ -5,7 +5,6 @@
 # must be Variant, which triggers these two notices
 @warning_ignore_start('unsafe_method_access')
 @warning_ignore_start('unsafe_call_argument')
-@warning_ignore_start('return_value_discarded')
 
 enum BaseType {
 	NONE = 0,
@@ -198,8 +197,7 @@ class KeyValue extends FlatBuffer:
 		verifier.set_buffer(_fb_bytes)
 		return (
 			verify_table_start(verifier)
-			# TODO required field
-			and verify_offset(verifier, VT_KEY)
+			and verify_offset_required(verifier, VT_KEY)
 			and verify_string( verifier, VT_KEY )
 			and verify_offset(verifier, VT_VALUE)
 			and verify_string( verifier, VT_VALUE )
@@ -248,7 +246,8 @@ class KeyValueBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.required(o, KeyValue.VT_KEY)
+		if not fbb_.required(o, KeyValue.VT_KEY):
+			return 0
 		return o;
 
 ## Create a KeyValue table in one go using the provided [param _fbb]
@@ -281,8 +280,7 @@ class EnumVal extends FlatBuffer:
 		verifier.set_buffer(_fb_bytes)
 		return (
 			verify_table_start(verifier)
-			# TODO required field
-			and verify_offset(verifier, VT_NAME)
+			and verify_offset_required(verifier, VT_NAME)
 			and verify_string( verifier, VT_NAME )
 			and verify_field_s64(verifier, VT_VALUE, 8)
 			and verify_offset(verifier, VT_UNION_TYPE)
@@ -435,7 +433,8 @@ class EnumValBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.required(o, EnumVal.VT_NAME)
+		if not fbb_.required(o, EnumVal.VT_NAME):
+			return 0
 		return o;
 
 ## Create a EnumVal table in one go using the provided [param _fbb]
@@ -475,16 +474,13 @@ class Enum extends FlatBuffer:
 		verifier.set_buffer(_fb_bytes)
 		return (
 			verify_table_start(verifier)
-			# TODO required field
-			and verify_offset(verifier, VT_NAME)
+			and verify_offset_required(verifier, VT_NAME)
 			and verify_string( verifier, VT_NAME )
-			# TODO required field
-			and verify_offset(verifier, VT_VALUES)
+			and verify_offset_required(verifier, VT_VALUES)
 			and verify_vector_u32(verifier, VT_VALUES)
 			and values_verify(verifier)
 			and verify_field_u8(verifier, VT_IS_UNION, 1)
-			# TODO required field
-			and verify_offset(verifier, VT_UNDERLYING_TYPE)
+			and verify_offset_required(verifier, VT_UNDERLYING_TYPE)
 			and underlying_type().verify(verifier)
 			and verify_offset(verifier, VT_ATTRIBUTES)
 			and verify_vector_u32(verifier, VT_ATTRIBUTES)
@@ -701,9 +697,12 @@ class EnumBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.required(o, Enum.VT_NAME)
-		fbb_.required(o, Enum.VT_VALUES)
-		fbb_.required(o, Enum.VT_UNDERLYING_TYPE)
+		if not fbb_.required(o, Enum.VT_NAME):
+			return 0
+		if not fbb_.required(o, Enum.VT_VALUES):
+			return 0
+		if not fbb_.required(o, Enum.VT_UNDERLYING_TYPE):
+			return 0
 		return o;
 
 ## Create a Enum table in one go using the provided [param _fbb]
@@ -753,11 +752,9 @@ class Field extends FlatBuffer:
 		verifier.set_buffer(_fb_bytes)
 		return (
 			verify_table_start(verifier)
-			# TODO required field
-			and verify_offset(verifier, VT_NAME)
+			and verify_offset_required(verifier, VT_NAME)
 			and verify_string( verifier, VT_NAME )
-			# TODO required field
-			and verify_offset(verifier, VT_TYPE)
+			and verify_offset_required(verifier, VT_TYPE)
 			and type().verify(verifier)
 			and verify_field_u16(verifier, VT_ID, 2)
 			and verify_field_u16(verifier, VT_OFFSET, 2)
@@ -1022,8 +1019,10 @@ class FieldBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.required(o, Field.VT_NAME)
-		fbb_.required(o, Field.VT_TYPE)
+		if not fbb_.required(o, Field.VT_NAME):
+			return 0
+		if not fbb_.required(o, Field.VT_TYPE):
+			return 0
 		return o;
 
 ## Create a Field table in one go using the provided [param _fbb]
@@ -1080,11 +1079,9 @@ class Object_ extends FlatBuffer:
 		verifier.set_buffer(_fb_bytes)
 		return (
 			verify_table_start(verifier)
-			# TODO required field
-			and verify_offset(verifier, VT_NAME)
+			and verify_offset_required(verifier, VT_NAME)
 			and verify_string( verifier, VT_NAME )
-			# TODO required field
-			and verify_offset(verifier, VT_FIELDS)
+			and verify_offset_required(verifier, VT_FIELDS)
 			and verify_vector_u32(verifier, VT_FIELDS)
 			and fields_verify(verifier)
 			and verify_field_u8(verifier, VT_IS_STRUCT, 1)
@@ -1317,8 +1314,10 @@ class Object_Builder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.required(o, Object_.VT_NAME)
-		fbb_.required(o, Object_.VT_FIELDS)
+		if not fbb_.required(o, Object_.VT_NAME):
+			return 0
+		if not fbb_.required(o, Object_.VT_FIELDS):
+			return 0
 		return o;
 
 ## Create a Object_ table in one go using the provided [param _fbb]
@@ -1362,14 +1361,11 @@ class RPCCall extends FlatBuffer:
 		verifier.set_buffer(_fb_bytes)
 		return (
 			verify_table_start(verifier)
-			# TODO required field
-			and verify_offset(verifier, VT_NAME)
+			and verify_offset_required(verifier, VT_NAME)
 			and verify_string( verifier, VT_NAME )
-			# TODO required field
-			and verify_offset(verifier, VT_REQUEST)
+			and verify_offset_required(verifier, VT_REQUEST)
 			and request().verify(verifier)
-			# TODO required field
-			and verify_offset(verifier, VT_RESPONSE)
+			and verify_offset_required(verifier, VT_RESPONSE)
 			and response().verify(verifier)
 			and verify_offset(verifier, VT_ATTRIBUTES)
 			and verify_vector_u32(verifier, VT_ATTRIBUTES)
@@ -1521,9 +1517,12 @@ class RPCCallBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.required(o, RPCCall.VT_NAME)
-		fbb_.required(o, RPCCall.VT_REQUEST)
-		fbb_.required(o, RPCCall.VT_RESPONSE)
+		if not fbb_.required(o, RPCCall.VT_NAME):
+			return 0
+		if not fbb_.required(o, RPCCall.VT_REQUEST):
+			return 0
+		if not fbb_.required(o, RPCCall.VT_RESPONSE):
+			return 0
 		return o;
 
 ## Create a RPCCall table in one go using the provided [param _fbb]
@@ -1561,8 +1560,7 @@ class Service extends FlatBuffer:
 		verifier.set_buffer(_fb_bytes)
 		return (
 			verify_table_start(verifier)
-			# TODO required field
-			and verify_offset(verifier, VT_NAME)
+			and verify_offset_required(verifier, VT_NAME)
 			and verify_string( verifier, VT_NAME )
 			and verify_offset(verifier, VT_CALLS)
 			and verify_vector_u32(verifier, VT_CALLS)
@@ -1754,7 +1752,8 @@ class ServiceBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.required(o, Service.VT_NAME)
+		if not fbb_.required(o, Service.VT_NAME):
+			return 0
 		return o;
 
 ## Create a Service table in one go using the provided [param _fbb]
@@ -1790,8 +1789,7 @@ class SchemaFile extends FlatBuffer:
 		verifier.set_buffer(_fb_bytes)
 		return (
 			verify_table_start(verifier)
-			# TODO required field
-			and verify_offset(verifier, VT_FILENAME)
+			and verify_offset_required(verifier, VT_FILENAME)
 			and verify_string( verifier, VT_FILENAME )
 			and verify_offset(verifier, VT_INCLUDED_FILENAMES)
 			and verify_vector_u32(verifier, VT_INCLUDED_FILENAMES)
@@ -1865,7 +1863,8 @@ class SchemaFileBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.required(o, SchemaFile.VT_FILENAME)
+		if not fbb_.required(o, SchemaFile.VT_FILENAME):
+			return 0
 		return o;
 
 ## Create a SchemaFile table in one go using the provided [param _fbb]
@@ -1898,14 +1897,14 @@ class Schema extends FlatBuffer:
 	## Verify the integrity of the SchemaFile data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
+		if not verifier.buffer_has_identifier("BFBS"):
+			return false
 		return (
 			verify_table_start(verifier)
-			# TODO required field
-			and verify_offset(verifier, VT_OBJECTS)
+			and verify_offset_required(verifier, VT_OBJECTS)
 			and verify_vector_u32(verifier, VT_OBJECTS)
 			and objects_verify(verifier)
-			# TODO required field
-			and verify_offset(verifier, VT_ENUMS)
+			and verify_offset_required(verifier, VT_ENUMS)
 			and verify_vector_u32(verifier, VT_ENUMS)
 			and enums_verify(verifier)
 			and verify_offset(verifier, VT_FILE_IDENT)
@@ -2202,8 +2201,10 @@ class SchemaBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.required(o, Schema.VT_OBJECTS)
-		fbb_.required(o, Schema.VT_ENUMS)
+		if not fbb_.required(o, Schema.VT_OBJECTS):
+			return 0
+		if not fbb_.required(o, Schema.VT_ENUMS):
+			return 0
 		return o;
 
 ## Create a Schema table in one go using the provided [param _fbb]
@@ -2231,4 +2232,10 @@ static func create_Schema( _fbb: FlatBufferBuilder,
 static func get_Schema( _bytes: PackedByteArray ) -> Schema:
 	assert(not _bytes.is_empty())
 	return Schema.new(_bytes, _bytes.decode_u32(0))
+
+const FILE_IDENTIFIER: String = "BFBS"
+
+## Finish a buffer whose root is a Schema
+static func finish_Schema_buffer( fbb: FlatBufferBuilder, root: int ) -> void:
+	fbb.finish(root, FILE_IDENTIFIER)
 
