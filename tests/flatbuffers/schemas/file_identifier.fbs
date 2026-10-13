@@ -1,0 +1,13 @@
+attribute "tool";
+
+table Child {
+	n:int;
+}
+
+table Root {
+	label:string;
+	child:Child;
+}
+
+root_type Root;
+file_identifier "RQID";
