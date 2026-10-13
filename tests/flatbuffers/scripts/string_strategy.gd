@@ -192,9 +192,9 @@ func decode_manual(buf:PackedByteArray) -> Schema.RootTable:
 	# Now we know where the string is, does it look like a flatbuffers string?
 	var ss:int = buf.decode_u32(sl)
 	test.logd("string_size: %d" % ss)
-	# string length in godot does not count the null termination, but getting the size
-	# from the flatbuffer is the size in bytes, which includes a null termination.
-	test.TEST_EQ(test_string.length() +1, ss, "decoded size, and original size should be the same")
+	# The length prefix is the UTF-8 byte count. A NUL follows those bytes and is not counted.
+	# This string is ASCII, so that count matches Godot's length().
+	test.TEST_EQ(test_string.length(), ss, "decoded size, and original size should be the same")
 
 	# get the string directly from the buffer using slice.
 	var decoded_string:String = buf.slice(sl+4, sl+4+ss).get_string_from_utf8()

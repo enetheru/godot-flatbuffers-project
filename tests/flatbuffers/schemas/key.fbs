@@ -1,0 +1,18 @@
+attribute "tool";
+
+table Named {
+	name:string (key);
+	n:int;
+}
+
+table Numbered {
+	n:long (key);
+	label:string;
+}
+
+table Root {
+	named:[Named];
+	numbered:[Numbered];
+}
+
+root_type Root;
