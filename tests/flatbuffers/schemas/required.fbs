@@ -1,0 +1,12 @@
+attribute "tool";
+
+table Child {
+	my_field:int;
+}
+
+table RootTable {
+	label:string (required);
+	child:Child (required);
+}
+
+root_type RootTable;

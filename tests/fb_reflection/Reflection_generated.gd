@@ -5,6 +5,7 @@
 # must be Variant, which triggers these two notices
 @warning_ignore_start('unsafe_method_access')
 @warning_ignore_start('unsafe_call_argument')
+@warning_ignore_start('return_value_discarded')
 
 enum BaseType {
 	NONE = 0,
