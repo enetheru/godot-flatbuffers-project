@@ -170,3 +170,115 @@ func read_orc_flatbuffer( bytes:PackedByteArray ) -> void:
 			var weapon_damage:int = weapon.damage()
 			test.TEST_EQ( weapon_name, "Axe", "weapon.name()" )
 			test.TEST_EQ( weapon_damage, 5, "weapon.damage()" )
+
+
+## Each case copies the good orc and breaks one slot. verify() must return false.
+## Field reads stay on the intact buffer above.
+func reject_broken_buffers( bytes:PackedByteArray ) -> void:
+	var intact:PackedByteArray = bytes.duplicate()
+	var monster:schema.Monster = _monster_at_root( intact )
+	if not test.TEST_TRUE_RET( monster.verify( verifier ), "intact buffer verifies" ):
+		return
+
+	_expect_reject( PackedByteArray(), "empty buffer" )
+	_expect_truncated( bytes )
+	_expect_vtable( bytes )
+	_expect_name_offset( bytes )
+	_expect_name_string( bytes )
+	_expect_inventory_length( bytes )
+	_expect_weapon_element( bytes )
+	_expect_equipped_offset( bytes )
+
+
+func _monster_at_root( bytes:PackedByteArray ) -> schema.Monster:
+	var monster:schema.Monster = schema.Monster.new()
+	var root:int = 0
+	if bytes.size() >= 4:
+		root = bytes.decode_u32( 0 )
+		if root < 0 or root >= bytes.size():
+			root = 0
+	monster.assign_buffer( bytes, root )
+	return monster
+
+
+func _expect_reject( bytes:PackedByteArray, label:String ) -> void:
+	var monster:schema.Monster = _monster_at_root( bytes )
+	test.TEST_FALSE( monster.verify( verifier ), label )
+
+
+func _expect_truncated( bytes:PackedByteArray ) -> void:
+	# Root is near the front. Dropping the tail leaves the table pointer in range
+	# and cuts off the bytes the later field checks follow.
+	var root:int = bytes.decode_u32( 0 )
+	var sliced:PackedByteArray = bytes.slice( 0, root + 4 )
+	var monster:schema.Monster = schema.Monster.new()
+	monster.assign_buffer( sliced, root )
+	test.TEST_FALSE( monster.verify( verifier ), "truncated buffer" )
+
+
+func _expect_vtable( bytes:PackedByteArray ) -> void:
+	var bad:PackedByteArray = bytes.duplicate()
+	var root:int = bad.decode_u32( 0 )
+	bad.encode_s32( root, 0x7FFFFFFF )
+	var monster:schema.Monster = schema.Monster.new()
+	monster.assign_buffer( bad, root )
+	verifier.set_buffer( bad )
+	test.TEST_FALSE( monster.verify_table_start( verifier ), "verify_table_start rejects a vtable outside the buffer" )
+	test.TEST_FALSE( monster.verify( verifier ), "vtable outside the buffer" )
+
+
+func _expect_name_offset( bytes:PackedByteArray ) -> void:
+	var bad:PackedByteArray = bytes.duplicate()
+	var probe:schema.Monster = _monster_at_root( bad )
+	var slot:int = probe.get_start() + probe.get_field_offset( schema.Monster.VT_NAME )
+	bad.encode_u32( slot, 0xFFFFFFF0 )
+
+	var monster:schema.Monster = _monster_at_root( bad )
+	test.TEST_FALSE( monster.verify( verifier ), "name offset past the buffer" )
+	test.TEST_FALSE( monster.verify_offset( verifier, schema.Monster.VT_NAME ), "verify_offset rejects the name" )
+
+
+func _expect_name_string( bytes:PackedByteArray ) -> void:
+	var bad:PackedByteArray = bytes.duplicate()
+	var probe:schema.Monster = _monster_at_root( bad )
+	var string_at:int = probe.get_offset_field_start( schema.Monster.VT_NAME )
+	bad.encode_u32( string_at, bad.size() )
+
+	var monster:schema.Monster = _monster_at_root( bad )
+	test.TEST_FALSE( monster.verify( verifier ), "name string length past the buffer" )
+	test.TEST_TRUE( monster.verify_offset( verifier, schema.Monster.VT_NAME ), "name offset still in range" )
+	test.TEST_FALSE( monster.verify_string( verifier, schema.Monster.VT_NAME ), "verify_string rejects the name" )
+
+
+func _expect_inventory_length( bytes:PackedByteArray ) -> void:
+	var bad:PackedByteArray = bytes.duplicate()
+	var probe:schema.Monster = _monster_at_root( bad )
+	var vector_at:int = probe.get_offset_field_start( schema.Monster.VT_INVENTORY )
+	bad.encode_u32( vector_at, bad.size() )
+
+	var monster:schema.Monster = _monster_at_root( bad )
+	test.TEST_FALSE( monster.verify( verifier ), "inventory length past the buffer" )
+	test.TEST_TRUE( monster.verify_offset( verifier, schema.Monster.VT_INVENTORY ), "inventory offset still in range" )
+	test.TEST_FALSE( monster.verify_vector_u8( verifier, schema.Monster.VT_INVENTORY ), "verify_vector_u8 rejects inventory" )
+
+
+func _expect_weapon_element( bytes:PackedByteArray ) -> void:
+	var bad:PackedByteArray = bytes.duplicate()
+	var probe:schema.Monster = _monster_at_root( bad )
+	var element_pos:int = probe.get_offset_field_start( schema.Monster.VT_WEAPONS ) + 4
+	# One byte past the offset slot, still inside the buffer, not a weapon table.
+	bad.encode_u32( element_pos, 1 )
+
+	var monster:schema.Monster = _monster_at_root( bad )
+	test.TEST_FALSE( monster.verify( verifier ), "weapon element is not a table" )
+
+
+func _expect_equipped_offset( bytes:PackedByteArray ) -> void:
+	var bad:PackedByteArray = bytes.duplicate()
+	var probe:schema.Monster = _monster_at_root( bad )
+	var slot:int = probe.get_start() + probe.get_field_offset( schema.Monster.VT_EQUIPPED )
+	bad.encode_u32( slot, 1 )
+
+	var monster:schema.Monster = _monster_at_root( bad )
+	test.TEST_FALSE( monster.verify( verifier ), "equipped target is not a weapon table" )
+	test.TEST_TRUE( monster.verify_offset( verifier, schema.Monster.VT_EQUIPPED ), "equipped offset still inside the buffer" )
