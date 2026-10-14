@@ -7,8 +7,11 @@ const RunnerScenario = preload("runner_scenario.gd")
 const ConsoleReporter = preload("uid://cp6jwltd8s2ur")
 const HistoryReporter = preload("history_reporter.gd")
 
+const _SUITES:PackedStringArray = ["suite", "prealloc", "array-size", "scenario"]
 
-## args[0] suite (default), all, prealloc, array-size, scenario.
+
+## args[0] is all, suite, prealloc, array-size, or scenario. A missing arg runs suite.
+## all runs those four suites. Each row keeps that suite's own name.
 ## args[1] target name stored on each row. args[2] absolute history.tres path.
 ## An empty path keeps the console table only.
 static func run_from_args(args:PackedStringArray) -> int:
@@ -22,10 +25,23 @@ static func run_from_args(args:PackedStringArray) -> int:
 	if args.size() > 2:
 		history_path = args[2]
 
-	# _init registers the suite. Keep the instance until the run returns.
+	if which == "all":
+		var failed := 0
+		for suite_name:String in _SUITES:
+			print("=== %s ===" % suite_name)
+			if _run_one(suite_name, target, history_path) != 0:
+				failed += 1
+		if failed != 0:
+			printerr("%d suites failed" % failed)
+		return failed
+	return _run_one(which, target, history_path)
+
+
+## _init registers the suite. Keep the instance until the run returns.
+static func _run_one(which:String, target:String, history_path:String) -> int:
 	var _runner:Object
 	match which:
-		"suite", "all":
+		"suite":
 			_runner = RunnerSuite.new()
 		"prealloc":
 			_runner = RunnerPrealloc.new()
@@ -36,6 +52,9 @@ static func run_from_args(args:PackedStringArray) -> int:
 		_:
 			printerr("unknown benchmark suite '%s'" % which)
 			return 1
+	if _runner == null:
+		printerr("unknown benchmark suite '%s'" % which)
+		return 1
 
 	var console := ConsoleReporter.new()
 	var history:HistoryReporter = null

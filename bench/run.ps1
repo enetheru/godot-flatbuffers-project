@@ -12,13 +12,16 @@
 # Rows append to bench/results/history.tres (a BenchHistory resource).
 # One timestamp covers every row from that process. Absent measurements are nan.
 # .\run.ps1
+# runs suite, prealloc, array-size, and scenario on editor, template_debug,
+# and template_release. Each suite keeps its own name on the history rows.
 # .\run.ps1 -Target template_release
+# .\run.ps1 -Suite scenario
 # .\run.ps1 -Target editor -Suite prealloc
 param(
 	[ValidateSet("all", "editor", "template_debug", "template_release")]
 	[string]$Target = "all",
-	[ValidateSet("suite", "all", "prealloc", "array-size", "scenario")]
-	[string]$Suite = "suite"
+	[ValidateSet("all", "suite", "prealloc", "array-size", "scenario")]
+	[string]$Suite = "all"
 )
 
 $project = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
