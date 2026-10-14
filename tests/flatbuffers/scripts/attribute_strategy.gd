@@ -36,3 +36,18 @@ func                        __________FLOW___________              ()->void:pass
 func _flow( _selection:Array[int] ) -> void:
 	var test_object := Schema.Attribute.new()
 	test.TEST_FALSE(test_object.has_method(&"deprecated_field"))
+	_empty_table()
+
+
+func _empty_table() -> void:
+	var fbb := FlatBufferBuilder.new()
+	var builder := Schema.AttributeBuilder.new(fbb)
+	test.TEST_FALSE(builder.has_method(&"add_deprecated_field"), "deprecated field is not built")
+	var offset:int = builder.finish()
+	if not test.TEST_TRUE_RET(offset != 0, "finish deprecated-only table"):
+		return
+	fbb.finish(offset)
+	var root:Schema.Attribute = Schema.get_Attribute(fbb.get_buffer())
+	var verifier := FlatBufferVerifier.new()
+	test.TEST_TRUE(root.verify(verifier), "deprecated-only table verifies")
+	test.TEST_FALSE(root.has_method(&"deprecated_field"), "reader has no deprecated accessor")

@@ -52,7 +52,7 @@ class Initial:
 	var packed_int64_array:PackedInt64Array = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
 	var packed_float32_array:PackedFloat32Array = [7,14,21,28,35,42,49,56,63,70]
 	var packed_float64_array:PackedFloat64Array = [3,6,9,12,15,18,21,24,27,30]
-	var packed_string_array:PackedStringArray = ["This", "is an", "array", "of", "Strings"]
+	var packed_string_array:PackedStringArray = ["This", "is an", "array", "of", "Strings", "café — 日本語"]
 	var packed_vector2_array:PackedVector2Array = [
 		Vector2(1,1), Vector2(1,-1), Vector2(-1,-1), Vector2(-1,1) ]
 	var packed_vector3_array:PackedVector3Array = [
@@ -120,6 +120,7 @@ func                        __________FLOW___________              ()->void:pass
 ## A selection is an array of strategies, one for each phase.
 func _flow( selection:Array[int] ) -> void:
 	test.logp("[b]== Flow ==[/b]")
+	_scalar_defaults()
 
 	# encode
 	var encode:Callable = get_strategy(ENCODING, selection[ENCODING])
@@ -193,6 +194,7 @@ func encode_builder() -> PackedByteArray:
 	var rtb := Schema.RootTableBuilder.new(fbb)
 	rtb.add_boolean(initial.boolean)
 	rtb.add_integer(initial.integer)
+	rtb.add_floating_point(initial.floating_point)
 	rtb.add_string( string_ofs )
 	rtb.add_vector2(initial.vector2 )
 	rtb.add_vector2i(initial.vector2i )
@@ -230,7 +232,11 @@ func decode_a(buf:PackedByteArray) -> Schema.RootTable:
 	var rto := Schema.get_RootTable(buf)
 
 	test.TEST_EQ(initial.boolean, rto.boolean(), "decode and initial data should be identical")
+	test.TEST_TRUE(rto.boolean_is_present(), "boolean is stored")
 	test.TEST_EQ(initial.integer, rto.integer(), "decode and initial data should be identical")
+	test.TEST_TRUE(rto.integer_is_present(), "integer is stored")
+	test.TEST_EQ(initial.floating_point, rto.floating_point(), "decode and initial data should be identical")
+	test.TEST_TRUE(rto.floating_point_is_present(), "floating_point is stored")
 	test.TEST_EQ(initial.string, rto.string(), "decode and initial data should be identical")
 	test.TEST_EQ(initial.vector2, rto.vector2(), "decode and initial data should be identical")
 	test.TEST_EQ(initial.vector2i, rto.vector2i(), "decode and initial data should be identical")
@@ -260,3 +266,40 @@ func decode_a(buf:PackedByteArray) -> Schema.RootTable:
 	test.TEST_EQ(initial.packed_vector4_array, rto.packed_vector4_array_(), "decode and initial data should be identical")
 
 	return rto
+
+
+func _scalar_defaults() -> void:
+	var fbb := FlatBufferBuilder.create(1)
+	var rtb := Schema.RootTableBuilder.new(fbb)
+	rtb.add_floating_point(0.0)
+	rtb.add_integer(0)
+	rtb.add_boolean(false)
+	var omitted_offset:int = rtb.finish()
+	if not test.TEST_TRUE_RET(omitted_offset != 0, "finish omitted scalars"):
+		return
+	fbb.finish(omitted_offset)
+	var omitted := Schema.get_RootTable(fbb.get_buffer())
+	var verifier := FlatBufferVerifier.new()
+	if not test.TEST_TRUE_RET(omitted.verify(verifier), "omitted scalars verify"):
+		return
+	test.TEST_FALSE(omitted.boolean_is_present(), "false boolean is omitted")
+	test.TEST_FALSE(omitted.boolean(), "omitted boolean reads false")
+	test.TEST_FALSE(omitted.integer_is_present(), "zero integer is omitted")
+	test.TEST_EQ(0, omitted.integer(), "omitted integer reads 0")
+	test.TEST_FALSE(omitted.floating_point_is_present(), "zero double is omitted")
+	test.TEST_EQ(0.0, omitted.floating_point(), "omitted double reads 0")
+
+	var stored_fbb := FlatBufferBuilder.create(1)
+	var stored_builder := Schema.RootTableBuilder.new(stored_fbb)
+	stored_builder.add_floating_point(initial.floating_point)
+	var stored_offset:int = stored_builder.finish()
+	if not test.TEST_TRUE_RET(stored_offset != 0, "finish stored double"):
+		return
+	stored_fbb.finish(stored_offset)
+	var stored := Schema.get_RootTable(stored_fbb.get_buffer())
+	if not test.TEST_TRUE_RET(stored.verify(verifier), "stored double verifies"):
+		return
+	test.TEST_TRUE(stored.floating_point_is_present(), "non-zero double is stored")
+	test.TEST_EQ(initial.floating_point, stored.floating_point(), "stored double")
+	test.TEST_FALSE(stored.boolean_is_present(), "unset boolean stays absent")
+	test.TEST_FALSE(stored.integer_is_present(), "unset integer stays absent")

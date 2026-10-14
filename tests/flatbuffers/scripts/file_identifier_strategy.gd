@@ -22,8 +22,8 @@ func _get_strategy(_idx:int, _idx2:int) -> Callable:
 
 func _flow(_selection:Array[int]) -> void:
 	_present_round_trip()
-	_verify_mismatch()
-	_verify_missing()
+	_identifier_mismatch()
+	_identifier_absent()
 
 
 func _build(fbb:FlatBufferBuilder) -> int:
@@ -37,39 +37,53 @@ func _present_round_trip() -> void:
 	var root_offset:int = _build(fbb)
 	if not test.TEST_TRUE_RET(root_offset != 0, "finish the root table"):
 		return
-	Schema.finish_Root_buffer(fbb, root_offset)
+	fbb.finish(root_offset, "RQID")
 	var bytes:PackedByteArray = fbb.get_buffer()
 	test.TEST_EQ("RQID", bytes.slice(4, 8).get_string_from_ascii(), "identifier bytes")
-	test.TEST_EQ(Schema.FILE_IDENTIFIER, "RQID", "FILE_IDENTIFIER")
 
 	var root:Schema.Root = Schema.get_Root(bytes)
 	var verifier := FlatBufferVerifier.new()
-	if not test.TEST_TRUE_RET(root.verify(verifier), "verify passes when the identifier matches"):
+	verifier.set_buffer(bytes)
+	if not test.TEST_TRUE_RET(verifier.buffer_has_identifier("RQID"), "buffer has RQID"):
+		return
+	if not test.TEST_TRUE_RET(root.verify(verifier), "verify the table"):
 		return
 	test.TEST_EQ("rqid-label", root.label(), "label()")
 	test.TEST_EQ(3, root.child().n(), "child().n()")
-	test.TEST_TRUE(root.child().verify(verifier), "nested verify ignores the file identifier")
+	test.TEST_TRUE(root.child().verify(verifier), "child verifies inside an identified buffer")
 
 
-func _verify_mismatch() -> void:
+func _identifier_mismatch() -> void:
 	var fbb := FlatBufferBuilder.new()
 	var root_offset:int = _build(fbb)
-	Schema.finish_Root_buffer(fbb, root_offset)
+	if not test.TEST_TRUE_RET(root_offset != 0, "finish mismatch root"):
+		return
+	fbb.finish(root_offset, "RQID")
 	var bad:PackedByteArray = fbb.get_buffer().duplicate()
 	bad[4] = 88
 	bad[5] = 88
 	bad[6] = 88
 	bad[7] = 88
-	var root:Schema.Root = Schema.get_Root(bad)
 	var verifier := FlatBufferVerifier.new()
-	test.TEST_FALSE(root.verify(verifier), "verify rejects a mismatched file identifier")
-	test.TEST_TRUE(root.child().verify(verifier), "nested verify still passes on a mismatched identifier")
+	verifier.set_buffer(bad)
+	test.TEST_FALSE(verifier.buffer_has_identifier("RQID"), "mismatched identifier")
+	test.TEST_EQ("XXXX", bad.slice(4, 8).get_string_from_ascii(), "overwritten identifier")
+	var root:Schema.Root = Schema.get_Root(bad)
+	test.TEST_TRUE(root.child().verify(verifier), "child verifies after the identifier bytes change")
 
 
-func _verify_missing() -> void:
+func _identifier_absent() -> void:
 	var fbb := FlatBufferBuilder.new()
 	var root_offset:int = _build(fbb)
+	if not test.TEST_TRUE_RET(root_offset != 0, "finish plain root"):
+		return
 	fbb.finish(root_offset)
-	var root:Schema.Root = Schema.get_Root(fbb.get_buffer())
+	var bytes:PackedByteArray = fbb.get_buffer()
 	var verifier := FlatBufferVerifier.new()
-	test.TEST_FALSE(root.verify(verifier), "verify rejects a buffer finished without the file identifier")
+	verifier.set_buffer(bytes)
+	test.TEST_FALSE(verifier.buffer_has_identifier("RQID"), "plain finish has no identifier")
+	test.TEST_FALSE(verifier.buffer_has_identifier("NO"), "short identifier is false")
+	var unset := FlatBufferVerifier.new()
+	test.TEST_FALSE(unset.buffer_has_identifier("RQID"), "no buffer is not an identifier")
+	var root:Schema.Root = Schema.get_Root(bytes)
+	test.TEST_EQ("rqid-label", root.label(), "label without an identifier")
