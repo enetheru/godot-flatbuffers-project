@@ -28,7 +28,7 @@ const _COLOR_DICT := Color(0.72, 0.55, 0.90)
 @onready var _status:Label = $Margin/VBox/Toolbar/Status
 @onready var _tree:Tree = $Margin/VBox/Split/Benchmarks
 @onready var _chart:Control = $Margin/VBox/Split/Right/Chart
-@onready var _readout:Label = $Margin/VBox/Split/Right/Readout
+@onready var _readout:RichTextLabel = $Margin/VBox/Split/Right/Readout
 
 var _rows:Array[BenchResult] = []
 var _hit:Array[BarHit] = []
@@ -455,9 +455,10 @@ func _update_readout() -> void:
 	if _readout == null:
 		return
 	if _hover >= 0 and _hover < _hit.size():
-		var row := _hit[_hover].row
+		var row:BenchResult = _hit[_hover].row
+		var fill:Color = _bar_color(row)
 		_readout.text = "%s\n%s    %s    %s    %d iters" % [
-			row.benchmark,
+			"[color=%s]%s[/color]" % [fill.to_html(), row.benchmark],
 			row.target,
 			_format_value(_value_of(row)),
 			row.timestamp_utc,
@@ -465,7 +466,7 @@ func _update_readout() -> void:
 		]
 		return
 
-	var benchmark := _selected_benchmark()
+	var benchmark:String = _selected_benchmark()
 	if benchmark.is_empty():
 		_readout.text = ""
 		return
@@ -474,10 +475,11 @@ func _update_readout() -> void:
 		return
 	var lines:Array[String] = [benchmark]
 	for target in _known_targets():
-		var sample := _latest(benchmark, target)
+		var sample:BenchResult = _latest(benchmark, target)
 		if sample == null:
 			lines.append("%s    -" % target)
 			continue
+		var fill:Color = _bar_color(sample)
 		lines.append("%s    %s    %s    %d iters" % [
 			target,
 			_format_value(_value_of(sample)),
@@ -490,15 +492,24 @@ func _update_readout() -> void:
 func _op_hint(op:String) -> String:
 	match op:
 		"Store":
-			return "64 records already in memory. Time to write the bytes."
+			return "64 records already in memory.[br]" \
+				+ "Time to write the bytes."
 		"Load":
-			return "Bytes already built. Time to decode them and read every field."
+			return "Bytes already built.[br]" \
+				+ "Time to decode them and read every field."
 		"Spawn":
-			return "Bytes become a new value. FlatBuffers fills a dictionary. Dictionary is bytes_to_var. Objects is bytes_to_var_with_objects."
+			return "Bytes become a new value.[br]" \
+				+ "FlatBuffers fills a dictionary.[br]" \
+				+ "Dictionary is bytes_to_var.[br]" \
+				+ "Objects is bytes_to_var_with_objects."
 		"Update":
-			return "Patch an existing value. FlatBuffers writes fields into a dictionary. Dictionary and Objects decode a temporary, then copy."
+			return "Patch an existing value.[br]" \
+				+ "FlatBuffers writes fields into a dictionary.[br]" \
+				+ "Dictionary and Objects decode a temporary, then copy."
 		"Peek":
-			return "Read one rating from the middle record. FlatBuffers reads that field. Dictionary and Objects decode the whole buffer first."
+			return "Read one rating from the middle record.[br]" \
+				+ "FlatBuffers reads that field.[br]" \
+				+ "Dictionary and Objects decode the whole buffer first."
 		_:
 			return ""
 
@@ -515,16 +526,18 @@ func _serializer_readout(op:String) -> String:
 	if flatbuffers != null:
 		base = _value_of(flatbuffers)
 	for codec:String in _CODECS:
-		var sample := _latest(_paired_name(codec, op), target)
+		var sample:BenchResult = _latest(_paired_name(codec, op), target)
+		var fill:Color = _codec_color(codec)
+		var coloured_label:String = "[color=%s]%s[/color]" % [fill.to_html(), _codec_label(codec).rpad(12)]
 		if sample == null:
-			lines.append("%s    -" % _codec_label(codec))
+			lines.append("%s\t-" % coloured_label)
 			continue
 		var value := _value_of(sample)
 		var ratio := ""
 		if codec != "Flatbuffers" and not is_nan(base) and base != 0.0 and not is_nan(value):
 			ratio = "    %.2fx" % (value / base)
-		lines.append("%s    %s%s    %s" % [
-			_codec_label(codec),
+		lines.append("%s\t%s%s    %s" % [
+			"[color=%s]%s[/color]" % [fill.to_html(), coloured_label],
 			_format_value(value),
 			ratio,
 			sample.timestamp_utc,
@@ -635,7 +648,7 @@ func _draw_chart() -> void:
 					plot.end.y - height,
 					bar_w,
 					height)
-			var fill := _bar_color(row)
+			var fill:Color = _bar_color(row)
 			if _hit.size() == _hover:
 				fill = fill.lightened(0.3)
 			chart.draw_rect(rect, fill)

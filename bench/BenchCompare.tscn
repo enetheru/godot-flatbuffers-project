@@ -74,7 +74,7 @@ text = "Reload"
 [node name="Status" type="Label" parent="Margin/VBox/Toolbar" unique_id=1498027085]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "210 rows, 6 runs"
+text = "2304 rows, 106 runs"
 
 [node name="Split" type="HSplitContainer" parent="Margin/VBox" unique_id=1601470242]
 layout_mode = 2
@@ -85,7 +85,7 @@ drag_area_highlight_in_editor = true
 custom_minimum_size = Vector2(420, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-columns = 4
+columns = 5
 column_titles_visible = true
 hide_root = true
 
@@ -99,13 +99,16 @@ clip_contents = true
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="Readout" type="Label" parent="Margin/VBox/Split/Right" unique_id=1796156214]
+[node name="Readout" type="RichTextLabel" parent="Margin/VBox/Split/Right" unique_id=1980135909]
 custom_minimum_size = Vector2(0, 96)
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 0.3
-text = "Encode    template_release
-FlatBuffers    46.0 us    2026-10-13T17:14:25
-Objects    69.2 us    1.51x    2026-10-13T17:14:25
-Dictionary    20.3 us    0.44x    2026-10-13T17:14:25"
-autowrap_mode = 3
+bbcode_enabled = true
+text = "64 records already in memory. Time to write the bytes.
+Store    template_release
+FlatBuffers    1.56 ms    2026-10-14T05:13:42
+Objects    1.63 ms    1.05x    2026-10-14T05:13:42
+Dictionary    370.9 us    0.24x    2026-10-14T05:13:42
+Dict from objects    694.8 us    0.45x    2026-10-14T05:13:42"
+tab_size = 8
