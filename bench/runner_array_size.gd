@@ -20,7 +20,7 @@ func _init() -> void:
 
 	# Standard Encode
 	var _bm := RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_Encode)) \
-		.AddRange(0,1024).AddRange(12,8192)
+		.AddRanges([0, 1024], [12, 8192])
 
 
 func _run() -> void:
