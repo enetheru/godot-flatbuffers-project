@@ -19,7 +19,9 @@ var phases:Array[Dictionary] = [{
 	# TODO implement a use function.
 ]
 
-var test_string : String = "This is a string that I am adding to te flatbuffer"
+## Character length and UTF-8 byte length differ. The buffer stores the byte count.
+var test_string:String = "café — 日本語"
+var _edges_done:bool = false
 
 
 #      ██████  ██    ██ ███████ ██████  ██████  ██ ██████  ███████ ███████     #
@@ -74,6 +76,9 @@ func                        __________FLOW___________              ()->void:pass
 
 ## A selection is an array of strategies, one for each phase.
 func _flow( selection:Array[int] ) -> void:
+	if not _edges_done:
+		_edges_done = true
+		_string_edges()
 	test.logp("[b]== Flow ==[/b]")
 	# encode
 	var encode:Callable = get_strategy(ENCODING, selection[ENCODING])
@@ -193,8 +198,10 @@ func decode_manual(buf:PackedByteArray) -> Schema.RootTable:
 	var ss:int = buf.decode_u32(sl)
 	test.logd("string_size: %d" % ss)
 	# The length prefix is the UTF-8 byte count. A NUL follows those bytes and is not counted.
-	# This string is ASCII, so that count matches Godot's length().
-	test.TEST_EQ(test_string.length(), ss, "decoded size, and original size should be the same")
+	var byte_count:int = test_string.to_utf8_buffer().size()
+	test.TEST_OP(test_string.length(), OP_NOT_EQUAL, byte_count,
+		"character length and UTF-8 byte length differ")
+	test.TEST_EQ(byte_count, ss, "decoded size is the UTF-8 byte count")
 
 	# get the string directly from the buffer using slice.
 	var decoded_string:String = buf.slice(sl+4, sl+4+ss).get_string_from_utf8()
@@ -212,5 +219,24 @@ func decode_function(buf:PackedByteArray) -> Schema.RootTable:
 	var fbo : Schema.RootTable = Schema.get_RootTable(buf)
 	test.TEST_EQ( fbo.my_string(), test_string, "my_string()" )
 	return fbo
+
+
+func _string_edges() -> void:
+	var empty_fbb := FlatBufferBuilder.new()
+	var empty_ofs:int = empty_fbb.create_variant("")
+	empty_fbb.finish(Schema.create_RootTable(empty_fbb, empty_ofs))
+	var empty_root:Schema.RootTable = Schema.get_RootTable(empty_fbb.get_buffer())
+	var verifier := FlatBufferVerifier.new()
+	if test.TEST_TRUE_RET(empty_root.verify(verifier), "empty string verifies"):
+		test.TEST_TRUE(empty_root.my_string_is_present(), "empty string is present")
+		test.TEST_EQ("", empty_root.my_string(), "empty string reads empty")
+
+	var absent_fbb := FlatBufferBuilder.new()
+	var absent_builder := Schema.RootTableBuilder.new(absent_fbb)
+	absent_fbb.finish(absent_builder.finish())
+	var absent_root:Schema.RootTable = Schema.get_RootTable(absent_fbb.get_buffer())
+	if test.TEST_TRUE_RET(absent_root.verify(FlatBufferVerifier.new()), "absent string verifies"):
+		test.TEST_FALSE(absent_root.my_string_is_present(), "absent string")
+		test.TEST_EQ("", absent_root.my_string(), "absent string reads empty")
 
 #endregion Decode
