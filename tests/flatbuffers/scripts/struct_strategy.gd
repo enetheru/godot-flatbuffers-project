@@ -25,7 +25,7 @@ var phases:Array[Dictionary] = [{
 var value:Dictionary = {
 	&'is_true': true,
 	&'x': 2,
-	&'y': 3,
+	&'y': 3.5,
 	&'w': Vector3(4,5,6),
 }
 
@@ -101,6 +101,7 @@ func _flow( selection:Array[int] ) -> void:
 	test.logp(" --- %s ---" % use.get_method().capitalize())
 	var can_use:bool = use.call(unpacked)
 	if can_use: pass
+	_table_cases()
 
 #               ██████  ██   ██  █████  ███████ ███████ ███████                #
 #               ██   ██ ██   ██ ██   ██ ██      ██      ██                     #
@@ -127,14 +128,60 @@ func decode_a(buf:PackedByteArray) -> Schema.CustomStruct:
 	print( "decode.y: ", struct.y )
 	print( "decode.w: ", struct.w )
 
-	test.TEST_EQ( value.x, struct.x )
-	test.TEST_EQ( value.y, struct.y )
+	test.TEST_EQ(value.is_true, struct.is_true, "is_true")
+	test.TEST_EQ(value.x, struct.x, "x")
+	test.TEST_EQ(value.y, struct.y, "y")
+	test.TEST_EQ(value.w, struct.w, "w")
 	return struct
 
 
-func use_a( _variant:Schema.CustomStruct ) -> int:
-	test.TEST_TRUE(true, "todo")
+func use_a(decoded:Schema.CustomStruct) -> int:
+	test.TEST_EQ(value.is_true, decoded.is_true, "use is_true")
+	test.TEST_EQ(value.w, decoded.w, "use w")
 	return TestBase.RetCode.TEST_OK
+
+
+func _table_cases() -> void:
+	var cs := Schema.CustomStruct.new()
+	cs.is_true = false
+	cs.x = -4
+	cs.y = 3.5
+	cs.w = Vector3(-1, 0, 2)
+	var fbb := FlatBufferBuilder.new()
+	fbb.finish(Schema.create_RootTable(fbb, cs, 9))
+	var root:Schema.RootTable = Schema.get_RootTable(fbb.get_buffer())
+	var verifier := FlatBufferVerifier.new()
+	if not test.TEST_TRUE_RET(root.verify(verifier), "table verify"):
+		return
+	test.TEST_TRUE(root.custom_struct_is_present(), "struct field present")
+	test.TEST_TRUE(root.z_is_present(), "z present")
+	test.TEST_EQ(9, root.z(), "z")
+	var got:Schema.CustomStruct = root.custom_struct()
+	if not test.TEST_TRUE_RET(got != null, "struct object"):
+		return
+	test.TEST_FALSE(got.is_true, "embedded is_true false")
+	test.TEST_EQ(-4, got.x, "embedded x")
+	test.TEST_EQ(3.5, got.y, "embedded y")
+	test.TEST_EQ(Vector3(-1, 0, 2), got.w, "embedded w")
+
+	var absent_fbb := FlatBufferBuilder.new()
+	var absent_builder := Schema.RootTableBuilder.new(absent_fbb)
+	absent_builder.add_z(4)
+	absent_fbb.finish(absent_builder.finish())
+	var absent:Schema.RootTable = Schema.get_RootTable(absent_fbb.get_buffer())
+	if test.TEST_TRUE_RET(absent.verify(FlatBufferVerifier.new()), "absent struct verifies"):
+		test.TEST_FALSE(absent.custom_struct_is_present(), "struct absent")
+		test.TEST_EQ(null, absent.custom_struct(), "absent struct is null")
+		test.TEST_EQ(4, absent.z(), "z beside absent struct")
+
+	var elided_fbb := FlatBufferBuilder.new()
+	var elided_builder := Schema.RootTableBuilder.new(elided_fbb)
+	elided_builder.add_z(0)
+	elided_fbb.finish(elided_builder.finish())
+	var elided:Schema.RootTable = Schema.get_RootTable(elided_fbb.get_buffer())
+	test.TEST_FALSE(elided.z_is_present(), "z default elided")
+	test.TEST_EQ(0, elided.z(), "z default reads 0")
+	test.TEST_TRUE(elided.verify(FlatBufferVerifier.new()), "elided z verifies")
 
 
 func                        __BoilerPlate____________              ()->void:pass

@@ -11,7 +11,13 @@ enum {
 
 var phases:Array[Dictionary] = [{
 		&"name":"Encoding",
-		&"strategies":[encode_a]
+		&"strategies":[
+			encode_sentinel,
+			encode_omitted,
+			encode_defaults,
+			encode_extremes,
+			encode_highs,
+		]
 	},{
 		&"name":"Decoding",
 		&"strategies":[decode_a]
@@ -23,6 +29,9 @@ var phases:Array[Dictionary] = [{
 
 var value:int = TestBase.u32
 var test:TestBase
+## True when every field was stored. False when each field is the schema default.
+var expect_present:bool = true
+var expect:Dictionary = {}
 
 #      ██████  ██    ██ ███████ ██████  ██████  ██ ██████  ███████ ███████     #
 #     ██    ██ ██    ██ ██      ██   ██ ██   ██ ██ ██   ██ ██      ██          #
@@ -104,44 +113,161 @@ func _flow( selection:Array[int] ) -> void:
 #               ██      ██   ██ ██   ██ ███████ ███████ ███████                #
 func                        __________PHASES_________              ()->void:pass
 
-func encode_a() -> PackedByteArray:
-	var fbb := FlatBufferBuilder.new()
+func _set_expect(present:bool, values:Dictionary) -> void:
+	expect_present = present
+	expect = values
 
-	# Setting fields to -1
+
+func _zeros() -> Dictionary:
+	return {
+		"f_bool": false,
+		"f_byte": 0,
+		"f_ubyte": 0,
+		"f_short": 0,
+		"f_ushort": 0,
+		"f_int": 0,
+		"f_uint": 0,
+		"f_long": 0,
+		"f_ulong": 0,
+		"f_float": 0.0,
+		"f_double": 0.0,
+	}
+
+
+## Godot float is 64-bit. The float field stores float32.
+func _float32(value:float) -> float:
+	var bytes := PackedByteArray()
+	bytes.resize(4)
+	bytes.encode_float(0, value)
+	return bytes.decode_float(0)
+
+
+func _finish_create(
+		f_bool:bool,
+		f_byte:int,
+		f_ubyte:int,
+		f_short:int,
+		f_ushort:int,
+		f_int:int,
+		f_uint:int,
+		f_long:int,
+		f_ulong:int,
+		f_float:float,
+		f_double:float) -> PackedByteArray:
+	var fbb := FlatBufferBuilder.new()
 	var offset:int = Schema.create_RootTable(fbb,
-		true,	# f_bool	== true
-		-1,		# f_byte	== -1
-		-1,		# f_ubyte	== 255
-		-1,		# f_short	== -1
-		-1,		# f_ushort	== 65535
-		-1,		# f_int		== -1
-		-1,		# f_uint	== 4294967295
-		-1,		# f_long	== -1
-		-1,		# f_ulong	== -1 ? This one is confusing to me
-		-1,		# f_float	== -1: we need better tests
-		-1		# f_double	== -1: we need better tests
-		)
+		f_bool, f_byte, f_ubyte, f_short, f_ushort,
+		f_int, f_uint, f_long, f_ulong, f_float, f_double)
 	fbb.finish(offset)
 	return fbb.get_buffer()
 
+
+func encode_sentinel() -> PackedByteArray:
+	# -1 sets every bit of each width. Godot has no u64, so ulong reads back as -1.
+	_set_expect(true, {
+		"f_bool": true,
+		"f_byte": -1,
+		"f_ubyte": 255,
+		"f_short": -1,
+		"f_ushort": 65_535,
+		"f_int": -1,
+		"f_uint": 4_294_967_295,
+		"f_long": -1,
+		"f_ulong": -1,
+		"f_float": -1.0,
+		"f_double": -1.0,
+	})
+	return _finish_create(true, -1, -1, -1, -1, -1, -1, -1, -1, -1.0, -1.0)
+
+
+func encode_omitted() -> PackedByteArray:
+	_set_expect(false, _zeros())
+	var fbb := FlatBufferBuilder.new()
+	var builder := Schema.RootTableBuilder.new(fbb)
+	fbb.finish(builder.finish())
+	return fbb.get_buffer()
+
+
+func encode_defaults() -> PackedByteArray:
+	# add_*_default must drop values that equal the schema default.
+	_set_expect(false, _zeros())
+	var fbb := FlatBufferBuilder.new()
+	var builder := Schema.RootTableBuilder.new(fbb)
+	builder.add_f_double(0.0)
+	builder.add_f_ulong(0)
+	builder.add_f_long(0)
+	builder.add_f_float(0.0)
+	builder.add_f_uint(0)
+	builder.add_f_int(0)
+	builder.add_f_ushort(0)
+	builder.add_f_short(0)
+	builder.add_f_ubyte(0)
+	builder.add_f_byte(0)
+	builder.add_f_bool(false)
+	fbb.finish(builder.finish())
+	return fbb.get_buffer()
+
+
+func encode_extremes() -> PackedByteArray:
+	# 2^24+1 is not a float32. The float field rounds; the double field does not.
+	var over_mantissa := 16_777_217.0
+	var long_min:int = -9_223_372_036_854_775_807 - 1
+	_set_expect(true, {
+		"f_bool": true,
+		"f_byte": -128,
+		"f_ubyte": 128,
+		"f_short": -32_768,
+		"f_ushort": 32_768,
+		"f_int": -2_147_483_648,
+		"f_uint": 2_147_483_648,
+		"f_long": long_min,
+		"f_ulong": long_min,
+		"f_float": _float32(over_mantissa),
+		"f_double": over_mantissa,
+	})
+	return _finish_create(
+		true, -128, 128, -32_768, 32_768, -2_147_483_648, 2_147_483_648,
+		long_min, long_min, over_mantissa, over_mantissa)
+
+
+func encode_highs() -> PackedByteArray:
+	var frac := -0.1
+	_set_expect(true, {
+		"f_bool": true,
+		"f_byte": 127,
+		"f_ubyte": 254,
+		"f_short": 32_767,
+		"f_ushort": 65_534,
+		"f_int": 2_147_483_647,
+		"f_uint": 4_294_967_294,
+		"f_long": 9_223_372_036_854_775_807,
+		"f_ulong": 9_223_372_036_854_775_807,
+		"f_float": _float32(frac),
+		"f_double": frac,
+	})
+	return _finish_create(
+		true, 127, 254, 32_767, 65_534, 2_147_483_647, 4_294_967_294,
+		9_223_372_036_854_775_807, 9_223_372_036_854_775_807, frac, frac)
+
+
+func _check_field(table:Schema.RootTable, field:String) -> void:
+	var present:bool = Callable(table, field + "_is_present").call()
+	if expect_present:
+		test.TEST_TRUE(present, "%s present" % field)
+	else:
+		test.TEST_FALSE(present, "%s absent" % field)
+	test.TEST_EQ(expect[field], Callable(table, field).call(), "%s()" % field)
+
+
 func decode_a(data:PackedByteArray) -> Schema.RootTable:
-	# Decode buffer
-	var fbo : Schema.RootTable = Schema.get_RootTable(data)
-	test.TEST_TRUE( fbo.f_bool(), " f_bool()")
-	test.TEST_EQ(fbo.f_byte(), -1, "f_byte()" )
-	test.TEST_EQ(fbo.f_ubyte(), 255, "f_ubyte()" )
-	test.TEST_EQ(fbo.f_short(), -1, "f_short()" )
-	test.TEST_EQ(fbo.f_ushort(), 65_535, "f_ushort()" )
-	test.TEST_EQ(fbo.f_int(), -1, "f_int()" )
-	test.TEST_EQ(fbo.f_uint(), 4_294_967_295, "f_uint()" )
-	test.TEST_EQ(fbo.f_long(), -1, "f_long()" )
-	test.TEST_EQ(fbo.f_ulong(), -1, "f_ulong()" )
-	test.TEST_EQ(fbo.f_float(), -1, "f_float()" )
-	test.TEST_EQ(fbo.f_double(), -1, "f_double()" )
+	var fbo:Schema.RootTable = Schema.get_RootTable(data)
+	for field:String in expect:
+		_check_field(fbo, field)
 	return fbo
 
 
-func use_a( decoded:Schema.RootTable ) -> int:
-	test.TEST_EQ(-1, decoded.f_double(), "rt.f_double()")
-	test.logd("decoded value: %X" % decoded.f_double() )
+func use_a(decoded:Schema.RootTable) -> int:
+	test.TEST_EQ(expect["f_float"], decoded.f_float(), "rt.f_float()")
+	test.TEST_EQ(expect["f_double"], decoded.f_double(), "rt.f_double()")
+	test.TEST_EQ(expect["f_ulong"], decoded.f_ulong(), "rt.f_ulong()")
 	return TestBase.RetCode.TEST_OK
