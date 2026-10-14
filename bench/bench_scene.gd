@@ -209,6 +209,7 @@ func _parse(bench_name:String) -> ParsedName:
 	var rest := bench_name
 	const flat := "BM_Flatbuffers_"
 	const built_in := "BM_BuiltIn_"
+	const dict_from_obj := "BM_DictFromObj_"
 	const gdict := "BM_GDict_"
 	if bench_name.begins_with(flat):
 		codec = "FlatBuffers"
@@ -216,6 +217,9 @@ func _parse(bench_name:String) -> ParsedName:
 	elif bench_name.begins_with(built_in):
 		codec = "Objects"
 		rest = bench_name.substr(built_in.length())
+	elif bench_name.begins_with(dict_from_obj):
+		codec = "Dict from objects"
+		rest = bench_name.substr(dict_from_obj.length())
 	elif bench_name.begins_with(gdict):
 		codec = "Dictionary"
 		rest = bench_name.substr(gdict.length())

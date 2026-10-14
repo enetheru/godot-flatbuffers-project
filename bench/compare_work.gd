@@ -35,10 +35,14 @@ func check_payload() -> String:
 	var object_total := object_sum(object_value)
 	var dict_round := dict_sum_bytes(encode_dict(dict_value))
 	var object_round := object_sum_bytes(encode_objects(object_value))
+	var built_value := dict_from_objects(object_value)
+	var built_total := dict_sum(built_value)
+	var built_round := dict_sum_bytes(encode_dict(built_value))
 	if flat_total == 0 or flat_total != dict_total or flat_total != object_total \
-			or flat_total != dict_round or flat_total != object_round:
-		return "scenario payload mismatch flat=%d dict=%d object=%d dict_bytes=%d object_bytes=%d" % [
-			flat_total, dict_total, object_total, dict_round, object_round,
+			or flat_total != dict_round or flat_total != object_round \
+			or flat_total != built_total or flat_total != built_round:
+		return "scenario payload mismatch flat=%d dict=%d object=%d built=%d dict_bytes=%d object_bytes=%d built_bytes=%d" % [
+			flat_total, dict_total, object_total, built_total, dict_round, object_round, built_round,
 		]
 
 	var flat_dest := make_dict()
@@ -153,6 +157,42 @@ func make_objects() -> FooBarContainer:
 		row.sibling = bar
 		root.list[i] = row
 	return root
+
+
+func dict_from_objects(root:FooBarContainer) -> Dictionary:
+	var src_list := _array_from(root.list)
+	var list:Array = []
+	if list.resize(src_list.size()) != OK:
+		push_error("scenario construct resize failed")
+		return {}
+	for i in src_list.size():
+		var item := _foobar_from(src_list[i])
+		if item == null or item.sibling == null or item.sibling.parent == null:
+			continue
+		var bar := item.sibling
+		var foo := bar.parent
+		var parent:Dictionary = {}
+		parent.id = foo.id
+		parent.count = foo.count
+		parent.prefix = foo.prefix
+		parent.length = foo.length
+		var sibling:Dictionary = {}
+		sibling.parent = parent
+		sibling.time = bar.time
+		sibling.ratio = bar.ratio
+		sibling.size = bar.size
+		var row:Dictionary = {}
+		row.name = item.name
+		row.postfix = item.postfix
+		row.rating = item.rating
+		row.sibling = sibling
+		list[i] = row
+	var out:Dictionary = {}
+	out.location = root.location
+	out.fruit = root.fruit
+	out.initialized = root.initialized
+	out.list = list
+	return out
 
 
 func flat_sum(buf:PackedByteArray) -> int:

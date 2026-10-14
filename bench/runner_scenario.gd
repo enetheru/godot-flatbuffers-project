@@ -5,8 +5,10 @@ const CntFlags = Counter.Flags
 const CntOneK = Counter.OneK
 
 ## Save, load, spawn, update, and one-field peek on one 64-record payload.
-## FlatBuffers, Godot objects (var_to_bytes_with_objects), and a Dictionary
-## (var_to_bytes) see the same field values. The original suite is untouched.
+## FlatBuffers, Objects (var_to_bytes_with_objects), and a Dictionary
+## (var_to_bytes) see the same field values. Store also times building that
+## dictionary from the object fields and then encoding it. The original suite
+## is untouched.
 static var _payload_error:String = ""
 
 
@@ -21,6 +23,7 @@ func _init() -> void:
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_Store))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_Store))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_GDict_Store))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_DictFromObj_Store))
 
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_Load))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_Load))
@@ -85,6 +88,18 @@ static func BM_GDict_Store(state:State) -> void:
 	var throughput := _measure(state, sample.size())
 	for _i in state:
 		throughput.value += work.encode_dict(data).size()
+
+
+static func BM_DictFromObj_Store(state:State) -> void:
+	if _fail(state):
+		return
+	var work := CompareWork.new()
+	var objects := work.make_objects()
+	var sample := work.encode_dict(work.dict_from_objects(objects))
+	var throughput := _measure(state, sample.size())
+	for _i in state:
+		var built := work.dict_from_objects(objects)
+		throughput.value += work.encode_dict(built).size()
 
 
 static func BM_Flatbuffers_Load(state:State) -> void:

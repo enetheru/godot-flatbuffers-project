@@ -13,6 +13,7 @@ const _TARGETS:PackedStringArray = ["editor", "template_debug", "template_releas
 const _COLOR_FLAT := Color(0.45, 0.78, 0.95)
 const _COLOR_GODOT := Color(0.95, 0.55, 0.32)
 const _COLOR_DICT := Color(0.72, 0.55, 0.9)
+const _COLOR_CONSTRUCT := Color(0.93, 0.78, 0.35)
 const _COLOR_AXIS := Color(0.78, 0.78, 0.82)
 const _COLOR_GRID := Color(1, 1, 1, 0.08)
 const _COLOR_PANEL := Color(0.11, 0.11, 0.13)
@@ -182,16 +183,18 @@ func _on_rerun() -> void:
 
 	var console := ConsoleReporter.new()
 	var missed := ""
+	var codecs := _codecs_for(slide.op)
+	_busy_bar.max_value = float(codecs.size())
 	_set_running(true, "Checking the payload")
 	await RenderingServer.frame_post_draw
 	if _runner == null:
 		_runner = RunnerScenario.new()
 
-	for i in _CODECS.size():
-		var codec := _CODECS[i]
+	for i in codecs.size():
+		var codec := codecs[i]
 		_busy_bar.value = float(i)
 		_busy_text.text = "Working    %s    %s    %d / %d" % [
-			slide.op, _codec_label(codec), i + 1, _CODECS.size(),
+			slide.op, _codec_label(codec), i + 1, codecs.size(),
 		]
 		await RenderingServer.frame_post_draw
 		var spec := "^BM_%s_%s$" % [codec, slide.op]
@@ -236,7 +239,15 @@ func _show_slide() -> void:
 	_fill_result("FlatBuffers", flat, base)
 	_fill_result("Objects", objects, base)
 	_fill_result("Dictionary", dictionary, base)
-	_source.text = _source_line(target_name, _newest(flat, objects, dictionary))
+	var stamp_row := _newest(flat, objects, dictionary)
+	var construct := _construct_box()
+	if construct != null:
+		construct.visible = slide.op == "Store"
+	if slide.op == "Store":
+		var built := _latest(_paired_name("DictFromObj", slide.op), target_name)
+		_fill_result("DictFromObj", built, base)
+		stamp_row = _newest(stamp_row, built, null)
+	_source.text = _source_line(target_name, stamp_row)
 	_runs_hover = -1
 	_targets_hover = -1
 	if _runs_chart != null:
@@ -376,15 +387,17 @@ func _draw_bars(
 
 
 func _draw_legend(chart:Control, font:Font, font_size:int, plot:Rect2) -> void:
-	var labels:PackedStringArray = ["FlatBuffers", "Objects", "Dictionary"]
-	var colors:Array[Color] = [_COLOR_FLAT, _COLOR_GODOT, _COLOR_DICT]
+	if _slides.is_empty():
+		return
+	var codecs := _codecs_for(_slides[_index].op)
 	var x := plot.end.x
-	for i in range(labels.size() - 1, -1, -1):
-		var text_w := font.get_string_size(labels[i], HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	for i in range(codecs.size() - 1, -1, -1):
+		var label := _codec_label(codecs[i])
+		var text_w := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 		x -= text_w + 22.0
-		chart.draw_rect(Rect2(x, 8, 12, 12), colors[i])
+		chart.draw_rect(Rect2(x, 8, 12, 12), _color_for_codec(codecs[i]))
 		chart.draw_string(
-				font, Vector2(x + 16, 18), labels[i],
+				font, Vector2(x + 16, 18), label,
 				HORIZONTAL_ALIGNMENT_LEFT, text_w + 4.0, font_size, _COLOR_TEXT)
 
 
@@ -443,7 +456,7 @@ func _history_groups(op:String, target_name:String) -> Array[BarGroup]:
 			found.stamp = seen.timestamp_utc
 	var filled:Array[BarGroup] = []
 	for group in order:
-		for codec:String in _CODECS:
+		for codec:String in _codecs_for(op):
 			var bench_name := _paired_name(codec, op)
 			for sample in _rows:
 				if sample.unix_s != group.unix_s or sample.target != target_name or sample.benchmark != bench_name:
@@ -461,7 +474,7 @@ func _target_groups(op:String) -> Array[BarGroup]:
 	for target_name:String in _TARGETS:
 		var group := BarGroup.new()
 		group.stamp = target_name
-		for codec:String in _CODECS:
+		for codec:String in _codecs_for(op):
 			var sample := _latest(_paired_name(codec, op), target_name)
 			if sample == null or not sample.error.is_empty() or is_nan(sample.time_ns):
 				continue
@@ -495,6 +508,8 @@ func _bar_color(benchmark:String) -> Color:
 		return _COLOR_FLAT
 	if benchmark.begins_with("BM_BuiltIn_"):
 		return _COLOR_GODOT
+	if benchmark.begins_with("BM_DictFromObj_"):
+		return _COLOR_CONSTRUCT
 	if benchmark.begins_with("BM_GDict_"):
 		return _COLOR_DICT
 	return _COLOR_AXIS
@@ -505,6 +520,8 @@ func _codec_of(benchmark:String) -> String:
 		return "FlatBuffers"
 	if benchmark.begins_with("BM_BuiltIn_"):
 		return "Objects"
+	if benchmark.begins_with("BM_DictFromObj_"):
+		return "Dict from objects"
 	if benchmark.begins_with("BM_GDict_"):
 		return "Dictionary"
 	return benchmark
@@ -624,8 +641,40 @@ func _codec_label(codec:String) -> String:
 			return "Objects"
 		"GDict":
 			return "Dictionary"
+		"DictFromObj":
+			return "Dict from objects"
 		_:
 			return codec
+
+
+func _codecs_for(op:String) -> PackedStringArray:
+	if op != "Store":
+		return _CODECS
+	var codecs := _CODECS.duplicate()
+	if not codecs.append("DictFromObj"):
+		return _CODECS
+	return codecs
+
+
+func _color_for_codec(codec:String) -> Color:
+	match codec:
+		"Flatbuffers":
+			return _COLOR_FLAT
+		"BuiltIn":
+			return _COLOR_GODOT
+		"GDict":
+			return _COLOR_DICT
+		"DictFromObj":
+			return _COLOR_CONSTRUCT
+		_:
+			return _COLOR_AXIS
+
+
+func _construct_box() -> CanvasItem:
+	var node := get_node_or_null("Margin/VBox/Scroll/Body/DictFromObj")
+	if node is CanvasItem:
+		return node
+	return null
 
 
 func _format_time(value:float) -> String:
@@ -675,8 +724,8 @@ func _make_slides() -> Array[Slide]:
 	var slides:Array[Slide] = []
 	slides.append(_slide(
 			"Store",
-			"FlatBuffers builds the 64-record buffer inside the timer: the field formulas, a new builder, 64 copies of the name string, and finish. Dictionary times var_to_bytes of a dictionary built before the timer. Objects times var_to_bytes_with_objects of an object graph built before the timer.",
-			"Dictionary and Objects measure encoding only. FlatBuffers includes construction. A lower Dictionary time is a smaller piece of work. The byte count is one buffer. The Objects buffer is larger because var_to_bytes_with_objects also writes the script class."))
+			"FlatBuffers builds the 64-record buffer inside the timer: the field formulas, a new builder, 64 copies of the name string, and finish. Dictionary times var_to_bytes of a dictionary built before the timer. Objects times var_to_bytes_with_objects of an object graph built before the timer. Dict from objects keeps that object graph outside the timer, then builds a dictionary from its fields and calls var_to_bytes inside the timer.",
+			"Dictionary and Objects measure encoding only. Dict from objects is the send path when the fields live on objects and a dictionary has to be built before var_to_bytes. FlatBuffers includes construction from the formulas, not from the object graph. The Objects buffer is larger because var_to_bytes_with_objects also writes the script class."))
 	slides.append(_slide(
 			"Load",
 			"The buffer is built before the timer. Inside, each codec reads every field and checks the checksum. Dictionary decodes with bytes_to_var, and Objects with bytes_to_var_with_objects, then both walk the value again. FlatBuffers produces the values in that walk. FlatBuffers also constructs a reader for the root, each list entry, and the nested sibling and parent.",

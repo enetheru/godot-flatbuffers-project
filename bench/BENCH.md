@@ -93,20 +93,20 @@ gdsbench times the `for` loop only. `CompareWork.new()`, `make_dict()`, `make_ob
 
 The byte counter is the encoded length of one buffer, marked iteration-invariant. `history.tres` stores that length in `bytes`. The console `bytes_size` column is the same counter after it has been multiplied by the iteration count, then shown in Mi. Divide by the iteration count before comparing it to `bytes`.
 
-| Test | FlatBuffers, inside the loop | Dictionary, inside the loop | Objects, inside the loop |
-| --- | --- | --- | --- |
-| Store | `encode_flat()`: formulas, builder, 64 strings, `finish` | `var_to_bytes` of the dictionary built before the loop | `var_to_bytes_with_objects` of the object graph built before the loop |
-| Load | `get_FBFooBarContainer` plus `FlatBuffersBench.Use` | `bytes_to_var` plus `case_gd_dict.gd` `Use` | `bytes_to_var_with_objects` plus `BuiltInBench.Use` |
-| Spawn | root view, then a new dictionary filled field by field | `bytes_to_var` | `bytes_to_var_with_objects` |
-| Update | write accessors into the dictionary built before the loop | `bytes_to_var`, then copy fields onto the dictionary built before the loop | `bytes_to_var_with_objects`, then copy fields onto the objects built before the loop |
-| Peek | new root, then `list_at(32).rating()` | `bytes_to_var`, then the rating at index 32 | `bytes_to_var_with_objects`, then the rating at index 32 |
+| Test | FlatBuffers, inside the loop | Dictionary, inside the loop | Objects, inside the loop | Dict from objects, inside the loop |
+| --- | --- | --- | --- | --- |
+| Store | `encode_flat()`: formulas, builder, 64 strings, `finish` | `var_to_bytes` of the dictionary built before the loop | `var_to_bytes_with_objects` of the object graph built before the loop | `dict_from_objects` of that same object graph, then `var_to_bytes` |
+| Load | `get_FBFooBarContainer` plus `FlatBuffersBench.Use` | `bytes_to_var` plus `case_gd_dict.gd` `Use` | `bytes_to_var_with_objects` plus `BuiltInBench.Use` | — |
+| Spawn | root view, then a new dictionary filled field by field | `bytes_to_var` | `bytes_to_var_with_objects` | — |
+| Update | write accessors into the dictionary built before the loop | `bytes_to_var`, then copy fields onto the dictionary built before the loop | `bytes_to_var_with_objects`, then copy fields onto the objects built before the loop | — |
+| Peek | new root, then `list_at(32).rating()` | `bytes_to_var`, then the rating at index 32 | `bytes_to_var_with_objects`, then the rating at index 32 | — |
 
 Load and Peek also compare the result to a value computed before the loop, and skip the run if it differs. Store adds `buf.size()` to the throughput counter. Spawn checks that the result is non-empty. Update does not checksum inside the loop.
 
 ### Where a comparison is fair
 
 **Same logical values**
-  All three codecs start from `_apply`. A run is skipped unless the checksums match, including after `var_to_bytes` and `var_to_bytes_with_objects` round-trips.
+  All three codecs start from `_apply`. Dict from objects is checked against the same sum: the dictionary built from the object graph, and that dictionary after `var_to_bytes`. A run is skipped unless the checksums match, including after `var_to_bytes` and `var_to_bytes_with_objects` round-trips.
 
 **Checksum**
   `FlatBuffersBench.Use`, `BuiltInBench.Use`, and `case_gd_dict.gd` `Use` add the same terms: `int(initialized)`, location length, fruit as an int, then per record the name length, postfix, `int(rating)`, `int(ratio)`, size, time, count, id, length, and prefix. The sum is allowed to be negative. The large ids overflow an int64 add. Equality is the check. `int(ratio)` truncates, so a 32-bit versus 64-bit fraction on `ratio` does not fail the check.
@@ -117,7 +117,7 @@ Load and Peek also compare the result to a value computed before the loop, and s
 ### Where a comparison is not the same work
 
 **Store**
-  Dictionary and Objects time only the encoder. The value already exists. FlatBuffers has no existing buffer, so Store times building one from the formulas, including a new builder and 64 string copies. The storage sketch above (existing object to bytes) describes the dictionary and the object columns. It does not describe FlatBuffers.
+  Dictionary and Objects time only the encoder. The value already exists. FlatBuffers has no existing buffer, so Store times building one from the formulas, including a new builder and 64 string copies. Dict from objects (`BM_DictFromObj_Store`) keeps the object graph outside the timer and, inside it, copies those fields into a new dictionary and then calls `var_to_bytes`. That is the send path when the fields live on objects. It still does not start FlatBuffers from those objects. The storage sketch above describes Dictionary, Objects, and Dict from objects. FlatBuffers remains the formula build.
 
 **Load**
   Every codec reads every field inside the timer, and the checksum has to match. For the dictionary and the objects, `bytes_to_var` has already materialized those fields, and `Use` walks them again in GDScript. For FlatBuffers, `Use` is the walk that produces the values. Load is a fair "touch every field" test. It is a pessimistic "time until the data exists" test for the dictionary and the objects, by one extra walk.

@@ -8,7 +8,8 @@ const _OPS:PackedStringArray = [
 	"Store", "Load", "Spawn", "Update", "Peek",
 	"Encode", "Decode", "ReadAll", "RoundTrip", "MetadataOnly", "RandomElement",
 ]
-const _CODECS:PackedStringArray = ["Flatbuffers", "BuiltIn", "GDict"]
+const _CODECS:PackedStringArray = ["Flatbuffers", "BuiltIn", "GDict", "DictFromObj"]
+const _COLOR_CONSTRUCT := Color(0.93, 0.78, 0.35)
 
 const _COLOR_EDITOR := Color(0.35, 0.65, 0.95)
 const _COLOR_DEBUG := Color(0.95, 0.72, 0.28)
@@ -205,6 +206,8 @@ func _codec_of(benchmark:String) -> String:
 		return "Flatbuffers"
 	if benchmark.begins_with("BM_BuiltIn_"):
 		return "BuiltIn"
+	if benchmark.begins_with("BM_DictFromObj_"):
+		return "DictFromObj"
 	if benchmark.begins_with("BM_GDict_"):
 		return "GDict"
 	return ""
@@ -218,6 +221,8 @@ func _codec_label(codec:String) -> String:
 			return "Objects"
 		"GDict":
 			return "Dictionary"
+		"DictFromObj":
+			return "Dict from objects"
 		_:
 			return codec
 
@@ -230,6 +235,8 @@ func _codec_color(codec:String) -> Color:
 			return _COLOR_GODOT
 		"GDict":
 			return _COLOR_DICT
+		"DictFromObj":
+			return _COLOR_CONSTRUCT
 		_:
 			return Color(0.7, 0.7, 0.75)
 
@@ -407,7 +414,10 @@ func _rebuild_serializer_tree() -> void:
 	for i in _CODECS.size():
 		_tree.set_column_title(i + 1, _codec_label(_CODECS[i]))
 		_tree.set_column_expand(i + 1, false)
-		_tree.set_column_custom_minimum_width(i + 1, 130)
+		var width := 130
+		if _CODECS[i] == "DictFromObj":
+			width = 156
+		_tree.set_column_custom_minimum_width(i + 1, width)
 
 	var root := _tree.create_item()
 	var select_item:TreeItem = null
