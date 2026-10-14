@@ -83,18 +83,14 @@ class Monster extends FlatBuffer:
 		return get_field_offset( VT_MANA )
 
 	func mana() -> int:
-		var field_start: int = get_inline_field_start( VT_MANA )
-		if not field_start: return 150
-		return _fb_bytes.decode_s16( field_start )
+		return get_s16( VT_MANA, 150 )
 
 	## Return true if hp is present in the buffer, else false
 	func hp_is_present() -> bool:
 		return get_field_offset( VT_HP )
 
 	func hp() -> int:
-		var field_start: int = get_inline_field_start( VT_HP )
-		if not field_start: return 100
-		return _fb_bytes.decode_s16( field_start )
+		return get_s16( VT_HP, 100 )
 
 	## Return true if name is present in the buffer, else false
 	func name_is_present() -> bool:
@@ -134,10 +130,7 @@ class Monster extends FlatBuffer:
 		return get_field_offset( VT_COLOR )
 
 	func color() -> Color_:
-		var field_start: int = get_inline_field_start( VT_COLOR )
-		if not field_start: return 2 as Color_
-		var decoded: Color_ = _fb_bytes.decode_s8( field_start )
-		return decoded
+		return get_s8( VT_COLOR, 2 ) as Color_
 
 	## Return true if weapons is present in the buffer, else false
 	func weapons_is_present() -> bool:
@@ -191,10 +184,7 @@ class Monster extends FlatBuffer:
 
 	## Get the union type of the equipped_type field
 	func equipped_type() -> Equipment:
-		var field_start: int = get_inline_field_start( VT_EQUIPPED_TYPE )
-		if not field_start: return 0 as Equipment
-		var decoded: Equipment = _fb_bytes.decode_u8( field_start )
-		return decoded
+		return get_u8( VT_EQUIPPED_TYPE, 0 ) as Equipment
 
 	func equipped() -> Variant:
 		var field_start: int = get_offset_field_start( VT_EQUIPPED )
@@ -351,9 +341,7 @@ class Weapon extends FlatBuffer:
 		return get_field_offset( VT_DAMAGE )
 
 	func damage() -> int:
-		var field_start: int = get_inline_field_start( VT_DAMAGE )
-		if not field_start: return 0
-		return _fb_bytes.decode_s16( field_start )
+		return get_s16( VT_DAMAGE, 0 )
 
 
 ## Builder class for Weapon

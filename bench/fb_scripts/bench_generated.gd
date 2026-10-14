@@ -136,18 +136,14 @@ class FBFooBar extends FlatBuffer:
 		return get_field_offset( VT_RATING )
 
 	func rating() -> float:
-		var field_start: int = get_inline_field_start( VT_RATING )
-		if not field_start: return 0.0
-		return _fb_bytes.decode_double( field_start )
+		return get_f64( VT_RATING, 0.0 )
 
 	## Return true if postfix is present in the buffer, else false
 	func postfix_is_present() -> bool:
 		return get_field_offset( VT_POSTFIX )
 
 	func postfix() -> int:
-		var field_start: int = get_inline_field_start( VT_POSTFIX )
-		if not field_start: return 0
-		return _fb_bytes.decode_u8( field_start )
+		return get_u8( VT_POSTFIX, 0 )
 
 
 ## TODO: Write a Doc Comment for the builder
@@ -257,19 +253,14 @@ class FBFooBarContainer extends FlatBuffer:
 		return get_field_offset( VT_INITIALIZED )
 
 	func initialized() -> bool:
-		var field_start: int = get_inline_field_start( VT_INITIALIZED )
-		if not field_start: return 0
-		return _fb_bytes.decode_u8( field_start )
+		return get_bool( VT_INITIALIZED, 0 )
 
 	## Return true if fruit is present in the buffer, else false
 	func fruit_is_present() -> bool:
 		return get_field_offset( VT_FRUIT )
 
 	func fruit() -> Enum:
-		var field_start: int = get_inline_field_start( VT_FRUIT )
-		if not field_start: return 0 as Enum
-		var decoded: Enum = _fb_bytes.decode_s16( field_start )
-		return decoded
+		return get_s16( VT_FRUIT, 0 ) as Enum
 
 	## Return true if location is present in the buffer, else false
 	func location_is_present() -> bool:

@@ -29,9 +29,7 @@ class Inner extends FlatBuffer:
 		return get_field_offset( VT_N )
 
 	func n() -> int:
-		var field_start: int = get_inline_field_start( VT_N )
-		if not field_start: return 0
-		return _fb_bytes.decode_s32( field_start )
+		return get_s32( VT_N, 0 )
 
 
 ## Builder class for Inner
@@ -62,8 +60,6 @@ static func create_Inner( _fbb: FlatBufferBuilder,
 	return builder.finish();
 
 class Root extends FlatBuffer:
-	const _nested_schema = preload( 'nested_generated.gd' )
-
 	enum {
 		VT_PAYLOAD = 4
 	}
@@ -79,7 +75,7 @@ class Root extends FlatBuffer:
 			verify_table_start(verifier)
 			and verify_offset(verifier, VT_PAYLOAD)
 			and verify_vector_u8(verifier, VT_PAYLOAD)
-			and payload_verify_nested()
+			# TODO and verifier.template VerifyNestedFlatBuffer<NestedFlatBufferName>(payload(), nullptr)
 			and verify_end_table(verifier)
 		)
 
@@ -106,23 +102,6 @@ class Root extends FlatBuffer:
 		var array_size: int = _fb_bytes.decode_u32( array_start )
 		array_start += 4
 		return _fb_bytes.slice( array_start, array_start + array_size )
-
-	func payload_nested_root() -> Inner:
-		if not payload_is_present():
-			return null
-		var bytes: PackedByteArray = payload()
-		if bytes.size() < 4:
-			return null
-		return _nested_schema.Inner.new( bytes, bytes.decode_u32( 0 ) )
-
-	func payload_verify_nested() -> bool:
-		if not payload_is_present():
-			return true
-		var bytes: PackedByteArray = payload()
-		if bytes.size() < 12:
-			return false
-		var nested_verifier: FlatBufferVerifier = FlatBufferVerifier.new()
-		return _nested_schema.Inner.new( bytes, bytes.decode_u32( 0 ) ).verify( nested_verifier )
 
 
 ## Builder class for Root

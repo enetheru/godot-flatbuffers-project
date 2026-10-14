@@ -71,38 +71,28 @@ class Type extends FlatBuffer:
 		return get_field_offset( VT_BASE_TYPE )
 
 	func base_type() -> BaseType:
-		var field_start: int = get_inline_field_start( VT_BASE_TYPE )
-		if not field_start: return 0 as BaseType
-		var decoded: BaseType = _fb_bytes.decode_s8( field_start )
-		return decoded
+		return get_s8( VT_BASE_TYPE, 0 ) as BaseType
 
 	## Return true if element is present in the buffer, else false
 	func element_is_present() -> bool:
 		return get_field_offset( VT_ELEMENT )
 
 	func element() -> BaseType:
-		var field_start: int = get_inline_field_start( VT_ELEMENT )
-		if not field_start: return 0 as BaseType
-		var decoded: BaseType = _fb_bytes.decode_s8( field_start )
-		return decoded
+		return get_s8( VT_ELEMENT, 0 ) as BaseType
 
 	## Return true if index is present in the buffer, else false
 	func index_is_present() -> bool:
 		return get_field_offset( VT_INDEX )
 
 	func index() -> int:
-		var field_start: int = get_inline_field_start( VT_INDEX )
-		if not field_start: return -1
-		return _fb_bytes.decode_s32( field_start )
+		return get_s32( VT_INDEX, -1 )
 
 	## Return true if fixed_length is present in the buffer, else false
 	func fixed_length_is_present() -> bool:
 		return get_field_offset( VT_FIXED_LENGTH )
 
 	func fixed_length() -> int:
-		var field_start: int = get_inline_field_start( VT_FIXED_LENGTH )
-		if not field_start: return 0
-		return _fb_bytes.decode_u16( field_start )
+		return get_u16( VT_FIXED_LENGTH, 0 )
 
 	## Return true if base_size is present in the buffer, else false
 	func base_size_is_present() -> bool:
@@ -110,9 +100,7 @@ class Type extends FlatBuffer:
 
 	## The size (octets) of the `base_type` field.
 	func base_size() -> int:
-		var field_start: int = get_inline_field_start( VT_BASE_SIZE )
-		if not field_start: return 4
-		return _fb_bytes.decode_u32( field_start )
+		return get_u32( VT_BASE_SIZE, 4 )
 
 	## Return true if element_size is present in the buffer, else false
 	func element_size_is_present() -> bool:
@@ -120,9 +108,7 @@ class Type extends FlatBuffer:
 
 	## The size (octets) of the `element` field, if present.
 	func element_size() -> int:
-		var field_start: int = get_inline_field_start( VT_ELEMENT_SIZE )
-		if not field_start: return 0
-		return _fb_bytes.decode_u32( field_start )
+		return get_u32( VT_ELEMENT_SIZE, 0 )
 
 
 ## Builder class for Type
@@ -197,7 +183,8 @@ class KeyValue extends FlatBuffer:
 		verifier.set_buffer(_fb_bytes)
 		return (
 			verify_table_start(verifier)
-			and verify_offset_required(verifier, VT_KEY)
+			# TODO required field
+			and verify_offset(verifier, VT_KEY)
 			and verify_string( verifier, VT_KEY )
 			and verify_offset(verifier, VT_VALUE)
 			and verify_string( verifier, VT_VALUE )
@@ -223,9 +210,6 @@ class KeyValue extends FlatBuffer:
 		if not field_start: return ''
 		return decode_variant( field_start, TYPE_STRING )
 
-	func key_compare_with_value( key: String ) -> int:
-		return key_compare( VT_KEY, FlatBufferBuilder.KEY_STRING, key, "" )
-
 
 ## Builder class for KeyValue
 class KeyValueBuilder extends RefCounted:
@@ -249,8 +233,7 @@ class KeyValueBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		if not fbb_.required(o, KeyValue.VT_KEY):
-			return 0
+		fbb_.required(o, KeyValue.VT_KEY)
 		return o;
 
 ## Create a KeyValue table in one go using the provided [param _fbb]
@@ -261,10 +244,6 @@ static func create_KeyValue( _fbb: FlatBufferBuilder,
 	builder.add_value( value );
 	builder.add_key( key );
 	return builder.finish();
-
-## Create a vector of KeyValue offsets sorted by the key field
-static func create_sorted_KeyValue_vector( _fbb: FlatBufferBuilder, offsets: PackedInt32Array ) -> int:
-	return _fbb.create_vector_of_sorted_tables( offsets, KeyValue.VT_KEY, FlatBufferBuilder.KEY_STRING, "" )
 
 class EnumVal extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
@@ -287,7 +266,8 @@ class EnumVal extends FlatBuffer:
 		verifier.set_buffer(_fb_bytes)
 		return (
 			verify_table_start(verifier)
-			and verify_offset_required(verifier, VT_NAME)
+			# TODO required field
+			and verify_offset(verifier, VT_NAME)
 			and verify_string( verifier, VT_NAME )
 			and verify_field_s64(verifier, VT_VALUE, 8)
 			and verify_offset(verifier, VT_UNION_TYPE)
@@ -316,9 +296,7 @@ class EnumVal extends FlatBuffer:
 		return get_field_offset( VT_VALUE )
 
 	func value() -> int:
-		var field_start: int = get_inline_field_start( VT_VALUE )
-		if not field_start: return 0
-		return _fb_bytes.decode_s64( field_start )
+		return get_s64( VT_VALUE, 0 )
 
 	## Return true if union_type is present in the buffer, else false
 	func union_type_is_present() -> bool:
@@ -405,24 +383,6 @@ class EnumVal extends FlatBuffer:
 			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func attributes_lookup( key: String ) -> KeyValue:
-		var size: int = attributes_size()
-		var lo: int = 0
-		var hi: int = size
-		while lo < hi:
-			var mid: int = lo + ((hi - lo) >> 1)
-			var cmp: int = attributes_at( mid ).key_compare_with_value( key )
-			if cmp < 0:
-				lo = mid + 1
-			elif cmp > 0:
-				hi = mid
-			else:
-				return attributes_at( mid )
-		return null
-
-	func key_compare_with_value( key: int ) -> int:
-		return key_compare( VT_VALUE, FlatBufferBuilder.KEY_LONG, key, 0 )
-
 
 ## Builder class for EnumVal
 class EnumValBuilder extends RefCounted:
@@ -458,8 +418,7 @@ class EnumValBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		if not fbb_.required(o, EnumVal.VT_NAME):
-			return 0
+		fbb_.required(o, EnumVal.VT_NAME)
 		return o;
 
 ## Create a EnumVal table in one go using the provided [param _fbb]
@@ -476,10 +435,6 @@ static func create_EnumVal( _fbb: FlatBufferBuilder,
 	builder.add_union_type( union_type );
 	builder.add_name( name );
 	return builder.finish();
-
-## Create a vector of EnumVal offsets sorted by the key field
-static func create_sorted_EnumVal_vector( _fbb: FlatBufferBuilder, offsets: PackedInt32Array ) -> int:
-	return _fbb.create_vector_of_sorted_tables( offsets, EnumVal.VT_VALUE, FlatBufferBuilder.KEY_LONG, 0 )
 
 class Enum extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
@@ -503,13 +458,16 @@ class Enum extends FlatBuffer:
 		verifier.set_buffer(_fb_bytes)
 		return (
 			verify_table_start(verifier)
-			and verify_offset_required(verifier, VT_NAME)
+			# TODO required field
+			and verify_offset(verifier, VT_NAME)
 			and verify_string( verifier, VT_NAME )
-			and verify_offset_required(verifier, VT_VALUES)
+			# TODO required field
+			and verify_offset(verifier, VT_VALUES)
 			and verify_vector_u32(verifier, VT_VALUES)
 			and values_verify(verifier)
 			and verify_field_u8(verifier, VT_IS_UNION, 1)
-			and verify_offset_required(verifier, VT_UNDERLYING_TYPE)
+			# TODO required field
+			and verify_offset(verifier, VT_UNDERLYING_TYPE)
 			and underlying_type().verify(verifier)
 			and verify_offset(verifier, VT_ATTRIBUTES)
 			and verify_vector_u32(verifier, VT_ATTRIBUTES)
@@ -579,29 +537,12 @@ class Enum extends FlatBuffer:
 			array[i] = _Reflection_schema.EnumVal.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func values_lookup( key: int ) -> EnumVal:
-		var size: int = values_size()
-		var lo: int = 0
-		var hi: int = size
-		while lo < hi:
-			var mid: int = lo + ((hi - lo) >> 1)
-			var cmp: int = values_at( mid ).key_compare_with_value( key )
-			if cmp < 0:
-				lo = mid + 1
-			elif cmp > 0:
-				hi = mid
-			else:
-				return values_at( mid )
-		return null
-
 	## Return true if is_union is present in the buffer, else false
 	func is_union_is_present() -> bool:
 		return get_field_offset( VT_IS_UNION )
 
 	func is_union() -> bool:
-		var field_start: int = get_inline_field_start( VT_IS_UNION )
-		if not field_start: return 0
-		return _fb_bytes.decode_u8( field_start )
+		return get_bool( VT_IS_UNION, 0 )
 
 	## Return true if underlying_type is present in the buffer, else false
 	## attribute: required
@@ -659,21 +600,6 @@ class Enum extends FlatBuffer:
 			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func attributes_lookup( key: String ) -> KeyValue:
-		var size: int = attributes_size()
-		var lo: int = 0
-		var hi: int = size
-		while lo < hi:
-			var mid: int = lo + ((hi - lo) >> 1)
-			var cmp: int = attributes_at( mid ).key_compare_with_value( key )
-			if cmp < 0:
-				lo = mid + 1
-			elif cmp > 0:
-				hi = mid
-			else:
-				return attributes_at( mid )
-		return null
-
 	## Return true if documentation is present in the buffer, else false
 	func documentation_is_present() -> bool:
 		return get_field_offset( VT_DOCUMENTATION )
@@ -712,9 +638,6 @@ class Enum extends FlatBuffer:
 		var field_start: int = get_offset_field_start( VT_DECLARATION_FILE )
 		if not field_start: return ''
 		return decode_variant( field_start, TYPE_STRING )
-
-	func key_compare_with_value( key: String ) -> int:
-		return key_compare( VT_NAME, FlatBufferBuilder.KEY_STRING, key, "" )
 
 
 ## Builder class for Enum
@@ -759,12 +682,9 @@ class EnumBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		if not fbb_.required(o, Enum.VT_NAME):
-			return 0
-		if not fbb_.required(o, Enum.VT_VALUES):
-			return 0
-		if not fbb_.required(o, Enum.VT_UNDERLYING_TYPE):
-			return 0
+		fbb_.required(o, Enum.VT_NAME)
+		fbb_.required(o, Enum.VT_VALUES)
+		fbb_.required(o, Enum.VT_UNDERLYING_TYPE)
 		return o;
 
 ## Create a Enum table in one go using the provided [param _fbb]
@@ -785,10 +705,6 @@ static func create_Enum( _fbb: FlatBufferBuilder,
 	builder.add_name( name );
 	builder.add_is_union( is_union );
 	return builder.finish();
-
-## Create a vector of Enum offsets sorted by the key field
-static func create_sorted_Enum_vector( _fbb: FlatBufferBuilder, offsets: PackedInt32Array ) -> int:
-	return _fbb.create_vector_of_sorted_tables( offsets, Enum.VT_NAME, FlatBufferBuilder.KEY_STRING, "" )
 
 class Field extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
@@ -818,9 +734,11 @@ class Field extends FlatBuffer:
 		verifier.set_buffer(_fb_bytes)
 		return (
 			verify_table_start(verifier)
-			and verify_offset_required(verifier, VT_NAME)
+			# TODO required field
+			and verify_offset(verifier, VT_NAME)
 			and verify_string( verifier, VT_NAME )
-			and verify_offset_required(verifier, VT_TYPE)
+			# TODO required field
+			and verify_offset(verifier, VT_TYPE)
 			and type().verify(verifier)
 			and verify_field_u16(verifier, VT_ID, 2)
 			and verify_field_u16(verifier, VT_OFFSET, 2)
@@ -865,63 +783,49 @@ class Field extends FlatBuffer:
 		return get_field_offset( VT_ID )
 
 	func id() -> int:
-		var field_start: int = get_inline_field_start( VT_ID )
-		if not field_start: return 0
-		return _fb_bytes.decode_u16( field_start )
+		return get_u16( VT_ID, 0 )
 
 	## Return true if offset is present in the buffer, else false
 	func offset_is_present() -> bool:
 		return get_field_offset( VT_OFFSET )
 
 	func offset() -> int:
-		var field_start: int = get_inline_field_start( VT_OFFSET )
-		if not field_start: return 0
-		return _fb_bytes.decode_u16( field_start )
+		return get_u16( VT_OFFSET, 0 )
 
 	## Return true if default_integer is present in the buffer, else false
 	func default_integer_is_present() -> bool:
 		return get_field_offset( VT_DEFAULT_INTEGER )
 
 	func default_integer() -> int:
-		var field_start: int = get_inline_field_start( VT_DEFAULT_INTEGER )
-		if not field_start: return 0
-		return _fb_bytes.decode_s64( field_start )
+		return get_s64( VT_DEFAULT_INTEGER, 0 )
 
 	## Return true if default_real is present in the buffer, else false
 	func default_real_is_present() -> bool:
 		return get_field_offset( VT_DEFAULT_REAL )
 
 	func default_real() -> float:
-		var field_start: int = get_inline_field_start( VT_DEFAULT_REAL )
-		if not field_start: return 0.0
-		return _fb_bytes.decode_double( field_start )
+		return get_f64( VT_DEFAULT_REAL, 0.0 )
 
 	## Return true if deprecated is present in the buffer, else false
 	func deprecated_is_present() -> bool:
 		return get_field_offset( VT_DEPRECATED )
 
 	func deprecated() -> bool:
-		var field_start: int = get_inline_field_start( VT_DEPRECATED )
-		if not field_start: return 0
-		return _fb_bytes.decode_u8( field_start )
+		return get_bool( VT_DEPRECATED, 0 )
 
 	## Return true if required is present in the buffer, else false
 	func required_is_present() -> bool:
 		return get_field_offset( VT_REQUIRED )
 
 	func required() -> bool:
-		var field_start: int = get_inline_field_start( VT_REQUIRED )
-		if not field_start: return 0
-		return _fb_bytes.decode_u8( field_start )
+		return get_bool( VT_REQUIRED, 0 )
 
 	## Return true if key is present in the buffer, else false
 	func key_is_present() -> bool:
 		return get_field_offset( VT_KEY )
 
 	func key() -> bool:
-		var field_start: int = get_inline_field_start( VT_KEY )
-		if not field_start: return 0
-		return _fb_bytes.decode_u8( field_start )
+		return get_bool( VT_KEY, 0 )
 
 	## Return true if attributes is present in the buffer, else false
 	func attributes_is_present() -> bool:
@@ -969,21 +873,6 @@ class Field extends FlatBuffer:
 			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func attributes_lookup( key: String ) -> KeyValue:
-		var size: int = attributes_size()
-		var lo: int = 0
-		var hi: int = size
-		while lo < hi:
-			var mid: int = lo + ((hi - lo) >> 1)
-			var cmp: int = attributes_at( mid ).key_compare_with_value( key )
-			if cmp < 0:
-				lo = mid + 1
-			elif cmp > 0:
-				hi = mid
-			else:
-				return attributes_at( mid )
-		return null
-
 	## Return true if documentation is present in the buffer, else false
 	func documentation_is_present() -> bool:
 		return get_field_offset( VT_DOCUMENTATION )
@@ -1019,9 +908,7 @@ class Field extends FlatBuffer:
 		return get_field_offset( VT_OPTIONAL )
 
 	func optional() -> bool:
-		var field_start: int = get_inline_field_start( VT_OPTIONAL )
-		if not field_start: return 0
-		return _fb_bytes.decode_u8( field_start )
+		return get_bool( VT_OPTIONAL, 0 )
 
 	## Return true if padding is present in the buffer, else false
 	func padding_is_present() -> bool:
@@ -1029,12 +916,7 @@ class Field extends FlatBuffer:
 
 	## Number of padding octets to always add after this field. Structs only.
 	func padding() -> int:
-		var field_start: int = get_inline_field_start( VT_PADDING )
-		if not field_start: return 0
-		return _fb_bytes.decode_u16( field_start )
-
-	func key_compare_with_value( key: String ) -> int:
-		return key_compare( VT_NAME, FlatBufferBuilder.KEY_STRING, key, "" )
+		return get_u16( VT_PADDING, 0 )
 
 
 ## Builder class for Field
@@ -1103,10 +985,8 @@ class FieldBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		if not fbb_.required(o, Field.VT_NAME):
-			return 0
-		if not fbb_.required(o, Field.VT_TYPE):
-			return 0
+		fbb_.required(o, Field.VT_NAME)
+		fbb_.required(o, Field.VT_TYPE)
 		return o;
 
 ## Create a Field table in one go using the provided [param _fbb]
@@ -1140,10 +1020,6 @@ static func create_Field( _fbb: FlatBufferBuilder,
 	builder.add_deprecated( deprecated );
 	return builder.finish();
 
-## Create a vector of Field offsets sorted by the key field
-static func create_sorted_Field_vector( _fbb: FlatBufferBuilder, offsets: PackedInt32Array ) -> int:
-	return _fbb.create_vector_of_sorted_tables( offsets, Field.VT_NAME, FlatBufferBuilder.KEY_STRING, "" )
-
 class Object_ extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
 
@@ -1167,9 +1043,11 @@ class Object_ extends FlatBuffer:
 		verifier.set_buffer(_fb_bytes)
 		return (
 			verify_table_start(verifier)
-			and verify_offset_required(verifier, VT_NAME)
+			# TODO required field
+			and verify_offset(verifier, VT_NAME)
 			and verify_string( verifier, VT_NAME )
-			and verify_offset_required(verifier, VT_FIELDS)
+			# TODO required field
+			and verify_offset(verifier, VT_FIELDS)
 			and verify_vector_u32(verifier, VT_FIELDS)
 			and fields_verify(verifier)
 			and verify_field_u8(verifier, VT_IS_STRUCT, 1)
@@ -1243,47 +1121,26 @@ class Object_ extends FlatBuffer:
 			array[i] = _Reflection_schema.Field.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func fields_lookup( key: String ) -> Field:
-		var size: int = fields_size()
-		var lo: int = 0
-		var hi: int = size
-		while lo < hi:
-			var mid: int = lo + ((hi - lo) >> 1)
-			var cmp: int = fields_at( mid ).key_compare_with_value( key )
-			if cmp < 0:
-				lo = mid + 1
-			elif cmp > 0:
-				hi = mid
-			else:
-				return fields_at( mid )
-		return null
-
 	## Return true if is_struct is present in the buffer, else false
 	func is_struct_is_present() -> bool:
 		return get_field_offset( VT_IS_STRUCT )
 
 	func is_struct() -> bool:
-		var field_start: int = get_inline_field_start( VT_IS_STRUCT )
-		if not field_start: return 0
-		return _fb_bytes.decode_u8( field_start )
+		return get_bool( VT_IS_STRUCT, 0 )
 
 	## Return true if minalign is present in the buffer, else false
 	func minalign_is_present() -> bool:
 		return get_field_offset( VT_MINALIGN )
 
 	func minalign() -> int:
-		var field_start: int = get_inline_field_start( VT_MINALIGN )
-		if not field_start: return 0
-		return _fb_bytes.decode_s32( field_start )
+		return get_s32( VT_MINALIGN, 0 )
 
 	## Return true if bytesize is present in the buffer, else false
 	func bytesize_is_present() -> bool:
 		return get_field_offset( VT_BYTESIZE )
 
 	func bytesize() -> int:
-		var field_start: int = get_inline_field_start( VT_BYTESIZE )
-		if not field_start: return 0
-		return _fb_bytes.decode_s32( field_start )
+		return get_s32( VT_BYTESIZE, 0 )
 
 	## Return true if attributes is present in the buffer, else false
 	func attributes_is_present() -> bool:
@@ -1331,21 +1188,6 @@ class Object_ extends FlatBuffer:
 			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func attributes_lookup( key: String ) -> KeyValue:
-		var size: int = attributes_size()
-		var lo: int = 0
-		var hi: int = size
-		while lo < hi:
-			var mid: int = lo + ((hi - lo) >> 1)
-			var cmp: int = attributes_at( mid ).key_compare_with_value( key )
-			if cmp < 0:
-				lo = mid + 1
-			elif cmp > 0:
-				hi = mid
-			else:
-				return attributes_at( mid )
-		return null
-
 	## Return true if documentation is present in the buffer, else false
 	func documentation_is_present() -> bool:
 		return get_field_offset( VT_DOCUMENTATION )
@@ -1384,9 +1226,6 @@ class Object_ extends FlatBuffer:
 		var field_start: int = get_offset_field_start( VT_DECLARATION_FILE )
 		if not field_start: return ''
 		return decode_variant( field_start, TYPE_STRING )
-
-	func key_compare_with_value( key: String ) -> int:
-		return key_compare( VT_NAME, FlatBufferBuilder.KEY_STRING, key, "" )
 
 
 ## Builder class for Object_
@@ -1435,10 +1274,8 @@ class Object_Builder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		if not fbb_.required(o, Object_.VT_NAME):
-			return 0
-		if not fbb_.required(o, Object_.VT_FIELDS):
-			return 0
+		fbb_.required(o, Object_.VT_NAME)
+		fbb_.required(o, Object_.VT_FIELDS)
 		return o;
 
 ## Create a Object_ table in one go using the provided [param _fbb]
@@ -1462,10 +1299,6 @@ static func create_Object_( _fbb: FlatBufferBuilder,
 	builder.add_is_struct( is_struct );
 	return builder.finish();
 
-## Create a vector of Object_ offsets sorted by the key field
-static func create_sorted_Object__vector( _fbb: FlatBufferBuilder, offsets: PackedInt32Array ) -> int:
-	return _fbb.create_vector_of_sorted_tables( offsets, Object_.VT_NAME, FlatBufferBuilder.KEY_STRING, "" )
-
 class RPCCall extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
 
@@ -1486,11 +1319,14 @@ class RPCCall extends FlatBuffer:
 		verifier.set_buffer(_fb_bytes)
 		return (
 			verify_table_start(verifier)
-			and verify_offset_required(verifier, VT_NAME)
+			# TODO required field
+			and verify_offset(verifier, VT_NAME)
 			and verify_string( verifier, VT_NAME )
-			and verify_offset_required(verifier, VT_REQUEST)
+			# TODO required field
+			and verify_offset(verifier, VT_REQUEST)
 			and request().verify(verifier)
-			and verify_offset_required(verifier, VT_RESPONSE)
+			# TODO required field
+			and verify_offset(verifier, VT_RESPONSE)
 			and response().verify(verifier)
 			and verify_offset(verifier, VT_ATTRIBUTES)
 			and verify_vector_u32(verifier, VT_ATTRIBUTES)
@@ -1577,21 +1413,6 @@ class RPCCall extends FlatBuffer:
 			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func attributes_lookup( key: String ) -> KeyValue:
-		var size: int = attributes_size()
-		var lo: int = 0
-		var hi: int = size
-		while lo < hi:
-			var mid: int = lo + ((hi - lo) >> 1)
-			var cmp: int = attributes_at( mid ).key_compare_with_value( key )
-			if cmp < 0:
-				lo = mid + 1
-			elif cmp > 0:
-				hi = mid
-			else:
-				return attributes_at( mid )
-		return null
-
 	## Return true if documentation is present in the buffer, else false
 	func documentation_is_present() -> bool:
 		return get_field_offset( VT_DOCUMENTATION )
@@ -1621,9 +1442,6 @@ class RPCCall extends FlatBuffer:
 			var element_start: int = idx + _fb_bytes.decode_u32( idx )
 			array[i] = decode_variant( element_start, TYPE_STRING )
 		return array
-
-	func key_compare_with_value( key: String ) -> int:
-		return key_compare( VT_NAME, FlatBufferBuilder.KEY_STRING, key, "" )
 
 
 ## Builder class for RPCCall
@@ -1660,12 +1478,9 @@ class RPCCallBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		if not fbb_.required(o, RPCCall.VT_NAME):
-			return 0
-		if not fbb_.required(o, RPCCall.VT_REQUEST):
-			return 0
-		if not fbb_.required(o, RPCCall.VT_RESPONSE):
-			return 0
+		fbb_.required(o, RPCCall.VT_NAME)
+		fbb_.required(o, RPCCall.VT_REQUEST)
+		fbb_.required(o, RPCCall.VT_RESPONSE)
 		return o;
 
 ## Create a RPCCall table in one go using the provided [param _fbb]
@@ -1682,10 +1497,6 @@ static func create_RPCCall( _fbb: FlatBufferBuilder,
 	builder.add_request( request );
 	builder.add_name( name );
 	return builder.finish();
-
-## Create a vector of RPCCall offsets sorted by the key field
-static func create_sorted_RPCCall_vector( _fbb: FlatBufferBuilder, offsets: PackedInt32Array ) -> int:
-	return _fbb.create_vector_of_sorted_tables( offsets, RPCCall.VT_NAME, FlatBufferBuilder.KEY_STRING, "" )
 
 class Service extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
@@ -1707,7 +1518,8 @@ class Service extends FlatBuffer:
 		verifier.set_buffer(_fb_bytes)
 		return (
 			verify_table_start(verifier)
-			and verify_offset_required(verifier, VT_NAME)
+			# TODO required field
+			and verify_offset(verifier, VT_NAME)
 			and verify_string( verifier, VT_NAME )
 			and verify_offset(verifier, VT_CALLS)
 			and verify_vector_u32(verifier, VT_CALLS)
@@ -1779,21 +1591,6 @@ class Service extends FlatBuffer:
 			array[i] = _Reflection_schema.RPCCall.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func calls_lookup( key: String ) -> RPCCall:
-		var size: int = calls_size()
-		var lo: int = 0
-		var hi: int = size
-		while lo < hi:
-			var mid: int = lo + ((hi - lo) >> 1)
-			var cmp: int = calls_at( mid ).key_compare_with_value( key )
-			if cmp < 0:
-				lo = mid + 1
-			elif cmp > 0:
-				hi = mid
-			else:
-				return calls_at( mid )
-		return null
-
 	## Return true if attributes is present in the buffer, else false
 	func attributes_is_present() -> bool:
 		return get_field_offset( VT_ATTRIBUTES )
@@ -1840,21 +1637,6 @@ class Service extends FlatBuffer:
 			array[i] = _Reflection_schema.KeyValue.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func attributes_lookup( key: String ) -> KeyValue:
-		var size: int = attributes_size()
-		var lo: int = 0
-		var hi: int = size
-		while lo < hi:
-			var mid: int = lo + ((hi - lo) >> 1)
-			var cmp: int = attributes_at( mid ).key_compare_with_value( key )
-			if cmp < 0:
-				lo = mid + 1
-			elif cmp > 0:
-				hi = mid
-			else:
-				return attributes_at( mid )
-		return null
-
 	## Return true if documentation is present in the buffer, else false
 	func documentation_is_present() -> bool:
 		return get_field_offset( VT_DOCUMENTATION )
@@ -1894,9 +1676,6 @@ class Service extends FlatBuffer:
 		if not field_start: return ''
 		return decode_variant( field_start, TYPE_STRING )
 
-	func key_compare_with_value( key: String ) -> int:
-		return key_compare( VT_NAME, FlatBufferBuilder.KEY_STRING, key, "" )
-
 
 ## Builder class for Service
 class ServiceBuilder extends RefCounted:
@@ -1932,8 +1711,7 @@ class ServiceBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		if not fbb_.required(o, Service.VT_NAME):
-			return 0
+		fbb_.required(o, Service.VT_NAME)
 		return o;
 
 ## Create a Service table in one go using the provided [param _fbb]
@@ -1950,10 +1728,6 @@ static func create_Service( _fbb: FlatBufferBuilder,
 	builder.add_calls( calls );
 	builder.add_name( name );
 	return builder.finish();
-
-## Create a vector of Service offsets sorted by the key field
-static func create_sorted_Service_vector( _fbb: FlatBufferBuilder, offsets: PackedInt32Array ) -> int:
-	return _fbb.create_vector_of_sorted_tables( offsets, Service.VT_NAME, FlatBufferBuilder.KEY_STRING, "" )
 
 ## File specific information.
 ## Symbols declared within a file may be recovered by iterating over all
@@ -1973,7 +1747,8 @@ class SchemaFile extends FlatBuffer:
 		verifier.set_buffer(_fb_bytes)
 		return (
 			verify_table_start(verifier)
-			and verify_offset_required(verifier, VT_FILENAME)
+			# TODO required field
+			and verify_offset(verifier, VT_FILENAME)
 			and verify_string( verifier, VT_FILENAME )
 			and verify_offset(verifier, VT_INCLUDED_FILENAMES)
 			and verify_vector_u32(verifier, VT_INCLUDED_FILENAMES)
@@ -2024,9 +1799,6 @@ class SchemaFile extends FlatBuffer:
 			array[i] = decode_variant( element_start, TYPE_STRING )
 		return array
 
-	func key_compare_with_value( key: String ) -> int:
-		return key_compare( VT_FILENAME, FlatBufferBuilder.KEY_STRING, key, "" )
-
 
 ## Builder class for SchemaFile
 class SchemaFileBuilder extends RefCounted:
@@ -2050,8 +1822,7 @@ class SchemaFileBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		if not fbb_.required(o, SchemaFile.VT_FILENAME):
-			return 0
+		fbb_.required(o, SchemaFile.VT_FILENAME)
 		return o;
 
 ## Create a SchemaFile table in one go using the provided [param _fbb]
@@ -2062,10 +1833,6 @@ static func create_SchemaFile( _fbb: FlatBufferBuilder,
 	builder.add_included_filenames( included_filenames );
 	builder.add_filename( filename );
 	return builder.finish();
-
-## Create a vector of SchemaFile offsets sorted by the key field
-static func create_sorted_SchemaFile_vector( _fbb: FlatBufferBuilder, offsets: PackedInt32Array ) -> int:
-	return _fbb.create_vector_of_sorted_tables( offsets, SchemaFile.VT_FILENAME, FlatBufferBuilder.KEY_STRING, "" )
 
 class Schema extends FlatBuffer:
 	const _Reflection_schema = preload( 'Reflection_generated.gd' )
@@ -2088,14 +1855,14 @@ class Schema extends FlatBuffer:
 	## Verify the integrity of the SchemaFile data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
-		if not verifier.buffer_has_identifier("BFBS"):
-			return false
 		return (
 			verify_table_start(verifier)
-			and verify_offset_required(verifier, VT_OBJECTS)
+			# TODO required field
+			and verify_offset(verifier, VT_OBJECTS)
 			and verify_vector_u32(verifier, VT_OBJECTS)
 			and objects_verify(verifier)
-			and verify_offset_required(verifier, VT_ENUMS)
+			# TODO required field
+			and verify_offset(verifier, VT_ENUMS)
 			and verify_vector_u32(verifier, VT_ENUMS)
 			and enums_verify(verifier)
 			and verify_offset(verifier, VT_FILE_IDENT)
@@ -2161,21 +1928,6 @@ class Schema extends FlatBuffer:
 			array[i] = _Reflection_schema.Object_.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func objects_lookup( key: String ) -> Object_:
-		var size: int = objects_size()
-		var lo: int = 0
-		var hi: int = size
-		while lo < hi:
-			var mid: int = lo + ((hi - lo) >> 1)
-			var cmp: int = objects_at( mid ).key_compare_with_value( key )
-			if cmp < 0:
-				lo = mid + 1
-			elif cmp > 0:
-				hi = mid
-			else:
-				return objects_at( mid )
-		return null
-
 	## Return true if enums is present in the buffer, else false
 	## attribute: required
 	func enums_is_present() -> bool:
@@ -2222,21 +1974,6 @@ class Schema extends FlatBuffer:
 			var p: int = array_start + i * 4
 			array[i] = _Reflection_schema.Enum.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
-
-	func enums_lookup( key: String ) -> Enum:
-		var size: int = enums_size()
-		var lo: int = 0
-		var hi: int = size
-		while lo < hi:
-			var mid: int = lo + ((hi - lo) >> 1)
-			var cmp: int = enums_at( mid ).key_compare_with_value( key )
-			if cmp < 0:
-				lo = mid + 1
-			elif cmp > 0:
-				hi = mid
-			else:
-				return enums_at( mid )
-		return null
 
 	## Return true if file_ident is present in the buffer, else false
 	func file_ident_is_present() -> bool:
@@ -2311,30 +2048,12 @@ class Schema extends FlatBuffer:
 			array[i] = _Reflection_schema.Service.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func services_lookup( key: String ) -> Service:
-		var size: int = services_size()
-		var lo: int = 0
-		var hi: int = size
-		while lo < hi:
-			var mid: int = lo + ((hi - lo) >> 1)
-			var cmp: int = services_at( mid ).key_compare_with_value( key )
-			if cmp < 0:
-				lo = mid + 1
-			elif cmp > 0:
-				hi = mid
-			else:
-				return services_at( mid )
-		return null
-
 	## Return true if advanced_features is present in the buffer, else false
 	func advanced_features_is_present() -> bool:
 		return get_field_offset( VT_ADVANCED_FEATURES )
 
 	func advanced_features() -> AdvancedFeatures:
-		var field_start: int = get_inline_field_start( VT_ADVANCED_FEATURES )
-		if not field_start: return 0 as AdvancedFeatures
-		var decoded: AdvancedFeatures = _fb_bytes.decode_u64( field_start )
-		return decoded
+		return get_u64( VT_ADVANCED_FEATURES, 0 ) as AdvancedFeatures
 
 	## Return true if fbs_files is present in the buffer, else false
 	func fbs_files_is_present() -> bool:
@@ -2390,21 +2109,6 @@ class Schema extends FlatBuffer:
 			array[i] = _Reflection_schema.SchemaFile.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
-	func fbs_files_lookup( key: String ) -> SchemaFile:
-		var size: int = fbs_files_size()
-		var lo: int = 0
-		var hi: int = size
-		while lo < hi:
-			var mid: int = lo + ((hi - lo) >> 1)
-			var cmp: int = fbs_files_at( mid ).key_compare_with_value( key )
-			if cmp < 0:
-				lo = mid + 1
-			elif cmp > 0:
-				hi = mid
-			else:
-				return fbs_files_at( mid )
-		return null
-
 
 ## Builder class for Schema
 class SchemaBuilder extends RefCounted:
@@ -2452,10 +2156,8 @@ class SchemaBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		if not fbb_.required(o, Schema.VT_OBJECTS):
-			return 0
-		if not fbb_.required(o, Schema.VT_ENUMS):
-			return 0
+		fbb_.required(o, Schema.VT_OBJECTS)
+		fbb_.required(o, Schema.VT_ENUMS)
 		return o;
 
 ## Create a Schema table in one go using the provided [param _fbb]
@@ -2483,10 +2185,4 @@ static func create_Schema( _fbb: FlatBufferBuilder,
 static func get_Schema( _bytes: PackedByteArray ) -> Schema:
 	assert(not _bytes.is_empty())
 	return Schema.new(_bytes, _bytes.decode_u32(0))
-
-const FILE_IDENTIFIER: String = "BFBS"
-
-## Finish a buffer whose root is a Schema
-static func finish_Schema_buffer( fbb: FlatBufferBuilder, root: int ) -> void:
-	fbb.finish(root, FILE_IDENTIFIER)
 

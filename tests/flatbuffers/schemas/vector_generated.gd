@@ -92,9 +92,7 @@ class TestTableA extends FlatBuffer:
 
 	## Field A
 	func a() -> int:
-		var field_start: int = get_inline_field_start( VT_A )
-		if not field_start: return 0
-		return _fb_bytes.decode_s32( field_start )
+		return get_s32( VT_A, 0 )
 
 
 ## Builder class for TestTableA
@@ -149,9 +147,7 @@ class TestTableB extends FlatBuffer:
 
 	## Field B
 	func b() -> int:
-		var field_start: int = get_inline_field_start( VT_B )
-		if not field_start: return 0
-		return _fb_bytes.decode_s32( field_start )
+		return get_s32( VT_B, 0 )
 
 
 ## Builder class for TestTableB

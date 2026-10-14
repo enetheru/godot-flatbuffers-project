@@ -85,9 +85,7 @@ class RootTable extends FlatBuffer:
 		return get_field_offset( VT_Z )
 
 	func z() -> int:
-		var field_start: int = get_inline_field_start( VT_Z )
-		if not field_start: return 0
-		return _fb_bytes.decode_s32( field_start )
+		return get_s32( VT_Z, 0 )
 
 
 ## Builder class for RootTable

@@ -47,20 +47,14 @@ class Root extends FlatBuffer:
 		return get_field_offset( VT_FLAG )
 
 	func flag() -> Flags:
-		var field_start: int = get_inline_field_start( VT_FLAG )
-		if not field_start: return 0 as Flags
-		var decoded: Flags = _fb_bytes.decode_u8( field_start )
-		return decoded
+		return get_u8( VT_FLAG, 0 ) as Flags
 
 	## Return true if sparse is present in the buffer, else false
 	func sparse_is_present() -> bool:
 		return get_field_offset( VT_SPARSE )
 
 	func sparse() -> Sparse:
-		var field_start: int = get_inline_field_start( VT_SPARSE )
-		if not field_start: return 0 as Sparse
-		var decoded: Sparse = _fb_bytes.decode_u16( field_start )
-		return decoded
+		return get_u16( VT_SPARSE, 0 ) as Sparse
 
 
 ## Builder class for Root

@@ -49,99 +49,77 @@ class RootTable extends FlatBuffer:
 		return get_field_offset( VT_F_BOOL )
 
 	func f_bool() -> bool:
-		var field_start: int = get_inline_field_start( VT_F_BOOL )
-		if not field_start: return 0
-		return _fb_bytes.decode_u8( field_start )
+		return get_bool( VT_F_BOOL, 0 )
 
 	## Return true if f_byte is present in the buffer, else false
 	func f_byte_is_present() -> bool:
 		return get_field_offset( VT_F_BYTE )
 
 	func f_byte() -> int:
-		var field_start: int = get_inline_field_start( VT_F_BYTE )
-		if not field_start: return 0
-		return _fb_bytes.decode_s8( field_start )
+		return get_s8( VT_F_BYTE, 0 )
 
 	## Return true if f_ubyte is present in the buffer, else false
 	func f_ubyte_is_present() -> bool:
 		return get_field_offset( VT_F_UBYTE )
 
 	func f_ubyte() -> int:
-		var field_start: int = get_inline_field_start( VT_F_UBYTE )
-		if not field_start: return 0
-		return _fb_bytes.decode_u8( field_start )
+		return get_u8( VT_F_UBYTE, 0 )
 
 	## Return true if f_short is present in the buffer, else false
 	func f_short_is_present() -> bool:
 		return get_field_offset( VT_F_SHORT )
 
 	func f_short() -> int:
-		var field_start: int = get_inline_field_start( VT_F_SHORT )
-		if not field_start: return 0
-		return _fb_bytes.decode_s16( field_start )
+		return get_s16( VT_F_SHORT, 0 )
 
 	## Return true if f_ushort is present in the buffer, else false
 	func f_ushort_is_present() -> bool:
 		return get_field_offset( VT_F_USHORT )
 
 	func f_ushort() -> int:
-		var field_start: int = get_inline_field_start( VT_F_USHORT )
-		if not field_start: return 0
-		return _fb_bytes.decode_u16( field_start )
+		return get_u16( VT_F_USHORT, 0 )
 
 	## Return true if f_int is present in the buffer, else false
 	func f_int_is_present() -> bool:
 		return get_field_offset( VT_F_INT )
 
 	func f_int() -> int:
-		var field_start: int = get_inline_field_start( VT_F_INT )
-		if not field_start: return 0
-		return _fb_bytes.decode_s32( field_start )
+		return get_s32( VT_F_INT, 0 )
 
 	## Return true if f_uint is present in the buffer, else false
 	func f_uint_is_present() -> bool:
 		return get_field_offset( VT_F_UINT )
 
 	func f_uint() -> int:
-		var field_start: int = get_inline_field_start( VT_F_UINT )
-		if not field_start: return 0
-		return _fb_bytes.decode_u32( field_start )
+		return get_u32( VT_F_UINT, 0 )
 
 	## Return true if f_long is present in the buffer, else false
 	func f_long_is_present() -> bool:
 		return get_field_offset( VT_F_LONG )
 
 	func f_long() -> int:
-		var field_start: int = get_inline_field_start( VT_F_LONG )
-		if not field_start: return 0
-		return _fb_bytes.decode_s64( field_start )
+		return get_s64( VT_F_LONG, 0 )
 
 	## Return true if f_ulong is present in the buffer, else false
 	func f_ulong_is_present() -> bool:
 		return get_field_offset( VT_F_ULONG )
 
 	func f_ulong() -> int:
-		var field_start: int = get_inline_field_start( VT_F_ULONG )
-		if not field_start: return 0
-		return _fb_bytes.decode_u64( field_start )
+		return get_u64( VT_F_ULONG, 0 )
 
 	## Return true if f_float is present in the buffer, else false
 	func f_float_is_present() -> bool:
 		return get_field_offset( VT_F_FLOAT )
 
 	func f_float() -> float:
-		var field_start: int = get_inline_field_start( VT_F_FLOAT )
-		if not field_start: return 0.0
-		return _fb_bytes.decode_float( field_start )
+		return get_f32( VT_F_FLOAT, 0.0 )
 
 	## Return true if f_double is present in the buffer, else false
 	func f_double_is_present() -> bool:
 		return get_field_offset( VT_F_DOUBLE )
 
 	func f_double() -> float:
-		var field_start: int = get_inline_field_start( VT_F_DOUBLE )
-		if not field_start: return 0.0
-		return _fb_bytes.decode_double( field_start )
+		return get_f64( VT_F_DOUBLE, 0.0 )
 
 
 ## Builder class for RootTable

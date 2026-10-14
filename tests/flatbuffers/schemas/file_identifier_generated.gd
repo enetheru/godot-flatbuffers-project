@@ -29,9 +29,7 @@ class Child extends FlatBuffer:
 		return get_field_offset( VT_N )
 
 	func n() -> int:
-		var field_start: int = get_inline_field_start( VT_N )
-		if not field_start: return 0
-		return _fb_bytes.decode_s32( field_start )
+		return get_s32( VT_N, 0 )
 
 
 ## Builder class for Child
@@ -76,8 +74,6 @@ class Root extends FlatBuffer:
 	## Verify the integrity of the Child data
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
-		if not verifier.buffer_has_identifier("RQID"):
-			return false
 		return (
 			verify_table_start(verifier)
 			and verify_offset(verifier, VT_LABEL)
@@ -143,10 +139,4 @@ static func create_Root( _fbb: FlatBufferBuilder,
 static func get_Root( _bytes: PackedByteArray ) -> Root:
 	assert(not _bytes.is_empty())
 	return Root.new(_bytes, _bytes.decode_u32(0))
-
-const FILE_IDENTIFIER: String = "RQID"
-
-## Finish a buffer whose root is a Root
-static func finish_Root_buffer( fbb: FlatBufferBuilder, root: int ) -> void:
-	fbb.finish(root, FILE_IDENTIFIER)
 

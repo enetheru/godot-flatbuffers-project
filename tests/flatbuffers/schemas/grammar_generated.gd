@@ -61,27 +61,21 @@ class TableDecl extends FlatBuffer:
 		return get_field_offset( VT_SCALAR_BOOL )
 
 	func scalar_bool() -> bool:
-		var field_start: int = get_inline_field_start( VT_SCALAR_BOOL )
-		if not field_start: return 0
-		return _fb_bytes.decode_u8( field_start )
+		return get_bool( VT_SCALAR_BOOL, 0 )
 
 	## Return true if scalar_int is present in the buffer, else false
 	func scalar_int_is_present() -> bool:
 		return get_field_offset( VT_SCALAR_INT )
 
 	func scalar_int() -> int:
-		var field_start: int = get_inline_field_start( VT_SCALAR_INT )
-		if not field_start: return 32
-		return _fb_bytes.decode_s32( field_start )
+		return get_s32( VT_SCALAR_INT, 32 )
 
 	## Return true if scalar_float is present in the buffer, else false
 	func scalar_float_is_present() -> bool:
 		return get_field_offset( VT_SCALAR_FLOAT )
 
 	func scalar_float() -> float:
-		var field_start: int = get_inline_field_start( VT_SCALAR_FLOAT )
-		if not field_start: return 5.3
-		return _fb_bytes.decode_float( field_start )
+		return get_f32( VT_SCALAR_FLOAT, 5.3 )
 
 	## Return true if ident5 is present in the buffer, else false
 	func ident5_is_present() -> bool:

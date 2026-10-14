@@ -99,27 +99,21 @@ class RootTable extends FlatBuffer:
 		return get_field_offset( VT_BOOLEAN )
 
 	func boolean() -> bool:
-		var field_start: int = get_inline_field_start( VT_BOOLEAN )
-		if not field_start: return 0
-		return _fb_bytes.decode_u8( field_start )
+		return get_bool( VT_BOOLEAN, 0 )
 
 	## Return true if integer is present in the buffer, else false
 	func integer_is_present() -> bool:
 		return get_field_offset( VT_INTEGER )
 
 	func integer() -> int:
-		var field_start: int = get_inline_field_start( VT_INTEGER )
-		if not field_start: return 0
-		return _fb_bytes.decode_s64( field_start )
+		return get_s64( VT_INTEGER, 0 )
 
 	## Return true if floating_point is present in the buffer, else false
 	func floating_point_is_present() -> bool:
 		return get_field_offset( VT_FLOATING_POINT )
 
 	func floating_point() -> float:
-		var field_start: int = get_inline_field_start( VT_FLOATING_POINT )
-		if not field_start: return 0.0
-		return _fb_bytes.decode_double( field_start )
+		return get_f64( VT_FLOATING_POINT, 0.0 )
 
 	## Return true if string is present in the buffer, else false
 	func string_is_present() -> bool:
