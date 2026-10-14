@@ -33,6 +33,14 @@ layout_mode = 2
 layout_mode = 2
 text = "Bench list"
 
+[node name="View" type="OptionButton" parent="Margin/VBox/Toolbar"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+
+[node name="Target" type="OptionButton" parent="Margin/VBox/Toolbar"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+
 [node name="Metric" type="OptionButton" parent="Margin/VBox/Toolbar" unique_id=202964740]
 custom_minimum_size = Vector2(140, 0)
 layout_mode = 2
