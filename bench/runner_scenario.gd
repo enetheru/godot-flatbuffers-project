@@ -5,10 +5,11 @@ const CntFlags = Counter.Flags
 const CntOneK = Counter.OneK
 
 ## Save, load, spawn, update, and one-field peek on one 64-record payload.
-## FlatBuffers, Objects (var_to_bytes_with_objects), and a Dictionary
-## (var_to_bytes) see the same field values. Store also times building that
-## dictionary from the object fields and then encoding it. The original suite
-## is untouched.
+## FlatBuffers, Objects (var_to_bytes_with_objects), Dictionary
+## (var_to_bytes), and Dict from objects see the same field values. Store
+## times building that dictionary from the object fields and then encoding
+## it. Load, Spawn, Update, and Peek time the dictionary codec on the bytes
+## that build produced. The original suite is untouched.
 static var _payload_error:String = ""
 
 
@@ -28,18 +29,22 @@ func _init() -> void:
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_Load))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_Load))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_GDict_Load))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_DictFromObj_Load))
 
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_Spawn))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_Spawn))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_GDict_Spawn))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_DictFromObj_Spawn))
 
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_Update))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_Update))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_GDict_Update))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_DictFromObj_Update))
 
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_Peek))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_BuiltIn_Peek))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_GDict_Peek))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_DictFromObj_Peek))
 	@warning_ignore_restore("return_value_discarded")
 
 
@@ -147,6 +152,21 @@ static func BM_GDict_Load(state:State) -> void:
 			return
 
 
+static func BM_DictFromObj_Load(state:State) -> void:
+	if _fail(state):
+		return
+	var work := CompareWork.new()
+	var buf := work.encode_dict(work.dict_from_objects(work.make_objects()))
+	var expected := work.dict_sum_bytes(buf)
+	var throughput := _measure(state, buf.size())
+	for _i in state:
+		var sum := work.dict_sum_bytes(buf)
+		throughput.value += buf.size()
+		if sum != expected:
+			state.SkipWithError("dict-from-objects load checksum %d != %d" % [sum, expected])
+			return
+
+
 static func BM_Flatbuffers_Spawn(state:State) -> void:
 	if _fail(state):
 		return
@@ -189,6 +209,20 @@ static func BM_GDict_Spawn(state:State) -> void:
 			return
 
 
+static func BM_DictFromObj_Spawn(state:State) -> void:
+	if _fail(state):
+		return
+	var work := CompareWork.new()
+	var buf := work.encode_dict(work.dict_from_objects(work.make_objects()))
+	var throughput := _measure(state, buf.size())
+	for _i in state:
+		var spawned := work.spawn_dict(buf)
+		throughput.value += buf.size()
+		if spawned.is_empty():
+			state.SkipWithError("dict-from-objects spawn was empty")
+			return
+
+
 static func BM_Flatbuffers_Update(state:State) -> void:
 	if _fail(state):
 		return
@@ -219,6 +253,19 @@ static func BM_GDict_Update(state:State) -> void:
 	var work := CompareWork.new()
 	var buf := work.encode_dict(work.make_dict())
 	var dest := work.make_dict()
+	var throughput := _measure(state, buf.size())
+	for _i in state:
+		work.apply_dict(buf, dest)
+		throughput.value += buf.size()
+
+
+static func BM_DictFromObj_Update(state:State) -> void:
+	if _fail(state):
+		return
+	var work := CompareWork.new()
+	var objects := work.make_objects()
+	var buf := work.encode_dict(work.dict_from_objects(objects))
+	var dest := work.dict_from_objects(objects)
 	var throughput := _measure(state, buf.size())
 	for _i in state:
 		work.apply_dict(buf, dest)
@@ -267,4 +314,19 @@ static func BM_GDict_Peek(state:State) -> void:
 		throughput.value += buf.size()
 		if rating != expected:
 			state.SkipWithError("dict peek %d != %d" % [rating, expected])
+			return
+
+
+static func BM_DictFromObj_Peek(state:State) -> void:
+	if _fail(state):
+		return
+	var work := CompareWork.new()
+	var buf := work.encode_dict(work.dict_from_objects(work.make_objects()))
+	var expected := work.peek_dict(buf)
+	var throughput := _measure(state, buf.size())
+	for _i in state:
+		var rating := work.peek_dict(buf)
+		throughput.value += buf.size()
+		if rating != expected:
+			state.SkipWithError("dict-from-objects peek %d != %d" % [rating, expected])
 			return

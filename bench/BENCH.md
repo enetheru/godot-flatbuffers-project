@@ -96,23 +96,23 @@ The byte counter is the encoded length of one buffer, marked iteration-invariant
 | Test | FlatBuffers, inside the loop | Dictionary, inside the loop | Objects, inside the loop | Dict from objects, inside the loop |
 | --- | --- | --- | --- | --- |
 | Store | `encode_flat()`: formulas, builder, 64 strings, `finish` | `var_to_bytes` of the dictionary built before the loop | `var_to_bytes_with_objects` of the object graph built before the loop | `dict_from_objects` of that same object graph, then `var_to_bytes` |
-| Load | `get_FBFooBarContainer` plus `FlatBuffersBench.Use` | `bytes_to_var` plus `case_gd_dict.gd` `Use` | `bytes_to_var_with_objects` plus `BuiltInBench.Use` | — |
-| Spawn | root view, then a new dictionary filled field by field | `bytes_to_var` | `bytes_to_var_with_objects` | — |
-| Update | write accessors into the dictionary built before the loop | `bytes_to_var`, then copy fields onto the dictionary built before the loop | `bytes_to_var_with_objects`, then copy fields onto the objects built before the loop | — |
-| Peek | new root, then `list_at(32).rating()` | `bytes_to_var`, then the rating at index 32 | `bytes_to_var_with_objects`, then the rating at index 32 | — |
+| Load | `get_FBFooBarContainer` plus `FlatBuffersBench.Use` | `bytes_to_var` plus `case_gd_dict.gd` `Use` | `bytes_to_var_with_objects` plus `BuiltInBench.Use` | the same `bytes_to_var` plus `Use`, on the buffer `dict_from_objects` encoded before the loop |
+| Spawn | root view, then a new dictionary filled field by field | `bytes_to_var` | `bytes_to_var_with_objects` | `bytes_to_var` of that same buffer |
+| Update | write accessors into the dictionary built before the loop | `bytes_to_var`, then copy fields onto the dictionary built before the loop | `bytes_to_var_with_objects`, then copy fields onto the objects built before the loop | `bytes_to_var`, then copy fields onto the dictionary `dict_from_objects` built before the loop |
+| Peek | new root, then `list_at(32).rating()` | `bytes_to_var`, then the rating at index 32 | `bytes_to_var_with_objects`, then the rating at index 32 | `bytes_to_var`, then the rating at index 32, on that same buffer |
 
 Load and Peek also compare the result to a value computed before the loop, and skip the run if it differs. Store adds `buf.size()` to the throughput counter. Spawn checks that the result is non-empty. Update does not checksum inside the loop.
 
 ### Where a comparison is fair
 
 **Same logical values**
-  All three codecs start from `_apply`. Dict from objects is checked against the same sum: the dictionary built from the object graph, and that dictionary after `var_to_bytes`. A run is skipped unless the checksums match, including after `var_to_bytes` and `var_to_bytes_with_objects` round-trips.
+  The codecs start from `_apply`. Dict from objects is checked against the same sum: the dictionary built from the object graph, that dictionary after `var_to_bytes`, the spawned dictionary, the patched destination, and the peeked rating. A run is skipped unless the checksums match, including after `var_to_bytes` and `var_to_bytes_with_objects` round-trips.
 
 **Checksum**
   `FlatBuffersBench.Use`, `BuiltInBench.Use`, and `case_gd_dict.gd` `Use` add the same terms: `int(initialized)`, location length, fruit as an int, then per record the name length, postfix, `int(rating)`, `int(ratio)`, size, time, count, id, length, and prefix. The sum is allowed to be negative. The large ids overflow an int64 add. Equality is the check. `int(ratio)` truncates, so a 32-bit versus 64-bit fraction on `ratio` does not fail the check.
 
 **Codecs inside one process**
-  Editor, template_debug, and template_release are separate processes. Compare the three codecs inside one of those rows. Editor and template_debug print that the Godot binary is a debug build. template_release does not. That warning is the Godot binary, not a difference between the three codecs.
+  Editor, template_debug, and template_release are separate processes. Compare the codecs inside one of those rows. Editor and template_debug print that the Godot binary is a debug build. template_release does not. That warning is the Godot binary, not a difference between the codecs.
 
 ### Where a comparison is not the same work
 
@@ -120,16 +120,16 @@ Load and Peek also compare the result to a value computed before the loop, and s
   Dictionary and Objects time only the encoder. The value already exists. FlatBuffers has no existing buffer, so Store times building one from the formulas, including a new builder and 64 string copies. Dict from objects (`BM_DictFromObj_Store`) keeps the object graph outside the timer and, inside it, copies those fields into a new dictionary and then calls `var_to_bytes`. That is the send path when the fields live on objects. It still does not start FlatBuffers from those objects. The storage sketch above describes Dictionary, Objects, and Dict from objects. FlatBuffers remains the formula build.
 
 **Load**
-  Every codec reads every field inside the timer, and the checksum has to match. For the dictionary and the objects, `bytes_to_var` has already materialized those fields, and `Use` walks them again in GDScript. For FlatBuffers, `Use` is the walk that produces the values. Load is a fair "touch every field" test. It is a pessimistic "time until the data exists" test for the dictionary and the objects, by one extra walk.
+  Every codec reads every field inside the timer, and the checksum has to match. For the dictionary and the objects, `bytes_to_var` has already materialized those fields, and `Use` walks them again in GDScript. For FlatBuffers, `Use` is the walk that produces the values. Dict from objects (`BM_DictFromObj_Load`) uses the Dictionary window on the buffer `dict_from_objects` encoded before the loop. Building that dictionary is not inside this timer. Load is a fair "touch every field" test. It is a pessimistic "time until the data exists" test for the dictionary paths and the objects, by one extra walk.
 
 **Spawn**
-  FlatBuffers and Dictionary both end as a dictionary. FlatBuffers copies each field in GDScript. Dictionary returns the dictionary `bytes_to_var` already built. Objects ends as a `FooBarContainer` of script instances. Pair FlatBuffers Spawn with Dictionary Spawn. The Objects column is a different destination.
+  FlatBuffers and Dictionary both end as a dictionary. FlatBuffers copies each field in GDScript. Dictionary returns the dictionary `bytes_to_var` already built. Dict from objects (`BM_DictFromObj_Spawn`) returns `bytes_to_var` of the buffer built from the object graph before the loop, so it ends as that same kind of dictionary. Objects ends as a `FooBarContainer` of script instances. Pair FlatBuffers Spawn with Dictionary Spawn. The Objects column is a different destination.
 
 **Update**
-  The destination exists before the loop. FlatBuffers writes fields from the buffer into that dictionary and does not allocate a second copy of the payload. Dictionary and Objects fully decode a temporary, then copy onto the existing value, because `bytes_to_var` cannot patch one field. FlatBuffers Update patches a dictionary, not `Foo` / `Bar` / `FooBar` instances. Pair it with Dictionary Update.
+  The destination exists before the loop. FlatBuffers writes fields from the buffer into that dictionary and does not allocate a second copy of the payload. Dictionary and Objects fully decode a temporary, then copy onto the existing value, because `bytes_to_var` cannot patch one field. Dict from objects (`BM_DictFromObj_Update`) decodes that dictionary buffer and copies onto a dictionary `dict_from_objects` built before the loop. FlatBuffers Update patches a dictionary, not `Foo` / `Bar` / `FooBar` instances. Pair it with Dictionary Update.
 
 **Peek**
-  Index 32, rating only. FlatBuffers builds a root and reads that field. Dictionary and Objects decode the whole buffer, then read the field. Dictionary peek also narrows the decoded `Variant` with `is` before the `int` conversion. That check is small next to `bytes_to_var` and is not how a typed property read looks.
+  Index 32, rating only. FlatBuffers builds a root and reads that field. Dictionary and Objects decode the whole buffer, then read the field. Dict from objects (`BM_DictFromObj_Peek`) does that Dictionary read on the buffer built from the object graph before the loop. Dictionary peek also narrows the decoded `Variant` with `is` before the `int` conversion. That check is small next to `bytes_to_var` and is not how a typed property read looks.
 
 **FlatBuffers reader objects**
   A view is not free of GDScript allocations. `get_FBFooBarContainer` constructs a root. `list_at` without `into` constructs an `FBFooBar` per call. `sibling()` constructs an `FBBar`. The `parent` getter constructs an `FBFoo`. Load, Spawn, Update, and Peek pay those objects on top of the byte reads. The timed code does not pass `into`, so those readers are not reused.

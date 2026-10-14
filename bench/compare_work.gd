@@ -36,8 +36,9 @@ func check_payload() -> String:
 	var dict_round := dict_sum_bytes(encode_dict(dict_value))
 	var object_round := object_sum_bytes(encode_objects(object_value))
 	var built_value := dict_from_objects(object_value)
+	var built_buf := encode_dict(built_value)
 	var built_total := dict_sum(built_value)
-	var built_round := dict_sum_bytes(encode_dict(built_value))
+	var built_round := dict_sum_bytes(built_buf)
 	if flat_total == 0 or flat_total != dict_total or flat_total != object_total \
 			or flat_total != dict_round or flat_total != object_round \
 			or flat_total != built_total or flat_total != built_round:
@@ -54,18 +55,27 @@ func check_payload() -> String:
 	var object_dest := make_objects()
 	object_dest.location = ""
 	apply_objects(encode_objects(object_value), object_dest)
+	var built_dest := dict_from_objects(object_value)
+	built_dest.location = ""
+	apply_dict(built_buf, built_dest)
 	if dict_sum(flat_dest) != flat_total or dict_sum(dict_dest) != flat_total \
-			or object_sum(object_dest) != flat_total:
-		return "scenario update mismatch flat=%d dict=%d object=%d" % [
+			or object_sum(object_dest) != flat_total or dict_sum(built_dest) != flat_total:
+		return "scenario update mismatch flat=%d dict=%d object=%d built=%d" % [
 			dict_sum(flat_dest), dict_sum(dict_dest), object_sum(object_dest),
+			dict_sum(built_dest),
+		]
+	if dict_sum(spawn_dict(built_buf)) != flat_total:
+		return "scenario spawn mismatch built=%d flat=%d" % [
+			dict_sum(spawn_dict(built_buf)), flat_total,
 		]
 
 	var expect := _expect_rating()
 	if peek_flat(flat_buf) != expect or peek_dict(encode_dict(dict_value)) != expect \
-			or peek_objects(encode_objects(object_value)) != expect:
-		return "scenario peek mismatch flat=%d dict=%d object=%d expect=%d" % [
+			or peek_objects(encode_objects(object_value)) != expect \
+			or peek_dict(built_buf) != expect:
+		return "scenario peek mismatch flat=%d dict=%d object=%d built=%d expect=%d" % [
 			peek_flat(flat_buf), peek_dict(encode_dict(dict_value)),
-			peek_objects(encode_objects(object_value)), expect,
+			peek_objects(encode_objects(object_value)), peek_dict(built_buf), expect,
 		]
 	return ""
 

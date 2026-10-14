@@ -8,7 +8,7 @@ const HistoryReporter = preload("history_reporter.gd")
 
 const HISTORY_PATH := "res://bench/results/history.tres"
 const BENCH_SCENE := "res://bench/BenchScene.tscn"
-const _CODECS:PackedStringArray = ["Flatbuffers", "BuiltIn", "GDict"]
+const _CODECS:PackedStringArray = ["Flatbuffers", "BuiltIn", "GDict", "DictFromObj"]
 const _TARGETS:PackedStringArray = ["editor", "template_debug", "template_release"]
 const _COLOR_FLAT := Color(0.45, 0.78, 0.95)
 const _COLOR_GODOT := Color(0.95, 0.55, 0.32)
@@ -183,7 +183,7 @@ func _on_rerun() -> void:
 
 	var console := ConsoleReporter.new()
 	var missed := ""
-	var codecs := _codecs_for(slide.op)
+	var codecs := _CODECS
 	_busy_bar.max_value = float(codecs.size())
 	_set_running(true, "Checking the payload")
 	await RenderingServer.frame_post_draw
@@ -239,14 +239,13 @@ func _show_slide() -> void:
 	_fill_result("FlatBuffers", flat, base)
 	_fill_result("Objects", objects, base)
 	_fill_result("Dictionary", dictionary, base)
+	var built := _latest(_paired_name("DictFromObj", slide.op), target_name)
+	_fill_result("DictFromObj", built, base)
 	var stamp_row := _newest(flat, objects, dictionary)
+	stamp_row = _newest(stamp_row, built, null)
 	var construct := _construct_box()
 	if construct != null:
-		construct.visible = slide.op == "Store"
-	if slide.op == "Store":
-		var built := _latest(_paired_name("DictFromObj", slide.op), target_name)
-		_fill_result("DictFromObj", built, base)
-		stamp_row = _newest(stamp_row, built, null)
+		construct.visible = true
 	_source.text = _source_line(target_name, stamp_row)
 	_runs_hover = -1
 	_targets_hover = -1
@@ -389,7 +388,7 @@ func _draw_bars(
 func _draw_legend(chart:Control, font:Font, font_size:int, plot:Rect2) -> void:
 	if _slides.is_empty():
 		return
-	var codecs := _codecs_for(_slides[_index].op)
+	var codecs := _CODECS
 	var x := plot.end.x
 	for i in range(codecs.size() - 1, -1, -1):
 		var label := _codec_label(codecs[i])
@@ -456,7 +455,7 @@ func _history_groups(op:String, target_name:String) -> Array[BarGroup]:
 			found.stamp = seen.timestamp_utc
 	var filled:Array[BarGroup] = []
 	for group in order:
-		for codec:String in _codecs_for(op):
+		for codec:String in _CODECS:
 			var bench_name := _paired_name(codec, op)
 			for sample in _rows:
 				if sample.unix_s != group.unix_s or sample.target != target_name or sample.benchmark != bench_name:
@@ -474,7 +473,7 @@ func _target_groups(op:String) -> Array[BarGroup]:
 	for target_name:String in _TARGETS:
 		var group := BarGroup.new()
 		group.stamp = target_name
-		for codec:String in _codecs_for(op):
+		for codec:String in _CODECS:
 			var sample := _latest(_paired_name(codec, op), target_name)
 			if sample == null or not sample.error.is_empty() or is_nan(sample.time_ns):
 				continue
@@ -647,15 +646,6 @@ func _codec_label(codec:String) -> String:
 			return codec
 
 
-func _codecs_for(op:String) -> PackedStringArray:
-	if op != "Store":
-		return _CODECS
-	var codecs := _CODECS.duplicate()
-	if not codecs.append("DictFromObj"):
-		return _CODECS
-	return codecs
-
-
 func _color_for_codec(codec:String) -> Color:
 	match codec:
 		"Flatbuffers":
@@ -728,20 +718,20 @@ func _make_slides() -> Array[Slide]:
 			"Dictionary and Objects measure encoding only. Dict from objects is the send path when the fields live on objects and a dictionary has to be built before var_to_bytes. FlatBuffers includes construction from the formulas, not from the object graph. The Objects buffer is larger because var_to_bytes_with_objects also writes the script class."))
 	slides.append(_slide(
 			"Load",
-			"The buffer is built before the timer. Inside, each codec reads every field and checks the checksum. Dictionary decodes with bytes_to_var, and Objects with bytes_to_var_with_objects, then both walk the value again. FlatBuffers produces the values in that walk. FlatBuffers also constructs a reader for the root, each list entry, and the nested sibling and parent.",
-			"Fair as touch-every-field. Dictionary and Objects include one extra walk past the moment the data exists. The checksum truncates ratio with int(), so a 32-bit versus 64-bit fraction on that field does not fail the check."))
+			"The buffer is built before the timer. Inside, each codec reads every field and checks the checksum. Dictionary decodes with bytes_to_var, and Objects with bytes_to_var_with_objects, then both walk the value again. Dict from objects uses that same dictionary decode and walk. Its buffer is the dictionary encoding of the object graph, built before the timer. FlatBuffers produces the values in that walk. FlatBuffers also constructs a reader for the root, each list entry, and the nested sibling and parent.",
+			"Fair as touch-every-field. Dictionary and Objects include one extra walk past the moment the data exists. Dict from objects matches the Dictionary window. The object-to-dictionary copy is the Store timer. The checksum truncates ratio with int(), so a 32-bit versus 64-bit fraction on that field does not fail the check."))
 	slides.append(_slide(
 			"Spawn",
-			"The buffer is built before the timer. FlatBuffers copies every field into a new dictionary, and constructs a reader per record. Dictionary returns bytes_to_var. Objects returns bytes_to_var_with_objects. An empty or null result fails the run. The timer does not repeat the checksum.",
-			"FlatBuffers and Dictionary both end as a dictionary. Objects ends as a FooBarContainer. Pair FlatBuffers with Dictionary. The Objects column is a different destination."))
+			"The buffer is built before the timer. FlatBuffers copies every field into a new dictionary, and constructs a reader per record. Dictionary returns bytes_to_var. Dict from objects returns bytes_to_var of the dictionary buffer built from the object graph before the timer. Objects returns bytes_to_var_with_objects. An empty or null result fails the run. The timer does not repeat the checksum.",
+			"FlatBuffers, Dictionary, and Dict from objects end as a dictionary. Objects ends as a FooBarContainer. Pair FlatBuffers with Dictionary. The object-to-dictionary copy is outside this timer."))
 	slides.append(_slide(
 			"Update",
-			"The buffer and the destination exist before the timer. FlatBuffers writes fields into that dictionary and does not allocate a second copy of the payload. Dictionary and Objects decode a temporary, then copy onto the existing value. The timer does not repeat the checksum. FlatBuffers constructs a reader per record.",
-			"FlatBuffers patches a dictionary, not Foo, Bar, or FooBar instances. Pair it with Dictionary. A no-op apply is rejected once at startup, before any timer starts. A later break that still returns a value would still record a time."))
+			"The buffer and the destination exist before the timer. FlatBuffers writes fields into that dictionary and does not allocate a second copy of the payload. Dictionary and Objects decode a temporary, then copy onto the existing value. Dict from objects decodes the dictionary buffer built from the object graph and copies onto a dictionary built from that same graph before the timer. The timer does not repeat the checksum. FlatBuffers constructs a reader per record.",
+			"FlatBuffers patches a dictionary, not Foo, Bar, or FooBar instances. Pair it with Dictionary. Dict from objects matches that Dictionary window. The object-to-dictionary copy is outside this timer. A no-op apply is rejected once at startup, before any timer starts. A later break that still returns a value would still record a time."))
 	slides.append(_slide(
 			"Peek",
-			"The buffer is built before the timer. The timed work reads the rating of record 32 and compares it with a value computed beforehand. FlatBuffers builds a root and reads that field. Dictionary and Objects decode the whole buffer first. Dictionary also narrows the decoded Variant before converting the rating.",
-			"FlatBuffers is a one-field read. The other two times are a full decode plus that read. The Variant narrowing is small beside bytes_to_var."))
+			"The buffer is built before the timer. The timed work reads the rating of record 32 and compares it with a value computed beforehand. FlatBuffers builds a root and reads that field. Dictionary and Objects decode the whole buffer first. Dict from objects decodes the whole dictionary buffer built from the object graph, then reads that rating. Dictionary also narrows the decoded Variant before converting the rating.",
+			"FlatBuffers is a one-field read. Dictionary, Objects, and Dict from objects time a full decode plus that read. The object-to-dictionary copy is outside this timer. The Variant narrowing is small beside bytes_to_var."))
 	return slides
 
 

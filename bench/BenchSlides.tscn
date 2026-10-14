@@ -228,7 +228,6 @@ autowrap_mode = 3
 text = " "
 
 [node name="DictFromObj" type="HBoxContainer" parent="Margin/VBox/Scroll/Body"]
-visible = false
 layout_mode = 2
 theme_override_constants/separation = 16
 
