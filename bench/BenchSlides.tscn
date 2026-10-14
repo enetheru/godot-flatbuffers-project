@@ -1,0 +1,234 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://bench/bench_slides.gd" id="1_script"]
+
+[node name="BenchSlides" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Toolbar" type="HBoxContainer" parent="Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Back" type="Button" parent="Margin/VBox/Toolbar"]
+layout_mode = 2
+text = "Bench list"
+
+[node name="Prev" type="Button" parent="Margin/VBox/Toolbar"]
+layout_mode = 2
+text = "Previous"
+
+[node name="Next" type="Button" parent="Margin/VBox/Toolbar"]
+layout_mode = 2
+text = "Next"
+
+[node name="Index" type="Label" parent="Margin/VBox/Toolbar"]
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+text = "1 / 5"
+vertical_alignment = 1
+
+[node name="Target" type="OptionButton" parent="Margin/VBox/Toolbar"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+
+[node name="Rerun" type="Button" parent="Margin/VBox/Toolbar"]
+layout_mode = 2
+text = "Re-run"
+
+[node name="Lamp" type="ColorRect" parent="Margin/VBox/Toolbar"]
+custom_minimum_size = Vector2(14, 14)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.35, 0.35, 0.38, 1)
+
+[node name="Busy" type="Label" parent="Margin/VBox/Toolbar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Idle"
+vertical_alignment = 1
+
+[node name="BusyBar" type="ProgressBar" parent="Margin/VBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+max_value = 3.0
+show_percentage = false
+
+[node name="Scroll" type="ScrollContainer" parent="Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Body" type="VBoxContainer" parent="Margin/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Margin/VBox/Scroll/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.93, 0.93, 0.96, 1)
+theme_override_font_sizes/font_size = 32
+text = "Store"
+
+[node name="Codecs" type="Label" parent="Margin/VBox/Scroll/Body"]
+layout_mode = 2
+autowrap_mode = 3
+text = "Dictionary is a tree of dictionaries, saved with var_to_bytes and loaded with bytes_to_var. Objects is Foo, Bar, FooBar, and FooBarContainer, saved with var_to_bytes_with_objects and loaded with bytes_to_var_with_objects. Both start from the same field values."
+
+[node name="TimesHead" type="Label" parent="Margin/VBox/Scroll/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.78, 0.86, 1)
+theme_override_font_sizes/font_size = 18
+text = "What the timer includes"
+
+[node name="Times" type="Label" parent="Margin/VBox/Scroll/Body"]
+layout_mode = 2
+autowrap_mode = 3
+text = " "
+
+[node name="ShowsHead" type="Label" parent="Margin/VBox/Scroll/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.78, 0.86, 1)
+theme_override_font_sizes/font_size = 18
+text = "What the numbers show"
+
+[node name="Shows" type="Label" parent="Margin/VBox/Scroll/Body"]
+layout_mode = 2
+autowrap_mode = 3
+text = " "
+
+[node name="RunsHead" type="Label" parent="Margin/VBox/Scroll/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.78, 0.86, 1)
+theme_override_font_sizes/font_size = 18
+text = "Runs on the selected binary"
+
+[node name="RunsChart" type="Control" parent="Margin/VBox/Scroll/Body"]
+custom_minimum_size = Vector2(0, 240)
+clip_contents = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TargetsHead" type="Label" parent="Margin/VBox/Scroll/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.78, 0.86, 1)
+theme_override_font_sizes/font_size = 18
+text = "Latest on each binary"
+
+[node name="TargetsChart" type="Control" parent="Margin/VBox/Scroll/Body"]
+custom_minimum_size = Vector2(0, 240)
+clip_contents = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ResultsHead" type="Label" parent="Margin/VBox/Scroll/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.78, 0.86, 1)
+theme_override_font_sizes/font_size = 18
+text = "Latest saved result"
+
+[node name="FlatBuffers" type="HBoxContainer" parent="Margin/VBox/Scroll/Body"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Name" type="Label" parent="Margin/VBox/Scroll/Body/FlatBuffers"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.78, 0.95, 1)
+text = "FlatBuffers"
+
+[node name="Time" type="Label" parent="Margin/VBox/Scroll/Body/FlatBuffers"]
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+text = "-"
+
+[node name="Ratio" type="Label" parent="Margin/VBox/Scroll/Body/FlatBuffers"]
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+text = " "
+
+[node name="Detail" type="Label" parent="Margin/VBox/Scroll/Body/FlatBuffers"]
+layout_mode = 2
+size_flags_horizontal = 3
+autowrap_mode = 3
+text = " "
+
+[node name="Objects" type="HBoxContainer" parent="Margin/VBox/Scroll/Body"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Name" type="Label" parent="Margin/VBox/Scroll/Body/Objects"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.55, 0.32, 1)
+text = "Objects"
+
+[node name="Time" type="Label" parent="Margin/VBox/Scroll/Body/Objects"]
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+text = "-"
+
+[node name="Ratio" type="Label" parent="Margin/VBox/Scroll/Body/Objects"]
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+text = " "
+
+[node name="Detail" type="Label" parent="Margin/VBox/Scroll/Body/Objects"]
+layout_mode = 2
+size_flags_horizontal = 3
+autowrap_mode = 3
+text = " "
+
+[node name="Dictionary" type="HBoxContainer" parent="Margin/VBox/Scroll/Body"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Name" type="Label" parent="Margin/VBox/Scroll/Body/Dictionary"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.55, 0.9, 1)
+text = "Dictionary"
+
+[node name="Time" type="Label" parent="Margin/VBox/Scroll/Body/Dictionary"]
+custom_minimum_size = Vector2(110, 0)
+layout_mode = 2
+text = "-"
+
+[node name="Ratio" type="Label" parent="Margin/VBox/Scroll/Body/Dictionary"]
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+text = " "
+
+[node name="Detail" type="Label" parent="Margin/VBox/Scroll/Body/Dictionary"]
+layout_mode = 2
+size_flags_horizontal = 3
+autowrap_mode = 3
+text = " "
+
+[node name="Source" type="Label" parent="Margin/VBox/Scroll/Body"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.62, 0.64, 0.7, 1)
+autowrap_mode = 3
+text = " "

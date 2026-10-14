@@ -37,6 +37,10 @@ text = "Quit"
 layout_mode = 2
 text = "Compare"
 
+[node name="Slides" type="Button" parent="Margin/VBox/Toolbar"]
+layout_mode = 2
+text = "Slides"
+
 [node name="Suite" type="OptionButton" parent="Margin/VBox/Toolbar"]
 custom_minimum_size = Vector2(160, 0)
 layout_mode = 2

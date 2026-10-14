@@ -106,6 +106,6 @@ size_flags_vertical = 3
 size_flags_stretch_ratio = 0.3
 text = "Encode    template_release
 FlatBuffers    46.0 us    2026-10-13T17:14:25
-Godot    69.2 us    1.51x    2026-10-13T17:14:25
+Objects    69.2 us    1.51x    2026-10-13T17:14:25
 Dictionary    20.3 us    0.44x    2026-10-13T17:14:25"
 autowrap_mode = 3

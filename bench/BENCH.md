@@ -81,7 +81,7 @@ The container is `initialized = true`, fruit bananas (`2`), and location `http:/
 **Dictionary**
   One `Dictionary` passed to `var_to_bytes` / `bytes_to_var`. No objects, so the call is not `var_to_bytes_with_objects`. Keys are `location`, `fruit` (the int `2`), `initialized`, and `list`. Each list entry has `name`, `postfix`, `rating`, and `sibling`. `sibling` has `time`, `ratio`, `size` (the schema field `ssize`), and `parent`. `parent` has `id`, `count`, `prefix`, and `length`.
 
-**Godot objects**
+**Objects**
   `FooBarContainer`, `FooBar`, `Bar`, and `Foo`. Encoded with `var_to_bytes_with_objects`, which writes the script class as well as the fields. That is why this buffer is larger than the other two. The classes are not a stand-in for the dictionary.
 
 **FlatBuffers**
@@ -93,7 +93,7 @@ gdsbench times the `for` loop only. `CompareWork.new()`, `make_dict()`, `make_ob
 
 The byte counter is the encoded length of one buffer, marked iteration-invariant. `history.tres` stores that length in `bytes`. The console `bytes_size` column is the same counter after it has been multiplied by the iteration count, then shown in Mi. Divide by the iteration count before comparing it to `bytes`.
 
-| Test | FlatBuffers, inside the loop | Dictionary, inside the loop | Godot objects, inside the loop |
+| Test | FlatBuffers, inside the loop | Dictionary, inside the loop | Objects, inside the loop |
 | --- | --- | --- | --- |
 | Store | `encode_flat()`: formulas, builder, 64 strings, `finish` | `var_to_bytes` of the dictionary built before the loop | `var_to_bytes_with_objects` of the object graph built before the loop |
 | Load | `get_FBFooBarContainer` plus `FlatBuffersBench.Use` | `bytes_to_var` plus `case_gd_dict.gd` `Use` | `bytes_to_var_with_objects` plus `BuiltInBench.Use` |
@@ -117,19 +117,19 @@ Load and Peek also compare the result to a value computed before the loop, and s
 ### Where a comparison is not the same work
 
 **Store**
-  Dictionary and Godot time only the encoder. The value already exists. FlatBuffers has no existing buffer, so Store times building one from the formulas, including a new builder and 64 string copies. The storage sketch above (existing object to bytes) describes the dictionary and the object columns. It does not describe FlatBuffers.
+  Dictionary and Objects time only the encoder. The value already exists. FlatBuffers has no existing buffer, so Store times building one from the formulas, including a new builder and 64 string copies. The storage sketch above (existing object to bytes) describes the dictionary and the object columns. It does not describe FlatBuffers.
 
 **Load**
   Every codec reads every field inside the timer, and the checksum has to match. For the dictionary and the objects, `bytes_to_var` has already materialized those fields, and `Use` walks them again in GDScript. For FlatBuffers, `Use` is the walk that produces the values. Load is a fair "touch every field" test. It is a pessimistic "time until the data exists" test for the dictionary and the objects, by one extra walk.
 
 **Spawn**
-  FlatBuffers and Dictionary both end as a dictionary. FlatBuffers copies each field in GDScript. Dictionary returns the dictionary `bytes_to_var` already built. Godot ends as a `FooBarContainer` of script instances. Pair FlatBuffers Spawn with Dictionary Spawn. The Godot column is a different destination.
+  FlatBuffers and Dictionary both end as a dictionary. FlatBuffers copies each field in GDScript. Dictionary returns the dictionary `bytes_to_var` already built. Objects ends as a `FooBarContainer` of script instances. Pair FlatBuffers Spawn with Dictionary Spawn. The Objects column is a different destination.
 
 **Update**
-  The destination exists before the loop. FlatBuffers writes fields from the buffer into that dictionary and does not allocate a second copy of the payload. Dictionary and Godot fully decode a temporary, then copy onto the existing value, because `bytes_to_var` cannot patch one field. FlatBuffers Update patches a dictionary, not `Foo` / `Bar` / `FooBar` instances. Pair it with Dictionary Update.
+  The destination exists before the loop. FlatBuffers writes fields from the buffer into that dictionary and does not allocate a second copy of the payload. Dictionary and Objects fully decode a temporary, then copy onto the existing value, because `bytes_to_var` cannot patch one field. FlatBuffers Update patches a dictionary, not `Foo` / `Bar` / `FooBar` instances. Pair it with Dictionary Update.
 
 **Peek**
-  Index 32, rating only. FlatBuffers builds a root and reads that field. Dictionary and Godot decode the whole buffer, then read the field. Dictionary peek also narrows the decoded `Variant` with `is` before the `int` conversion. That check is small next to `bytes_to_var` and is not how a typed property read looks.
+  Index 32, rating only. FlatBuffers builds a root and reads that field. Dictionary and Objects decode the whole buffer, then read the field. Dictionary peek also narrows the decoded `Variant` with `is` before the `int` conversion. That check is small next to `bytes_to_var` and is not how a typed property read looks.
 
 **FlatBuffers reader objects**
   A view is not free of GDScript allocations. `get_FBFooBarContainer` constructs a root. `list_at` without `into` constructs an `FBFooBar` per call. `sibling()` constructs an `FBBar`. The `parent` getter constructs an `FBFoo`. Load, Spawn, Update, and Peek pay those objects on top of the byte reads. The timed code does not pass `into`, so those readers are not reused.

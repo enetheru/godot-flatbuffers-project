@@ -215,7 +215,7 @@ func _codec_label(codec:String) -> String:
 		"Flatbuffers":
 			return "FlatBuffers"
 		"BuiltIn":
-			return "Godot"
+			return "Objects"
 		"GDict":
 			return "Dictionary"
 		_:
@@ -484,11 +484,11 @@ func _op_hint(op:String) -> String:
 		"Load":
 			return "Bytes already built. Time to decode them and read every field."
 		"Spawn":
-			return "Bytes become a new value. FlatBuffers fills a dictionary. Dictionary is bytes_to_var. Godot is bytes_to_var_with_objects."
+			return "Bytes become a new value. FlatBuffers fills a dictionary. Dictionary is bytes_to_var. Objects is bytes_to_var_with_objects."
 		"Update":
-			return "Patch an existing value. FlatBuffers writes fields into a dictionary. Dictionary and Godot decode a temporary, then copy."
+			return "Patch an existing value. FlatBuffers writes fields into a dictionary. Dictionary and Objects decode a temporary, then copy."
 		"Peek":
-			return "Read one rating from the middle record. FlatBuffers reads that field. Dictionary and Godot decode the whole buffer first."
+			return "Read one rating from the middle record. FlatBuffers reads that field. Dictionary and Objects decode the whole buffer first."
 		_:
 			return ""
 

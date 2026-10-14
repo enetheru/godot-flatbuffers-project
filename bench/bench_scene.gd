@@ -10,6 +10,7 @@ const RunnerArraySize = preload("uid://c7t7mscufip1r")
 const RunnerScenario = preload("runner_scenario.gd")
 const Run = preload("run.gd")
 const COMPARE_SCENE := "res://bench/BenchCompare.tscn"
+const SLIDES_SCENE := "res://bench/BenchSlides.tscn"
 
 const _OPS:PackedStringArray = [
 	"Store", "Load", "Spawn", "Update", "Peek",
@@ -63,6 +64,7 @@ func _ready() -> void:
 func _connect_toolbar() -> void:
 	var quit := $Margin/VBox/Toolbar/Quit as Button
 	var compare := $Margin/VBox/Toolbar/Compare as Button
+	var slides := $Margin/VBox/Toolbar/Slides as Button
 	var run := $Margin/VBox/Toolbar/Run as Button
 	var run_all := $Margin/VBox/Toolbar/RunAll as Button
 	if quit != null and not quit.pressed.is_connected(_on_quit):
@@ -71,6 +73,9 @@ func _connect_toolbar() -> void:
 	if compare != null and not compare.pressed.is_connected(_on_compare):
 		if compare.pressed.connect(_on_compare) != OK:
 			push_error("compare signal failed")
+	if slides != null and not slides.pressed.is_connected(_on_slides):
+		if slides.pressed.connect(_on_slides) != OK:
+			push_error("slides signal failed")
 	if run != null and not run.pressed.is_connected(_on_run):
 		if run.pressed.connect(_on_run) != OK:
 			push_error("run signal failed")
@@ -92,6 +97,11 @@ func _on_quit() -> void:
 func _on_compare() -> void:
 	if get_tree().change_scene_to_file(COMPARE_SCENE) != OK:
 		_status.text = "Could not open results"
+
+
+func _on_slides() -> void:
+	if get_tree().change_scene_to_file(SLIDES_SCENE) != OK:
+		_status.text = "Could not open slides"
 
 
 func _on_suite_selected(index:int) -> void:
@@ -204,7 +214,7 @@ func _parse(bench_name:String) -> ParsedName:
 		codec = "FlatBuffers"
 		rest = bench_name.substr(flat.length())
 	elif bench_name.begins_with(built_in):
-		codec = "Godot"
+		codec = "Objects"
 		rest = bench_name.substr(built_in.length())
 	elif bench_name.begins_with(gdict):
 		codec = "Dictionary"
