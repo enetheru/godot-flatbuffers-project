@@ -81,10 +81,12 @@ func read_orc_flatbuffer( bytes:PackedByteArray ) -> void:
 	test.TEST_EQ( 300, hp,  "monster.hp()" )
 	test.TEST_EQ( 150, mana,  "monster.mana()" )
 	test.TEST_EQ( "Orc", name , "monster.name()" )
-
-	# Note: The default value 150 wasn't stored in mana, but we are still able
-	# to retrieve it.
-	# FIXME, implement field defaults, and change the creating script to skip mana
+	# create_Monster passes mana 150, which is the schema default, so the field
+	# is left out of the buffer and the accessor still returns 150.
+	test.TEST_FALSE(monster.mana_is_present(), "default mana is not stored")
+	test.TEST_TRUE(monster.hp_is_present(), "non-default hp is stored")
+	test.TEST_EQ(schema.Color_.RED, monster.color(), "monster.color()")
+	test.TEST_TRUE(monster.color_is_present(), "non-default color is stored")
 
 	# To access sub-objects, in the case of our pos, which is a Vec3:
 	# auto pos = monster->pos();
@@ -170,6 +172,37 @@ func read_orc_flatbuffer( bytes:PackedByteArray ) -> void:
 			var weapon_damage:int = weapon.damage()
 			test.TEST_EQ( weapon_name, "Axe", "weapon.name()" )
 			test.TEST_EQ( weapon_damage, 5, "weapon.damage()" )
+
+
+## A monster with no fields stored still reads the schema defaults.
+func read_omitted_defaults() -> void:
+	var fbb := FlatBufferBuilder.new()
+	var builder := schema.MonsterBuilder.new(fbb)
+	fbb.finish(builder.finish())
+	var bytes:PackedByteArray = fbb.get_buffer()
+	var monster := schema.Monster.new()
+	monster.assign_buffer(bytes, bytes.decode_u32(0))
+	if not test.TEST_TRUE_RET(monster.verify(verifier), "omitted monster verifies"):
+		return
+	test.TEST_FALSE(monster.mana_is_present(), "omitted mana")
+	test.TEST_EQ(150, monster.mana(), "omitted mana reads 150")
+	test.TEST_FALSE(monster.hp_is_present(), "omitted hp")
+	test.TEST_EQ(100, monster.hp(), "omitted hp reads 100")
+	test.TEST_FALSE(monster.color_is_present(), "omitted color")
+	test.TEST_EQ(schema.Color_.BLUE, monster.color(), "omitted color reads Blue")
+	test.TEST_FALSE(monster.name_is_present(), "omitted name")
+	test.TEST_EQ("", monster.name(), "omitted name reads empty")
+	test.TEST_FALSE(monster.inventory_is_present(), "omitted inventory")
+	test.TEST_EQ(0, monster.inventory_size(), "omitted inventory size")
+	test.TEST_EQ(0, monster.inventory().size(), "omitted inventory array")
+	test.TEST_FALSE(monster.weapons_is_present(), "omitted weapons")
+	test.TEST_EQ(0, monster.weapons_size(), "omitted weapons size")
+	test.TEST_FALSE(monster.equipped_is_present(), "omitted equipped")
+	test.TEST_EQ(null, monster.equipped(), "omitted equipped value")
+	test.TEST_EQ(schema.Equipment.NONE, monster.equipped_type(), "omitted equipped type")
+	test.TEST_FALSE(monster.pos_is_present(), "omitted pos")
+	test.TEST_FALSE(monster.path_is_present(), "omitted path")
+	test.TEST_EQ(0, monster.path_size(), "omitted path size")
 
 
 ## Each case copies the good orc and breaks one slot. verify() must return false.

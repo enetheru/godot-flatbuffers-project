@@ -78,6 +78,7 @@ func _run_test() -> int:
 	TEST_OP(packed.size(), OP_GREATER, 0, "Packed Array size is larger than zero")
 
 	rts.call(&"read_orc_flatbuffer", packed)
+	rts.call(&"read_omitted_defaults")
 	rts.call(&"reject_broken_buffers", packed)
 
 	return runcode
