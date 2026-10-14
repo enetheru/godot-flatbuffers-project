@@ -3,11 +3,12 @@ extends SceneTree
 const RunnerSuite = preload("runner_suite.gd")
 const RunnerPrealloc = preload("runner_prealloc.gd")
 const RunnerArraySize = preload("runner_array_size.gd")
+const RunnerScenario = preload("runner_scenario.gd")
 const ConsoleReporter = preload("uid://cp6jwltd8s2ur")
 const HistoryReporter = preload("history_reporter.gd")
 
 
-## args[0] suite (default), all, prealloc, array-size.
+## args[0] suite (default), all, prealloc, array-size, scenario.
 ## args[1] target name stored on each row. args[2] absolute history.tres path.
 ## An empty path keeps the console table only.
 static func run_from_args(args:PackedStringArray) -> int:
@@ -30,6 +31,8 @@ static func run_from_args(args:PackedStringArray) -> int:
 			_runner = RunnerPrealloc.new()
 		"array-size":
 			_runner = RunnerArraySize.new()
+		"scenario":
+			_runner = RunnerScenario.new()
 		_:
 			printerr("unknown benchmark suite '%s'" % which)
 			return 1

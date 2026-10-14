@@ -7,10 +7,12 @@ const ConsoleReporter = preload("uid://cp6jwltd8s2ur")
 const RunnerSuite = preload("runner_suite.gd")
 const RunnerPrealloc = preload("uid://6s5qd6by3jri")
 const RunnerArraySize = preload("uid://c7t7mscufip1r")
+const RunnerScenario = preload("runner_scenario.gd")
 const Run = preload("run.gd")
 const COMPARE_SCENE := "res://bench/BenchCompare.tscn"
 
 const _OPS:PackedStringArray = [
+	"Store", "Load", "Spawn", "Update", "Peek",
 	"Encode", "Decode", "ReadAll", "RoundTrip", "MetadataOnly", "RandomElement",
 ]
 
@@ -48,13 +50,14 @@ func _ready() -> void:
 	_bmf = BenchmarkFamilies.GetInstance()
 	_reporter = ConsoleReporter.new()
 	_suite.clear()
+	_suite.add_item("Scenarios")
 	_suite.add_item("Suite")
 	_suite.add_item("Pre-alloc")
 	_suite.add_item("Array size")
 	_suite.select(0)
 
 	_connect_toolbar()
-	_use_suite("suite")
+	_use_suite("scenario")
 
 
 func _connect_toolbar() -> void:
@@ -94,11 +97,13 @@ func _on_compare() -> void:
 func _on_suite_selected(index:int) -> void:
 	match index:
 		1:
-			_use_suite("prealloc")
+			_use_suite("suite")
 		2:
+			_use_suite("prealloc")
+		3:
 			_use_suite("array-size")
 		_:
-			_use_suite("suite")
+			_use_suite("scenario")
 
 
 func _on_run() -> void:
@@ -119,8 +124,10 @@ func _use_suite(which:String) -> void:
 			_runner = RunnerPrealloc.new()
 		"array-size":
 			_runner = RunnerArraySize.new()
-		_:
+		"suite":
 			_runner = RunnerSuite.new()
+		_:
+			_runner = RunnerScenario.new()
 	_fill_tree()
 
 

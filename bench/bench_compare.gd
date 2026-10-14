@@ -5,6 +5,7 @@ const HISTORY_PATH := "res://bench/results/history.tres"
 const BENCH_SCENE := "res://bench/BenchScene.tscn"
 const TARGET_ORDER:PackedStringArray = ["editor", "template_debug", "template_release"]
 const _OPS:PackedStringArray = [
+	"Store", "Load", "Spawn", "Update", "Peek",
 	"Encode", "Decode", "ReadAll", "RoundTrip", "MetadataOnly", "RandomElement",
 ]
 const _CODECS:PackedStringArray = ["Flatbuffers", "BuiltIn", "GDict"]
@@ -425,6 +426,9 @@ func _rebuild_serializer_tree() -> void:
 		var item := _tree.create_item(root)
 		item.set_text(0, op)
 		item.set_metadata(0, op)
+		var hint := _op_hint(op)
+		if not hint.is_empty():
+			item.set_tooltip_text(0, hint)
 		for i in texts.size():
 			item.set_text(i + 1, texts[i])
 		if select_item == null or op == selected:
@@ -473,9 +477,29 @@ func _update_readout() -> void:
 	_readout.text = "\n".join(PackedStringArray(lines))
 
 
+func _op_hint(op:String) -> String:
+	match op:
+		"Store":
+			return "64 records already in memory. Time to write the bytes."
+		"Load":
+			return "Bytes already built. Time to decode them and read every field."
+		"Spawn":
+			return "Bytes become a new value. FlatBuffers fills a dictionary. Dictionary is bytes_to_var. Godot is bytes_to_var_with_objects."
+		"Update":
+			return "Patch an existing value. FlatBuffers writes fields into a dictionary. Dictionary and Godot decode a temporary, then copy."
+		"Peek":
+			return "Read one rating from the middle record. FlatBuffers reads that field. Dictionary and Godot decode the whole buffer first."
+		_:
+			return ""
+
+
 func _serializer_readout(op:String) -> String:
 	var target := _selected_target()
-	var lines:Array[String] = ["%s    %s" % [op, target]]
+	var lines:Array[String] = []
+	var hint := _op_hint(op)
+	if not hint.is_empty():
+		lines.append(hint)
+	lines.append("%s    %s" % [op, target])
 	var flatbuffers := _latest(_paired_name("Flatbuffers", op), target)
 	var base := NAN
 	if flatbuffers != null:

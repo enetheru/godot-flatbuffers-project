@@ -17,7 +17,7 @@
 param(
 	[ValidateSet("all", "editor", "template_debug", "template_release")]
 	[string]$Target = "all",
-	[ValidateSet("suite", "all", "prealloc", "array-size")]
+	[ValidateSet("suite", "all", "prealloc", "array-size", "scenario")]
 	[string]$Suite = "suite"
 )
 
