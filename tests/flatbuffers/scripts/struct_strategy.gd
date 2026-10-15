@@ -103,6 +103,7 @@ func _flow( selection:Array[int] ) -> void:
 	if can_use: pass
 	_table_cases()
 	_struct_span()
+	_reused_struct()
 
 #               ██████  ██   ██  █████  ███████ ███████ ███████                #
 #               ██   ██ ██   ██ ██   ██ ██      ██      ██                     #
@@ -196,6 +197,37 @@ func _struct_span() -> void:
 	var overrun := Schema.CustomStruct.new()
 	overrun.assign_buffer(bytes, 1)
 	test.TEST_FALSE(overrun.verify(verifier), "struct offset overruns the buffer")
+
+
+func _reused_struct() -> void:
+	var cs := Schema.CustomStruct.new()
+	cs.is_true = false
+	cs.x = -4
+	cs.y = 3.5
+	cs.w = Vector3(-1, 0, 2)
+	var fbb := FlatBufferBuilder.new()
+	fbb.finish(Schema.create_RootTable(fbb, cs, 9))
+	var root:Schema.RootTable = Schema.get_RootTable(fbb.get_buffer())
+	var view := Schema.CustomStruct.new()
+	view.is_true = true
+	view.x = 11
+	var got:Schema.CustomStruct = root.custom_struct(view)
+	test.TEST_TRUE(got == view, "custom_struct returns the passed reader")
+	test.TEST_FALSE(view.is_true, "reused is_true")
+	test.TEST_EQ(-4, view.x, "reused x")
+	test.TEST_EQ(3.5, view.y, "reused y")
+	test.TEST_EQ(Vector3(-1, 0, 2), view.w, "reused w")
+
+	var absent_fbb := FlatBufferBuilder.new()
+	var absent_builder := Schema.RootTableBuilder.new(absent_fbb)
+	absent_builder.add_z(4)
+	absent_fbb.finish(absent_builder.finish())
+	var absent:Schema.RootTable = Schema.get_RootTable(absent_fbb.get_buffer())
+	test.TEST_EQ(null, absent.custom_struct(view), "missing struct returns null")
+	test.TEST_FALSE(view.is_true, "missing struct leaves is_true")
+	test.TEST_EQ(-4, view.x, "missing struct leaves x")
+	test.TEST_EQ(3.5, view.y, "missing struct leaves y")
+	test.TEST_EQ(Vector3(-1, 0, 2), view.w, "missing struct leaves w")
 
 
 func                        __BoilerPlate____________              ()->void:pass
