@@ -251,13 +251,13 @@ func flat_sum_reuse(buf:PackedByteArray, readers:Readers) -> int:
 		total += item.name().length()
 		total += item.postfix()
 		total += int(item.rating())
-		var bar := _sibling_into(item, bar_into)
+		var bar := item.sibling(bar_into)
 		if bar == null:
 			return -1
 		total += int(bar.ratio)
 		total += bar.ssize
 		total += bar.time
-		var foo := _parent_into(bar, foo_into)
+		var foo := bar.parent_into(foo_into)
 		total += foo.count
 		total += foo.id
 		total += foo.length
@@ -384,21 +384,6 @@ func peek_objects(buf:PackedByteArray) -> int:
 	if row == null:
 		return -1
 	return int(row.rating)
-
-
-## assign_buffer moves table onto this span. _fb_bytes and _fb_start leave it
-## on the scratch buffer from the empty constructor.
-func _sibling_into(item:FB.FBFooBar, into:FB.FBBar) -> FB.FBBar:
-	var field_start := item.get_inline_field_start(FB.FBFooBar.VT_SIBLING)
-	if not field_start:
-		return null
-	into.assign_buffer(item._fb_bytes, field_start)
-	return into
-
-
-func _parent_into(bar:FB.FBBar, into:FB.FBFoo) -> FB.FBFoo:
-	into.assign_buffer(bar._fb_bytes, bar._fb_start)
-	return into
 
 
 func _apply(i:int, rec:Record) -> void:

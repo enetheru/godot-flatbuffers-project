@@ -73,6 +73,12 @@ class FBBar extends FlatBuffer:
 		get(): return _bench_schema.FBFoo.new(_fb_bytes, _fb_start + 0)
 		set(v): overwrite_bytes(v._fb_bytes, v._fb_start, _fb_start + 0, v._fb_struct_size)
 
+	## Point into at this nested struct. It is inline at a fixed offset, so
+	## this does not walk a vtable. The property getter still constructs a reader.
+	func parent_into(into: FBFoo) -> FBFoo:
+		into.assign_buffer(_fb_bytes, _fb_start + 0)
+		return into
+
 	var time: int :
 		get(): return _fb_bytes.decode_s32(_fb_start + 16)
 		set(v): _fb_bytes.encode_s32(_fb_start + 16, v)
@@ -117,10 +123,16 @@ class FBFooBar extends FlatBuffer:
 	func sibling_is_present() -> bool:
 		return get_field_offset( VT_SIBLING )
 
-	func sibling() -> FBBar:
-		var field_start: int = get_inline_field_start( VT_SIBLING )
-		if not field_start: return null
-		return _bench_schema.FBBar.new( _fb_bytes, field_start )
+	## Pass into to reuse a reader. The offset stays in the extension. A missing
+	## field leaves into unchanged and returns null.
+	func sibling( into: FBBar = null ) -> FBBar:
+		if into == null:
+			var field_start: int = get_inline_field_start( VT_SIBLING )
+			if not field_start: return null
+			return _bench_schema.FBBar.new( _fb_bytes, field_start )
+		if not read_inline_struct_into(into, VT_SIBLING):
+			return null
+		return into
 
 	## Return true if name is present in the buffer, else false
 	func name_is_present() -> bool:

@@ -80,10 +80,17 @@ class RootTable extends FlatBuffer:
 	func custom_struct_is_present() -> bool:
 		return get_field_offset( VT_CUSTOM_STRUCT )
 
-	func custom_struct() -> CustomStruct:
-		var field_start: int = get_inline_field_start( VT_CUSTOM_STRUCT )
-		if not field_start: return null
-		return _struct_schema.CustomStruct.new( _fb_bytes, field_start )
+	## Pass [param into] to reuse a reader. The offset stays in the
+## extension. A missing field leaves [param into] unchanged and
+## returns null.
+	func custom_struct( into: _struct_schema.CustomStruct = null ) -> _struct_schema.CustomStruct:
+		if into == null:
+			var field_start: int = get_inline_field_start( VT_CUSTOM_STRUCT )
+			if not field_start: return null
+			return _struct_schema.CustomStruct.new( _fb_bytes, field_start )
+		if not read_inline_struct_into(into, VT_CUSTOM_STRUCT):
+			return null
+		return into
 
 	## Return true if z is present in the buffer, else false
 	func z_is_present() -> bool:

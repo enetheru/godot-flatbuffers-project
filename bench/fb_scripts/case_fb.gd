@@ -72,6 +72,11 @@ func Encode( _unused:Variant = null ) -> PackedByteArray:
 # static reader so we dont need to allocate.
 static var _sbf_foobarcontainer := FB.FBFooBarContainer.new()
 
+# One of each view for Use. Built once, pointed at each record.
+static var _use_item := FB.FBFooBar.new()
+static var _use_bar := FB.FBBar.new()
+static var _use_foo := FB.FBFoo.new()
+
 #void* Decode(void* buffer, int64_t) override { return buffer; }
 func Decode( buf:PackedByteArray ) -> Variant:
 	if kStaticReader:
@@ -94,7 +99,7 @@ func Use( decoded:Variant ) -> int:
 	#for (unsigned int i = 0; i < foobarcontainer->list()->Length(); i++) {
 	for i:int in foobarcontainer.list_size():
 		#auto foobar = foobarcontainer->list()->Get(i);
-		var foobar:FB.FBFooBar = foobarcontainer.list_at(i)
+		var foobar:FB.FBFooBar = foobarcontainer.list_at(i, _use_item)
 		#Add(foobar->name()->Length());
 		Add( foobar.name().length() )
 		#Add(foobar->postfix());
@@ -102,7 +107,7 @@ func Use( decoded:Variant ) -> int:
 		#Add(static_cast<int64_t>(foobar->rating()));
 		Add( int(foobar.rating()) )
 		#auto bar = foobar->sibling();
-		var bar:FB.FBBar = foobar.sibling()
+		var bar:FB.FBBar = foobar.sibling(_use_bar)
 		#Add(static_cast<int64_t>(bar->ratio()));
 		Add( int(bar.ratio) )
 		#Add(bar->size());
@@ -110,7 +115,7 @@ func Use( decoded:Variant ) -> int:
 		#Add(bar->time());
 		Add( bar.time )
 		#auto& foo = bar->parent();
-		var foo:FB.FBFoo = bar.parent
+		var foo:FB.FBFoo = bar.parent_into(_use_foo)
 		Add(foo.count)
 		Add(foo.id)
 		Add(foo.length)
