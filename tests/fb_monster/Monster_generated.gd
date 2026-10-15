@@ -20,6 +20,8 @@ enum Equipment {
 ## Verify the integrity of the Equipment union data
 static func equipment_verify(verifier:FlatBufferVerifier, value:Variant, type:Equipment) -> bool: 
 	match type:
+		Equipment.NONE:
+			return true
 		Equipment.WEAPON:
 			var weapon: Weapon = value
 			return weapon.verify(verifier)

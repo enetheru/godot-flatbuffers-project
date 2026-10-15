@@ -26,6 +26,8 @@ enum TestUnion {
 ## Verify the integrity of the TestUnion union data
 static func test_union_verify(verifier:FlatBufferVerifier, value:Variant, type:TestUnion) -> bool: 
 	match type:
+		TestUnion.NONE:
+			return true
 		TestUnion.TEST_TABLE_A:
 			var test_table_a: TestTableA = value
 			return test_table_a.verify(verifier)
@@ -56,6 +58,11 @@ class TestStruct extends FlatBuffer:
 	var b: int :
 		get(): return _fb_bytes.decode_s32(_fb_start + 4)
 		set(v): _fb_bytes.encode_s32(_fb_start + 4, v)
+
+	## Verify that this struct's fixed bytes lie inside the buffer.
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return _fb_bytes.size() >= _fb_start + _fb_struct_size
 
 
 ## Create a new TestStruct with the provided field values

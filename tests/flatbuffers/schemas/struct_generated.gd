@@ -34,6 +34,11 @@ class CustomStruct extends FlatBuffer:
 		get(): return decode_variant(_fb_start + 12, TYPE_VECTOR3)
 		set(v): encode_variant(_fb_start + 12, v, TYPE_VECTOR3)
 
+	## Verify that this struct's fixed bytes lie inside the buffer.
+	func verify(verifier:FlatBufferVerifier) -> bool:
+		verifier.set_buffer(_fb_bytes)
+		return _fb_bytes.size() >= _fb_start + _fb_struct_size
+
 
 ## Create a new CustomStruct with the provided field values
 static func create_CustomStruct(
