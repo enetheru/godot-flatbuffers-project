@@ -4,14 +4,15 @@ const RunnerSuite = preload("runner_suite.gd")
 const RunnerPrealloc = preload("runner_prealloc.gd")
 const RunnerArraySize = preload("runner_array_size.gd")
 const RunnerScenario = preload("runner_scenario.gd")
+const RunnerReuse = preload("runner_reuse.gd")
 const ConsoleReporter = preload("uid://cp6jwltd8s2ur")
 const HistoryReporter = preload("history_reporter.gd")
 
-const _SUITES:PackedStringArray = ["suite", "prealloc", "array-size", "scenario"]
+const _SUITES:PackedStringArray = ["suite", "prealloc", "array-size", "scenario", "reuse"]
 
 
-## args[0] is all, suite, prealloc, array-size, or scenario. A missing arg runs suite.
-## all runs those four suites. Each row keeps that suite's own name.
+## args[0] is all, suite, prealloc, array-size, scenario, or reuse. A missing arg runs suite.
+## all runs those five suites. Each row keeps that suite's own name.
 ## args[1] target name stored on each row. args[2] absolute history.tres path.
 ## An empty path keeps the console table only.
 static func run_from_args(args:PackedStringArray) -> int:
@@ -49,6 +50,8 @@ static func _run_one(which:String, target:String, history_path:String) -> int:
 			_runner = RunnerArraySize.new()
 		"scenario":
 			_runner = RunnerScenario.new()
+		"reuse":
+			_runner = RunnerReuse.new()
 		_:
 			printerr("unknown benchmark suite '%s'" % which)
 			return 1

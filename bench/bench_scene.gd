@@ -8,12 +8,13 @@ const RunnerSuite = preload("runner_suite.gd")
 const RunnerPrealloc = preload("uid://6s5qd6by3jri")
 const RunnerArraySize = preload("uid://c7t7mscufip1r")
 const RunnerScenario = preload("runner_scenario.gd")
+const RunnerReuse = preload("runner_reuse.gd")
 const Run = preload("run.gd")
 const COMPARE_SCENE := "res://bench/BenchCompare.tscn"
 const SLIDES_SCENE := "res://bench/BenchSlides.tscn"
 
 const _OPS:PackedStringArray = [
-	"Store", "Load", "Spawn", "Update", "Peek",
+	"Store", "Load", "LoadReuse", "Spawn", "Update", "Peek",
 	"Encode", "Decode", "ReadAll", "RoundTrip", "MetadataOnly", "RandomElement",
 ]
 
@@ -55,6 +56,7 @@ func _ready() -> void:
 	_suite.add_item("Suite")
 	_suite.add_item("Pre-alloc")
 	_suite.add_item("Array size")
+	_suite.add_item("Reuse")
 	_suite.select(0)
 
 	_connect_toolbar()
@@ -112,6 +114,8 @@ func _on_suite_selected(index:int) -> void:
 			_use_suite("prealloc")
 		3:
 			_use_suite("array-size")
+		4:
+			_use_suite("reuse")
 		_:
 			_use_suite("scenario")
 
@@ -136,6 +140,8 @@ func _use_suite(which:String) -> void:
 			_runner = RunnerArraySize.new()
 		"suite":
 			_runner = RunnerSuite.new()
+		"reuse":
+			_runner = RunnerReuse.new()
 		_:
 			_runner = RunnerScenario.new()
 	_fill_tree()
