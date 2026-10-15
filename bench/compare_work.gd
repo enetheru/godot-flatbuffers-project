@@ -332,10 +332,10 @@ func spawn_flat_reuse(buf:PackedByteArray, readers:Readers) -> Dictionary:
 		push_error("scenario spawn resize failed")
 	for i in root.list_size():
 		var item := root.list_at(i, item_into)
-		var bar := _sibling_into(item, bar_into)
+		var bar := item.sibling(bar_into)
 		if bar == null:
 			return {}
-		var foo := _parent_into(bar, foo_into)
+		var foo := bar.parent_into(foo_into)
 		var parent:Dictionary = {}
 		parent.id = foo.id
 		parent.count = foo.count
@@ -396,10 +396,10 @@ func apply_flat_reuse(buf:PackedByteArray, dest:Dictionary, readers:Readers) -> 
 	var n := mini(root.list_size(), dest_list.size())
 	for i in n:
 		var item := root.list_at(i, item_into)
-		var bar := _sibling_into(item, bar_into)
+		var bar := item.sibling(bar_into)
 		if bar == null:
 			return false
-		var foo := _parent_into(bar, foo_into)
+		var foo := bar.parent_into(foo_into)
 		var row := _dict_from(dest_list[i])
 		row.name = item.name()
 		row.postfix = item.postfix()

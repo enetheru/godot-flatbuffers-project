@@ -39,7 +39,7 @@ func _enum_values() -> void:
 	test.TEST_EQ( 1, Schema.Fruit.ORANGES, "oranges shares 1" )
 	test.TEST_EQ( 2, Schema.Fruit.MORE_BANNANAS, "more bannanas is 2" )
 	test.TEST_EQ( 4, Schema.Fruit.EVEN_MORE_BANANNAS, "even more is 4" )
-	test.TEST_EQ( "", Schema.Fruit.find_key( 3 ), "3 has no name" )
+	test.TEST_EQ( null, Schema.Fruit.find_key( 3 ), "3 has no name" )
 	test.TEST_EQ( 0, Schema.Enum1.NONE, "empty enum is none" )
 	test.TEST_EQ( 0, Schema.Enum2.NONE, "empty enum 2 is none" )
 	test.TEST_EQ( 0, Schema.Enum3.NONE, "empty enum 3 is none" )
