@@ -233,27 +233,31 @@ func flat_sum(buf:PackedByteArray) -> int:
 
 ## Same terms as FlatBuffersBench.Use. list_at, sibling, and parent reuse
 ## the Readers objects, so those three allocations stay outside the records.
+## Readers holds RefCounted, so the generated types are cast once per call.
 func flat_sum_reuse(buf:PackedByteArray, readers:Readers) -> int:
 	if buf.is_empty() or readers == null:
 		return -1
-	var root := readers.root
-	root._interpret_as_root(buf)
+	var root := readers.root as FB.FBFooBarContainer
+	var item_into := readers.item as FB.FBFooBar
+	var bar_into := readers.bar as FB.FBBar
+	var foo_into := readers.foo as FB.FBFoo
+	root.assign_buffer(buf, buf.decode_u32(0))
 	var total := 0
 	total += int(root.initialized())
 	total += root.location().length()
 	total += int(root.fruit())
 	for i in root.list_size():
-		var item := root.list_at(i, readers.item)
+		var item := root.list_at(i, item_into)
 		total += item.name().length()
 		total += item.postfix()
 		total += int(item.rating())
-		var bar := _sibling_into(item, readers.bar)
+		var bar := _sibling_into(item, bar_into)
 		if bar == null:
 			return -1
 		total += int(bar.ratio)
 		total += bar.ssize
 		total += bar.time
-		var foo := _parent_into(bar, readers.foo)
+		var foo := _parent_into(bar, foo_into)
 		total += foo.count
 		total += foo.id
 		total += foo.length
@@ -382,18 +386,18 @@ func peek_objects(buf:PackedByteArray) -> int:
 	return int(row.rating)
 
 
+## assign_buffer moves table onto this span. _fb_bytes and _fb_start leave it
+## on the scratch buffer from the empty constructor.
 func _sibling_into(item:FB.FBFooBar, into:FB.FBBar) -> FB.FBBar:
 	var field_start := item.get_inline_field_start(FB.FBFooBar.VT_SIBLING)
 	if not field_start:
 		return null
-	into._fb_bytes = item._fb_bytes
-	into._fb_start = field_start
+	into.assign_buffer(item._fb_bytes, field_start)
 	return into
 
 
 func _parent_into(bar:FB.FBBar, into:FB.FBFoo) -> FB.FBFoo:
-	into._fb_bytes = bar._fb_bytes
-	into._fb_start = bar._fb_start
+	into.assign_buffer(bar._fb_bytes, bar._fb_start)
 	return into
 
 
