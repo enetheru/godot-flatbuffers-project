@@ -49,6 +49,21 @@ func make_readers() -> Readers:
 	return readers
 
 
+## One FBFoo and one FBBar. StoreReuse writes these instead of calling
+## create_FBFoo and create_FBBar per record. The nested class cannot see
+## this file's preload, so make_store_writers() builds the two objects.
+class Writers:
+	var foo:RefCounted
+	var bar:RefCounted
+
+
+func make_store_writers() -> Writers:
+	var writers := Writers.new()
+	writers.foo = FB.FBFoo.new()
+	writers.bar = FB.FBBar.new()
+	return writers
+
+
 func check_payload() -> String:
 	var flat_buf := encode_flat()
 	var dict_value := make_dict()
@@ -114,6 +129,39 @@ func encode_flat() -> PackedByteArray:
 		_apply(i, rec)
 		var foo := FB.create_FBFoo(rec.id, rec.count, rec.prefix, rec.length, _enc_foo)
 		var bar := FB.create_FBBar(foo, rec.time, rec.ratio, rec.ssize, _enc_bar)
+		var name_ofs:int = fbb.create_variant(rec.label)
+		offsets[i] = FB.create_FBFooBar(fbb, bar, name_ofs, rec.rating, rec.postfix)
+	var loc_ofs:int = fbb.create_variant(LOCATION)
+	var list_ofs:int = fbb.create_vector_offset(offsets)
+	var root_ofs:int = FB.create_FBFooBarContainer(
+			fbb, list_ofs, true, FB.Enum.BANANAS, loc_ofs)
+	fbb.finish(root_ofs)
+	return fbb.get_buffer()
+
+
+## Same bytes as encode_flat. The two structs are the callers' objects.
+## Field order matches create_FBFoo and create_FBBar. parent copies the
+## foo bytes into the bar, and create_FBFooBar copies the bar into the
+## builder before the next record overwrites those structs.
+func encode_flat_reuse(writers:Writers) -> PackedByteArray:
+	var foo := writers.foo as FB.FBFoo
+	var bar := writers.bar as FB.FBBar
+	var fbb := FlatBufferBuilder.create(0)
+	var rec := Record.new()
+	var offsets := PackedInt32Array()
+	if offsets.resize(COUNT) != OK:
+		push_error("scenario offset resize failed")
+		return PackedByteArray()
+	for i in COUNT:
+		_apply(i, rec)
+		foo.length = rec.length
+		foo.prefix = rec.prefix
+		foo.count = rec.count
+		foo.id = rec.id
+		bar.ssize = rec.ssize
+		bar.ratio = rec.ratio
+		bar.time = rec.time
+		bar.parent = foo
 		var name_ofs:int = fbb.create_variant(rec.label)
 		offsets[i] = FB.create_FBFooBar(fbb, bar, name_ofs, rec.rating, rec.postfix)
 	var loc_ofs:int = fbb.create_variant(LOCATION)

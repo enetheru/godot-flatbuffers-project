@@ -137,13 +137,25 @@ Load and Peek also compare the result to a value computed before the loop, and s
 **Update and Spawn are checked once, then timed**
   Before any benchmark, `check_payload` clears `location` on a destination, applies the buffer, and requires the checksum to return. A no-op apply fails there, and every benchmark in that process is skipped. The timed Update and Spawn loops do not repeat that checksum. A later break that still returns a non-empty value would still record a time.
 
-## Load with reused readers
+## Reuse suite
 
-`runner_reuse.gd` (`reuse` in `run.ps1`) registers `BM_Flatbuffers_LoadReuse`, `BM_Flatbuffers_SpawnReuse`, `BM_Flatbuffers_UpdateReuse`, and `BM_Flatbuffers_PeekReuse`. Load, Spawn, Update, and Peek are the questions above, each with the per-record reader allocations taken out. Store is not in this suite. Peek does not read the struct fields, so its reused reader is the one table.
+`runner_reuse.gd` (`reuse` in `run.ps1`) registers `BM_Flatbuffers_StoreReuse`, `BM_Flatbuffers_LoadReuse`, `BM_Flatbuffers_SpawnReuse`, `BM_Flatbuffers_UpdateReuse`, and `BM_Flatbuffers_PeekReuse`. Each one is the scenario question with one allocation removed. The metric is the time difference from the scenario row of the same operation. These rows do not ask whether FlatBuffers beats Dictionary.
+
+## Store with reused structs
+
+`BM_Flatbuffers_StoreReuse` builds the same buffer as `encode_flat`. Scenario Store calls `create_FBFoo` and `create_FBBar` on every record. Each call constructs a struct and a `PackedByteArray`. StoreReuse writes those fields onto one `FBFoo` and one `FBBar` created before the loop. `FlatBufferBuilder.create(0)`, the 64 `create_variant` name copies, the location string, and `finish` stay inside the timer.
+
+`BM_Flatbuffers_Store` minus `BM_Flatbuffers_StoreReuse` is the per-record struct allocation. Both timers still construct the buffer from the formulas.
+
+Before the timed loop, the reused buffer has to equal `encode_flat`. A mismatch skips the run. The loop does not compare buffers again. It adds the encoded length to the throughput counter, the same counter as scenario Store.
+
+The foo fields are written in the creator's order: length, prefix, count, id. The bar then writes ssize, ratio, time, and `parent`. `parent` copies the foo bytes into the bar. `create_FBFooBar` copies the bar into the builder before the next record overwrites those two structs.
+
+## Load with reused readers
 
 The payload and the checksum terms are the same as scenario Load. `CompareWork.flat_sum_reuse` adds the same values as `FlatBuffersBench.Use`, in the same order. Before the timed loop, and again on every iteration, that sum has to match `flat_sum`. A mismatch skips the run.
 
-`Readers` is built once, before the loop: one `FBFooBarContainer`, one `FBFooBar`, one `FBBar`, and one `FBFoo`. Each iteration calls `assign_buffer` on that container with the root offset at byte 0. Each record calls `list_at(i, into)` with the same `FBFooBar`. The sibling view calls `assign_buffer` on the same `FBBar` (`VT_SIBLING`, the same offset `sibling()` would pass to `FBBar.new`). The parent view does that on the same `FBFoo` at the start of the bar, which is what the `parent` getter constructs. `name`, `postfix`, `rating`, `location`, `initialized`, and `fruit` are still one call each. The string objects those calls return are not reused.
+`Readers` is built once, before the loop: one `FBFooBarContainer`, one `FBFooBar`, one `FBBar`, and one `FBFoo`. Each iteration calls `assign_buffer` on that container with the root offset at byte 0. Each record calls `list_at(i, into)` with the same `FBFooBar`. The sibling view is `sibling(into)` on the same `FBBar`. The parent view is `parent_into` on the same `FBFoo` at the start of the bar, which is what the `parent` getter constructs. `name`, `postfix`, `rating`, `location`, `initialized`, and `fruit` are still one call each. The string objects those calls return are not reused.
 
 ## Spawn with reused readers
 
