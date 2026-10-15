@@ -40,18 +40,22 @@ class CustomStruct extends FlatBuffer:
 		return _fb_bytes.size() >= _fb_start + _fb_struct_size
 
 
-## Create a new CustomStruct with the provided field values
+## Write the fields into [param into]. The empty constructor allocates
+## a staging buffer, so a reused struct avoids that. A null [param into]
+## still constructs one.
 static func create_CustomStruct(
 		_is_true: bool,
 		_x: int,
 		_y: float,
-		_w: Vector3 ) -> CustomStruct :
-	var val: CustomStruct = CustomStruct.new()
-	val.w = _w;
-	val.y = _y;
-	val.x = _x;
-	val.is_true = _is_true;
-	return val
+		_w: Vector3,
+		into: CustomStruct = null ) -> CustomStruct :
+	if into == null:
+		into = CustomStruct.new()
+	into.w = _w;
+	into.y = _y;
+	into.x = _x;
+	into.is_true = _is_true;
+	return into
 
 class RootTable extends FlatBuffer:
 	const _struct_schema = preload( 'struct_generated.gd' )

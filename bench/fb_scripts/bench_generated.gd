@@ -41,18 +41,20 @@ class FBFoo extends FlatBuffer:
 		set(v): _fb_bytes.encode_u32(_fb_start + 12, v)
 
 
-## TODO: create a useful doc comment for the static creation function
+## Pass into to reuse the staging buffer. A null into still constructs one.
 static func create_FBFoo(
 		_id: int,
 		_count: int,
 		_prefix: int,
-		_length: int ) -> FBFoo :
-	var val: FBFoo = FBFoo.new()
-	val.length = _length;
-	val.prefix = _prefix;
-	val.count = _count;
-	val.id = _id;
-	return val
+		_length: int,
+		into: FBFoo = null ) -> FBFoo :
+	if into == null:
+		into = FBFoo.new()
+	into.length = _length;
+	into.prefix = _prefix;
+	into.count = _count;
+	into.id = _id;
+	return into
 
 
 class FBBar extends FlatBuffer:
@@ -92,18 +94,20 @@ class FBBar extends FlatBuffer:
 		set(v): _fb_bytes.encode_u16(_fb_start + 24, v)
 
 
-## TODO: create a useful doc comment for the static creation function
+## Pass into to reuse the staging buffer. A null into still constructs one.
 static func create_FBBar(
 		_parent: FBFoo,
 		_time: int,
 		_ratio: float,
-		_ssize: int ) -> FBBar :
-	var val: FBBar = FBBar.new()
-	val.ssize = _ssize;
-	val.ratio = _ratio;
-	val.time = _time;
-	val.parent = _parent;
-	return val
+		_ssize: int,
+		into: FBBar = null ) -> FBBar :
+	if into == null:
+		into = FBBar.new()
+	into.ssize = _ssize;
+	into.ratio = _ratio;
+	into.time = _time;
+	into.parent = _parent;
+	return into
 
 class FBFooBar extends FlatBuffer:
 	const _bench_schema = preload( 'bench_generated.gd' )

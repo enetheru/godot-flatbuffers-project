@@ -65,14 +65,18 @@ class TestStruct extends FlatBuffer:
 		return _fb_bytes.size() >= _fb_start + _fb_struct_size
 
 
-## Create a new TestStruct with the provided field values
+## Write the fields into [param into]. The empty constructor allocates
+## a staging buffer, so a reused struct avoids that. A null [param into]
+## still constructs one.
 static func create_TestStruct(
 		_a: int,
-		_b: int ) -> TestStruct :
-	var val: TestStruct = TestStruct.new()
-	val.b = _b;
-	val.a = _a;
-	return val
+		_b: int,
+		into: TestStruct = null ) -> TestStruct :
+	if into == null:
+		into = TestStruct.new()
+	into.b = _b;
+	into.a = _a;
+	return into
 
 ## Table A Used for testing
 class TestTableA extends FlatBuffer:

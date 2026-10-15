@@ -41,11 +41,11 @@ func Encode( _unused:Variant = null ) -> PackedByteArray:
 		# NOTE: Foo is a struct, godot doesnt have structs, so I am making a class here.
 		# FIXME: the value cannot be represented as a signed 64 bit integer, and godot does
 		# not provide an alternative.
-		var foo:FB.FBFoo = FB.create_FBFoo(0xBADCAFEABADCAFE + i, 10000 + i, ord('@') + i, 1000000 + i)
+		var foo:FB.FBFoo = FB.create_FBFoo(0xBADCAFEABADCAFE + i, 10000 + i, ord('@') + i, 1000000 + i, _enc_foo)
 
 		#Bar bar(foo, 123456 + i, 3.14159f + i, 10000 + i);
 		# NOTE: Bar is a struct, godot doesnt have structs, so I am making a class here.
-		var bar:FB.FBBar = FB.create_FBBar(foo, 123456 + i, 3.14159 + i, 10000 + i)
+		var bar:FB.FBBar = FB.create_FBBar(foo, 123456 + i, 3.14159 + i, 10000 + i, _enc_bar)
 
 		#auto name = fbb.CreateString("Hello, World!");
 		var name_ofs:int = fbb.create_variant("Hello, World!")
@@ -76,6 +76,10 @@ static var _sbf_foobarcontainer := FB.FBFooBarContainer.new()
 static var _use_item := FB.FBFooBar.new()
 static var _use_bar := FB.FBBar.new()
 static var _use_foo := FB.FBFoo.new()
+
+# Staging structs for Encode. Built once, overwritten each record.
+static var _enc_foo := FB.FBFoo.new()
+static var _enc_bar := FB.FBBar.new()
 
 #void* Decode(void* buffer, int64_t) override { return buffer; }
 func Decode( buf:PackedByteArray ) -> Variant:

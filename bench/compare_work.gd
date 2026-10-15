@@ -10,6 +10,10 @@ const LABEL := "Hello, World!"
 const FRUIT := 2
 
 const FB = preload("uid://ddiycsgeokhmv")
+
+## Staging structs for encode_flat. Built once, overwritten each record.
+static var _enc_foo := FB.FBFoo.new()
+static var _enc_bar := FB.FBBar.new()
 const DictCase = preload("uid://dve0r6lgn2kft")
 
 
@@ -108,8 +112,8 @@ func encode_flat() -> PackedByteArray:
 		return PackedByteArray()
 	for i in COUNT:
 		_apply(i, rec)
-		var foo := FB.create_FBFoo(rec.id, rec.count, rec.prefix, rec.length)
-		var bar := FB.create_FBBar(foo, rec.time, rec.ratio, rec.ssize)
+		var foo := FB.create_FBFoo(rec.id, rec.count, rec.prefix, rec.length, _enc_foo)
+		var bar := FB.create_FBBar(foo, rec.time, rec.ratio, rec.ssize, _enc_bar)
 		var name_ofs:int = fbb.create_variant(rec.label)
 		offsets[i] = FB.create_FBFooBar(fbb, bar, name_ofs, rec.rating, rec.postfix)
 	var loc_ofs:int = fbb.create_variant(LOCATION)
