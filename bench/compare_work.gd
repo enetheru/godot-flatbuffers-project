@@ -318,6 +318,48 @@ func spawn_flat(buf:PackedByteArray) -> Dictionary:
 	return out
 
 
+## Same dictionary as spawn_flat. list_at, sibling, and parent reuse Readers.
+func spawn_flat_reuse(buf:PackedByteArray, readers:Readers) -> Dictionary:
+	if buf.is_empty() or readers == null:
+		return {}
+	var root := readers.root as FB.FBFooBarContainer
+	var item_into := readers.item as FB.FBFooBar
+	var bar_into := readers.bar as FB.FBBar
+	var foo_into := readers.foo as FB.FBFoo
+	root.assign_buffer(buf, buf.decode_u32(0))
+	var list:Array = []
+	if list.resize(root.list_size()) != OK:
+		push_error("scenario spawn resize failed")
+	for i in root.list_size():
+		var item := root.list_at(i, item_into)
+		var bar := _sibling_into(item, bar_into)
+		if bar == null:
+			return {}
+		var foo := _parent_into(bar, foo_into)
+		var parent:Dictionary = {}
+		parent.id = foo.id
+		parent.count = foo.count
+		parent.prefix = foo.prefix
+		parent.length = foo.length
+		var sibling:Dictionary = {}
+		sibling.parent = parent
+		sibling.time = bar.time
+		sibling.ratio = bar.ratio
+		sibling.size = bar.ssize
+		var row:Dictionary = {}
+		row.name = item.name()
+		row.postfix = item.postfix()
+		row.rating = item.rating()
+		row.sibling = sibling
+		list[i] = row
+	var out:Dictionary = {}
+	out.initialized = root.initialized()
+	out.location = root.location()
+	out.fruit = int(root.fruit())
+	out.list = list
+	return out
+
+
 func spawn_dict(buf:PackedByteArray) -> Dictionary:
 	return _dict_from(bytes_to_var(buf))
 
@@ -335,6 +377,43 @@ func apply_flat(buf:PackedByteArray, dest:Dictionary) -> void:
 	var n := mini(root.list_size(), dest_list.size())
 	for i in n:
 		_fill_row(_dict_from(dest_list[i]), root.list_at(i))
+
+
+## Same writes as apply_flat. list_at, sibling, and parent reuse Readers.
+## Returns false when the sibling view is missing.
+func apply_flat_reuse(buf:PackedByteArray, dest:Dictionary, readers:Readers) -> bool:
+	if buf.is_empty() or readers == null or dest == null:
+		return false
+	var root := readers.root as FB.FBFooBarContainer
+	var item_into := readers.item as FB.FBFooBar
+	var bar_into := readers.bar as FB.FBBar
+	var foo_into := readers.foo as FB.FBFoo
+	root.assign_buffer(buf, buf.decode_u32(0))
+	dest.initialized = root.initialized()
+	dest.location = root.location()
+	dest.fruit = int(root.fruit())
+	var dest_list := _array_from(dest.list)
+	var n := mini(root.list_size(), dest_list.size())
+	for i in n:
+		var item := root.list_at(i, item_into)
+		var bar := _sibling_into(item, bar_into)
+		if bar == null:
+			return false
+		var foo := _parent_into(bar, foo_into)
+		var row := _dict_from(dest_list[i])
+		row.name = item.name()
+		row.postfix = item.postfix()
+		row.rating = item.rating()
+		var sibling := _dict_from(row.sibling)
+		sibling.time = bar.time
+		sibling.ratio = bar.ratio
+		sibling.size = bar.ssize
+		var parent := _dict_from(sibling.parent)
+		parent.id = foo.id
+		parent.count = foo.count
+		parent.prefix = foo.prefix
+		parent.length = foo.length
+	return true
 
 
 func apply_dict(buf:PackedByteArray, dest:Dictionary) -> void:
@@ -364,6 +443,19 @@ func peek_flat(buf:PackedByteArray) -> int:
 	if root.list_size() <= (COUNT >> 1):
 		return -1
 	return int(root.list_at(COUNT >> 1).rating())
+
+
+## Rating at the same index as peek_flat. The root and the one table are reused.
+## Sibling and parent are not read. Peek does not read them.
+func peek_flat_reuse(buf:PackedByteArray, readers:Readers) -> int:
+	if buf.is_empty() or readers == null:
+		return -1
+	var root := readers.root as FB.FBFooBarContainer
+	var item_into := readers.item as FB.FBFooBar
+	root.assign_buffer(buf, buf.decode_u32(0))
+	if root.list_size() <= (COUNT >> 1):
+		return -1
+	return int(root.list_at(COUNT >> 1, item_into).rating())
 
 
 func peek_dict(buf:PackedByteArray) -> int:
