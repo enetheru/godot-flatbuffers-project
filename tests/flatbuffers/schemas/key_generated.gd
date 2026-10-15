@@ -21,8 +21,7 @@ class Named extends FlatBuffer:
 		verifier.set_buffer(_fb_bytes)
 		return (
 			verify_table_start(verifier)
-			# TODO required field
-			and verify_offset(verifier, VT_NAME)
+			and verify_offset_required(verifier, VT_NAME)
 			and verify_string( verifier, VT_NAME )
 			and verify_field_s32(verifier, VT_N, 4)
 			and verify_end_table(verifier)
@@ -42,6 +41,9 @@ class Named extends FlatBuffer:
 
 	func n() -> int:
 		return get_s32( VT_N, 0 )
+
+	func key_compare_with_value(key: String) -> int:
+		return key_compare(VT_NAME, FlatBufferBuilder.KEY_STRING, key, "")
 
 
 ## Builder class for Named
@@ -66,7 +68,7 @@ class NamedBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.required(o, Named.VT_NAME)
+		if not fbb_.required(o, Named.VT_NAME): return 0
 		return o;
 
 ## Create a Named table in one go using the provided [param _fbb]
@@ -77,6 +79,9 @@ static func create_Named( _fbb: FlatBufferBuilder,
 	builder.add_n( n );
 	builder.add_name( name );
 	return builder.finish();
+
+static func create_sorted_Named_vector(_fbb: FlatBufferBuilder, offsets: PackedInt32Array) -> int:
+	return _fbb.create_vector_of_sorted_tables(offsets, Named.VT_NAME, FlatBufferBuilder.KEY_STRING, "")
 
 class Numbered extends FlatBuffer:
 	enum {
@@ -113,6 +118,9 @@ class Numbered extends FlatBuffer:
 	func label() -> String:
 		return get_string( VT_LABEL )
 
+	func key_compare_with_value(key: int) -> int:
+		return key_compare(VT_N, FlatBufferBuilder.KEY_LONG, key, 0)
+
 
 ## Builder class for Numbered
 class NumberedBuilder extends RefCounted:
@@ -146,6 +154,9 @@ static func create_Numbered( _fbb: FlatBufferBuilder,
 	builder.add_n( n );
 	builder.add_label( label );
 	return builder.finish();
+
+static func create_sorted_Numbered_vector(_fbb: FlatBufferBuilder, offsets: PackedInt32Array) -> int:
+	return _fbb.create_vector_of_sorted_tables(offsets, Numbered.VT_N, FlatBufferBuilder.KEY_LONG, 0)
 
 class Root extends FlatBuffer:
 	const _key_schema = preload( 'key_generated.gd' )
@@ -219,6 +230,20 @@ class Root extends FlatBuffer:
 			array[i] = _key_schema.Named.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
+	func named_lookup(key: String) -> Named:
+		var lo: int = 0
+		var hi: int = named_size()
+		while lo < hi:
+			var mid: int = lo + ((hi - lo) >> 1)
+			var cmp: int = named_at(mid).key_compare_with_value(key)
+			if cmp < 0:
+				lo = mid + 1
+			elif cmp > 0:
+				hi = mid
+			else:
+				return named_at(mid)
+		return null
+
 	## Return true if numbered is present in the buffer, else false
 	func numbered_is_present() -> bool:
 		return get_field_offset( VT_NUMBERED )
@@ -264,6 +289,20 @@ class Root extends FlatBuffer:
 			var p: int = array_start + i * 4
 			array[i] = _key_schema.Numbered.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
+
+	func numbered_lookup(key: int) -> Numbered:
+		var lo: int = 0
+		var hi: int = numbered_size()
+		while lo < hi:
+			var mid: int = lo + ((hi - lo) >> 1)
+			var cmp: int = numbered_at(mid).key_compare_with_value(key)
+			if cmp < 0:
+				lo = mid + 1
+			elif cmp > 0:
+				hi = mid
+			else:
+				return numbered_at(mid)
+		return null
 
 
 ## Builder class for Root

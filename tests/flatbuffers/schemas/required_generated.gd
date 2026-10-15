@@ -76,11 +76,9 @@ class RootTable extends FlatBuffer:
 		verifier.set_buffer(_fb_bytes)
 		return (
 			verify_table_start(verifier)
-			# TODO required field
-			and verify_offset(verifier, VT_LABEL)
+			and verify_offset_required(verifier, VT_LABEL)
 			and verify_string( verifier, VT_LABEL )
-			# TODO required field
-			and verify_offset(verifier, VT_CHILD)
+			and verify_offset_required(verifier, VT_CHILD)
 			and child().verify(verifier)
 			and verify_end_table(verifier)
 		)
@@ -126,8 +124,8 @@ class RootTableBuilder extends RefCounted:
 	func finish() -> int:
 		var end: int = fbb_.end_table( start_ )
 		var o: int = end
-		fbb_.required(o, RootTable.VT_LABEL)
-		fbb_.required(o, RootTable.VT_CHILD)
+		if not fbb_.required(o, RootTable.VT_LABEL): return 0
+		if not fbb_.required(o, RootTable.VT_CHILD): return 0
 		return o;
 
 ## Create a RootTable table in one go using the provided [param _fbb]

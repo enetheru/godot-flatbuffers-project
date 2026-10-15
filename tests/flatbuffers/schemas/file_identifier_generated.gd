@@ -6,6 +6,8 @@
 @warning_ignore_start('unsafe_method_access')
 @warning_ignore_start('unsafe_call_argument')
 
+const FILE_IDENTIFIER: String = "RQID"
+
 class Child extends FlatBuffer:
 	enum {
 		VT_N = 4
@@ -75,7 +77,8 @@ class Root extends FlatBuffer:
 	func verify(verifier:FlatBufferVerifier) -> bool:
 		verifier.set_buffer(_fb_bytes)
 		return (
-			verify_table_start(verifier)
+			verifier.buffer_has_identifier(FILE_IDENTIFIER)
+			and verify_table_start(verifier)
 			and verify_offset(verifier, VT_LABEL)
 			and verify_string( verifier, VT_LABEL )
 			and verify_offset(verifier, VT_CHILD)
@@ -137,4 +140,8 @@ static func create_Root( _fbb: FlatBufferBuilder,
 static func get_Root( _bytes: PackedByteArray ) -> Root:
 	assert(not _bytes.is_empty())
 	return Root.new(_bytes, _bytes.decode_u32(0))
+
+## Finish a Root buffer and stamp FILE_IDENTIFIER
+static func finish_Root_buffer(_fbb: FlatBufferBuilder, offset: int) -> void:
+	_fbb.finish(offset, FILE_IDENTIFIER)
 
