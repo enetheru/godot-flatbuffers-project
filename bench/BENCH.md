@@ -139,8 +139,14 @@ Load and Peek also compare the result to a value computed before the loop, and s
 
 ## Load with reused readers
 
-`runner_reuse.gd` (`reuse` in `run.ps1`) registers `BM_Flatbuffers_LoadReuse` only. It is the Load question above, with the per-record reader allocations taken out. Store, Spawn, Update, and Peek are not in this suite.
+`runner_reuse.gd` (`reuse` in `run.ps1`) registers `BM_Flatbuffers_LoadReuse` and `BM_Flatbuffers_SpawnReuse`. Load is the Load question above, and Spawn is the Spawn question above, each with the per-record reader allocations taken out. Store, Update, and Peek are not in this suite.
 
 The payload and the checksum terms are the same as scenario Load. `CompareWork.flat_sum_reuse` adds the same values as `FlatBuffersBench.Use`, in the same order. Before the timed loop, and again on every iteration, that sum has to match `flat_sum`. A mismatch skips the run.
 
-`Readers` is built once, before the loop: one `FBFooBarContainer`, one `FBFooBar`, one `FBBar`, and one `FBFoo`. Each iteration calls `_interpret_as_root` on that container. Each record calls `list_at(i, into)` with the same `FBFooBar`. The sibling view writes `_fb_bytes` and `_fb_start` on the same `FBBar` (`VT_SIBLING`, the same offset `sibling()` would pass to `FBBar.new`). The parent view does that on the same `FBFoo` at the start of the bar, which is what the `parent` getter constructs. `name`, `postfix`, `rating`, `location`, `initialized`, and `fruit` are still one call each. The string objects those calls return are not reused.
+`Readers` is built once, before the loop: one `FBFooBarContainer`, one `FBFooBar`, one `FBBar`, and one `FBFoo`. Each iteration calls `assign_buffer` on that container with the root offset at byte 0. Each record calls `list_at(i, into)` with the same `FBFooBar`. The sibling view calls `assign_buffer` on the same `FBBar` (`VT_SIBLING`, the same offset `sibling()` would pass to `FBBar.new`). The parent view does that on the same `FBFoo` at the start of the bar, which is what the `parent` getter constructs. `name`, `postfix`, `rating`, `location`, `initialized`, and `fruit` are still one call each. The string objects those calls return are not reused.
+
+## Spawn with reused readers
+
+`BM_Flatbuffers_SpawnReuse` builds the same dictionary as `spawn_flat`. The timed loop calls `spawn_flat_reuse` and skips the run when that dictionary is empty. It does not repeat the checksum. Before the loop, `dict_sum` of the reused dictionary has to match `dict_sum` of `spawn_flat` on the same buffer. A mismatch skips the run.
+
+The reused root, table, and both structs are the same `Readers` objects as Load. The new dictionaries for the container, each row, and each sibling are still allocated inside the timer. That is the Spawn result. Only the FlatBuffers reader objects are reused.

@@ -318,6 +318,48 @@ func spawn_flat(buf:PackedByteArray) -> Dictionary:
 	return out
 
 
+## Same dictionary as spawn_flat. list_at, sibling, and parent reuse Readers.
+func spawn_flat_reuse(buf:PackedByteArray, readers:Readers) -> Dictionary:
+	if buf.is_empty() or readers == null:
+		return {}
+	var root := readers.root as FB.FBFooBarContainer
+	var item_into := readers.item as FB.FBFooBar
+	var bar_into := readers.bar as FB.FBBar
+	var foo_into := readers.foo as FB.FBFoo
+	root.assign_buffer(buf, buf.decode_u32(0))
+	var list:Array = []
+	if list.resize(root.list_size()) != OK:
+		push_error("scenario spawn resize failed")
+	for i in root.list_size():
+		var item := root.list_at(i, item_into)
+		var bar := _sibling_into(item, bar_into)
+		if bar == null:
+			return {}
+		var foo := _parent_into(bar, foo_into)
+		var parent:Dictionary = {}
+		parent.id = foo.id
+		parent.count = foo.count
+		parent.prefix = foo.prefix
+		parent.length = foo.length
+		var sibling:Dictionary = {}
+		sibling.parent = parent
+		sibling.time = bar.time
+		sibling.ratio = bar.ratio
+		sibling.size = bar.ssize
+		var row:Dictionary = {}
+		row.name = item.name()
+		row.postfix = item.postfix()
+		row.rating = item.rating()
+		row.sibling = sibling
+		list[i] = row
+	var out:Dictionary = {}
+	out.initialized = root.initialized()
+	out.location = root.location()
+	out.fruit = int(root.fruit())
+	out.list = list
+	return out
+
+
 func spawn_dict(buf:PackedByteArray) -> Dictionary:
 	return _dict_from(bytes_to_var(buf))
 

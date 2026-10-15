@@ -4,9 +4,10 @@ const FunctionBenchmark = RegisterLib.FunctionBenchmark
 const CntFlags = Counter.Flags
 const CntOneK = Counter.OneK
 
-## Load on the 64-record scenario payload. The walk reuses one FBFooBar,
-## one FBBar, and one FBFoo. The other scenario operations are unchanged.
+## Load and Spawn on the 64-record scenario payload. Both reuse one
+## FBFooBar, one FBBar, and one FBFoo. Store, Update, and Peek do not.
 static var _payload_error:String = ""
+static var _spawn_error:String = ""
 
 
 func _init() -> void:
@@ -20,11 +21,21 @@ func _init() -> void:
 		var reuse := work.flat_sum_reuse(buf, readers)
 		if reuse != expected:
 			_payload_error = "reuse load checksum %d != %d" % [reuse, expected]
+		else:
+			var spawned := work.spawn_flat_reuse(buf, readers)
+			var plain := work.dict_sum(work.spawn_flat(buf))
+			var reused_sum := -1 if spawned.is_empty() else work.dict_sum(spawned)
+			if spawned.is_empty() or reused_sum != plain:
+				_spawn_error = "reuse spawn checksum %d != %d" % [reused_sum, plain]
 	if not _payload_error.is_empty():
 		printerr(_payload_error)
+	if not _spawn_error.is_empty():
+		printerr(_spawn_error)
 
-	@warning_ignore("return_value_discarded")
+	@warning_ignore_start("return_value_discarded")
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_LoadReuse))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_SpawnReuse))
+	@warning_ignore_restore("return_value_discarded")
 
 
 static func BM_Flatbuffers_LoadReuse(state:State) -> void:
@@ -44,4 +55,32 @@ static func BM_Flatbuffers_LoadReuse(state:State) -> void:
 		throughput.value += buf.size()
 		if sum != expected:
 			state.SkipWithError("reuse load checksum %d != %d" % [sum, expected])
+			return
+
+
+static func BM_Flatbuffers_SpawnReuse(state:State) -> void:
+	if not _payload_error.is_empty():
+		state.SkipWithError(_payload_error)
+		return
+	if not _spawn_error.is_empty():
+		state.SkipWithError(_spawn_error)
+		return
+	var work := CompareWork.new()
+	var buf := work.encode_flat()
+	var readers := work.make_readers()
+	var spawned := work.spawn_flat_reuse(buf, readers)
+	var plain := work.dict_sum(work.spawn_flat(buf))
+	var reused_sum := -1 if spawned.is_empty() else work.dict_sum(spawned)
+	if spawned.is_empty() or reused_sum != plain:
+		state.SkipWithError("reuse spawn checksum %d != %d" % [reused_sum, plain])
+		return
+	var throughput := Counter.new(0, CntFlags.kIsRate, CntOneK.kIs1024)
+	state.counters["bytes_size"] = Counter.new(
+			buf.size(), CntFlags.kIsIterationInvariant, CntOneK.kIs1024)
+	state.counters["bytes/s"] = throughput
+	for _i in state:
+		spawned = work.spawn_flat_reuse(buf, readers)
+		throughput.value += buf.size()
+		if spawned.is_empty():
+			state.SkipWithError("reuse spawn was empty")
 			return
