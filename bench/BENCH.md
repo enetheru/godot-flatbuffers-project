@@ -143,7 +143,7 @@ Load and Peek also compare the result to a value computed before the loop, and s
 
 The payload and the checksum terms are the same as scenario Load. `CompareWork.flat_sum_reuse` adds the same values as `FlatBuffersBench.Use`, in the same order. Before the timed loop, and again on every iteration, that sum has to match `flat_sum`. A mismatch skips the run.
 
-`Readers` is built once, before the loop: one `FBFooBarContainer`, one `FBFooBar`, one `FBBar`, and one `FBFoo`. Each iteration calls `assign_buffer` on that container with the root offset at byte 0. Each record calls `list_at(i, into)` with the same `FBFooBar`. The sibling view calls `assign_buffer` on the same `FBBar` (`VT_SIBLING`, the same offset `sibling()` would pass to `FBBar.new`). The parent view does that on the same `FBFoo` at the start of the bar, which is what the `parent` getter constructs. `name`, `postfix`, `rating`, `location`, `initialized`, and `fruit` are still one call each. The string objects those calls return are not reused.
+`Readers` is built once, before the loop: one `FBFooBarContainer`, one `FBFooBar`, one `FBBar`, and one `FBFoo`. Each iteration calls `assign_buffer` on that container with the root offset at byte 0. Each record calls `list_at(i, into)` with the same `FBFooBar`. The sibling view is `sibling(into)` on the same `FBBar`. The parent view is `parent_into` on the same `FBFoo` at the start of the bar, which is what the `parent` getter constructs. `name`, `postfix`, `rating`, `location`, `initialized`, and `fruit` are still one call each. The string objects those calls return are not reused.
 
 ## Spawn with reused readers
 
