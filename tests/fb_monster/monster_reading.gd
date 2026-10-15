@@ -148,6 +148,14 @@ func read_orc_flatbuffer( bytes:PackedByteArray ) -> void:
 	test.TEST_EQ(5, second_weapon_damage, "second_weapon.damage()")
 	test.TEST_EQ(5, monster.weapons_at(1).damage(),
 			"monster.weapons_at(1).damage()")
+	var weapon := schema.Weapon.new()
+	var sword:schema.Weapon = monster.weapons_at(0, weapon)
+	test.TEST_TRUE(sword == weapon, "weapons_at returns the passed view")
+	test.TEST_EQ("Sword", weapon.name(), "reused weapon 0")
+	test.TEST_EQ(3, weapon.damage(), "reused weapon 0 damage")
+	monster.weapons_at(1, weapon)
+	test.TEST_EQ("Axe", sword.name(), "reused weapon follows the later index")
+	test.TEST_EQ(5, sword.damage(), "reused weapon damage follows the later index")
 
 	# Last, we can access our Equipped FlatBuffer union. Just like when we
 	# created the union, we need to get both parts of the union: the type and

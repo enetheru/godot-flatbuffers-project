@@ -358,6 +358,7 @@ func _vector_edges() -> void:
 	_empty_vectors()
 	_union_discriminant()
 	_struct_span()
+	_reused_table_view()
 
 
 func _absent_vectors() -> void:
@@ -456,3 +457,31 @@ func _struct_span() -> void:
 	var overrun := TestStruct.new()
 	overrun.assign_buffer(bytes, 1)
 	test.TEST_FALSE(overrun.verify(verifier), "test struct offset overruns")
+
+
+func _reused_table_view() -> void:
+	var fbb := FlatBufferBuilder.new()
+	var first_row:int = Schema.create_TestTableA(fbb, 3)
+	var second_row:int = Schema.create_TestTableA(fbb, 5)
+	var third_row:int = Schema.create_TestTableA(fbb, 7)
+	var tables:int = fbb.create_vector_offset(PackedInt32Array([first_row, second_row, third_row]))
+	if not test.TEST_TRUE_RET(tables != 0, "table vector"):
+		return
+	var builder := Schema.RootTableBuilder.new(fbb)
+	builder.add_tables(tables)
+	var root:Schema.RootTable = _root_from(fbb, builder.finish())
+	var verifier := FlatBufferVerifier.new()
+	if not test.TEST_TRUE_RET(root.verify(verifier), "reused table view verifies"):
+		return
+	var view := Schema.TestTableA.new()
+	var first:Schema.TestTableA = root.tables_at(0, view)
+	test.TEST_TRUE(first == view, "tables_at returns the passed view")
+	test.TEST_EQ(3, view.a(), "first row")
+	var later:Schema.TestTableA = root.tables_at(2, view)
+	test.TEST_TRUE(later == view, "later index reuses the view")
+	test.TEST_EQ(7, view.a(), "reused view reads the later row")
+	test.TEST_EQ(7, first.a(), "the earlier reference follows the view")
+	var fresh:Schema.TestTableA = root.tables_at(1)
+	test.TEST_EQ(5, fresh.a(), "a new view reads the middle row")
+	test.TEST_TRUE(fresh != view, "a missing into allocates another table")
+	test.TEST_EQ(7, view.a(), "the new view leaves the reused one")
