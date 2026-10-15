@@ -139,7 +139,7 @@ Load and Peek also compare the result to a value computed before the loop, and s
 
 ## Load with reused readers
 
-`runner_reuse.gd` (`reuse` in `run.ps1`) registers `BM_Flatbuffers_LoadReuse` and `BM_Flatbuffers_SpawnReuse`. Load is the Load question above, and Spawn is the Spawn question above, each with the per-record reader allocations taken out. Store, Update, and Peek are not in this suite.
+`runner_reuse.gd` (`reuse` in `run.ps1`) registers `BM_Flatbuffers_LoadReuse`, `BM_Flatbuffers_SpawnReuse`, and `BM_Flatbuffers_UpdateReuse`. Load, Spawn, and Update are the questions above, each with the per-record reader allocations taken out. Store and Peek are not in this suite.
 
 The payload and the checksum terms are the same as scenario Load. `CompareWork.flat_sum_reuse` adds the same values as `FlatBuffersBench.Use`, in the same order. Before the timed loop, and again on every iteration, that sum has to match `flat_sum`. A mismatch skips the run.
 
@@ -150,3 +150,11 @@ The payload and the checksum terms are the same as scenario Load. `CompareWork.f
 `BM_Flatbuffers_SpawnReuse` builds the same dictionary as `spawn_flat`. The timed loop calls `spawn_flat_reuse` and skips the run when that dictionary is empty. It does not repeat the checksum. Before the loop, `dict_sum` of the reused dictionary has to match `dict_sum` of `spawn_flat` on the same buffer. A mismatch skips the run.
 
 The reused root, table, and both structs are the same `Readers` objects as Load. The new dictionaries for the container, each row, and each sibling are still allocated inside the timer. That is the Spawn result. Only the FlatBuffers reader objects are reused.
+
+## Update with reused readers
+
+`BM_Flatbuffers_UpdateReuse` patches a dictionary built before the timed loop, the same window as scenario Update. The loop calls `apply_flat_reuse` and does not repeat the checksum.
+
+Before that loop, `location` is cleared on a separate dictionary, `apply_flat_reuse` writes it, and `dict_sum` has to match `apply_flat` on another cleared dictionary. A missing sibling or a mismatched sum skips the run. The timed destination is a fresh `make_dict()` and is not that probe.
+
+The reused root, table, and both structs are the same `Readers` objects. The destination dictionary and its nested rows already exist. `name`, `location`, and the other field reads still return new values. Those reads are not reused.

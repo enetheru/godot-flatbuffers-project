@@ -379,6 +379,43 @@ func apply_flat(buf:PackedByteArray, dest:Dictionary) -> void:
 		_fill_row(_dict_from(dest_list[i]), root.list_at(i))
 
 
+## Same writes as apply_flat. list_at, sibling, and parent reuse Readers.
+## Returns false when the sibling view is missing.
+func apply_flat_reuse(buf:PackedByteArray, dest:Dictionary, readers:Readers) -> bool:
+	if buf.is_empty() or readers == null or dest == null:
+		return false
+	var root := readers.root as FB.FBFooBarContainer
+	var item_into := readers.item as FB.FBFooBar
+	var bar_into := readers.bar as FB.FBBar
+	var foo_into := readers.foo as FB.FBFoo
+	root.assign_buffer(buf, buf.decode_u32(0))
+	dest.initialized = root.initialized()
+	dest.location = root.location()
+	dest.fruit = int(root.fruit())
+	var dest_list := _array_from(dest.list)
+	var n := mini(root.list_size(), dest_list.size())
+	for i in n:
+		var item := root.list_at(i, item_into)
+		var bar := _sibling_into(item, bar_into)
+		if bar == null:
+			return false
+		var foo := _parent_into(bar, foo_into)
+		var row := _dict_from(dest_list[i])
+		row.name = item.name()
+		row.postfix = item.postfix()
+		row.rating = item.rating()
+		var sibling := _dict_from(row.sibling)
+		sibling.time = bar.time
+		sibling.ratio = bar.ratio
+		sibling.size = bar.ssize
+		var parent := _dict_from(sibling.parent)
+		parent.id = foo.id
+		parent.count = foo.count
+		parent.prefix = foo.prefix
+		parent.length = foo.length
+	return true
+
+
 func apply_dict(buf:PackedByteArray, dest:Dictionary) -> void:
 	_copy_root(_dict_from(bytes_to_var(buf)), dest)
 
