@@ -30,9 +30,7 @@ class RootTable extends FlatBuffer:
 		return get_field_offset( VT_MY_STRING )
 
 	func my_string() -> String:
-		var field_start: int = get_offset_field_start( VT_MY_STRING )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_MY_STRING )
 
 
 ## Builder class for RootTable

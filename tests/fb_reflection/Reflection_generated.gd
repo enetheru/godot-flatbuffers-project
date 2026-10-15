@@ -197,18 +197,14 @@ class KeyValue extends FlatBuffer:
 		return get_field_offset( VT_KEY )
 
 	func key() -> String:
-		var field_start: int = get_offset_field_start( VT_KEY )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_KEY )
 
 	## Return true if value is present in the buffer, else false
 	func value_is_present() -> bool:
 		return get_field_offset( VT_VALUE )
 
 	func value() -> String:
-		var field_start: int = get_offset_field_start( VT_VALUE )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_VALUE )
 
 
 ## Builder class for KeyValue
@@ -287,9 +283,7 @@ class EnumVal extends FlatBuffer:
 		return get_field_offset( VT_NAME )
 
 	func name() -> String:
-		var field_start: int = get_offset_field_start( VT_NAME )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_NAME )
 
 	## Return true if value is present in the buffer, else false
 	func value_is_present() -> bool:
@@ -486,9 +480,7 @@ class Enum extends FlatBuffer:
 		return get_field_offset( VT_NAME )
 
 	func name() -> String:
-		var field_start: int = get_offset_field_start( VT_NAME )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_NAME )
 
 	## Return true if values is present in the buffer, else false
 	## attribute: required
@@ -635,9 +627,7 @@ class Enum extends FlatBuffer:
 		return get_field_offset( VT_DECLARATION_FILE )
 
 	func declaration_file() -> String:
-		var field_start: int = get_offset_field_start( VT_DECLARATION_FILE )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_DECLARATION_FILE )
 
 
 ## Builder class for Enum
@@ -764,9 +754,7 @@ class Field extends FlatBuffer:
 		return get_field_offset( VT_NAME )
 
 	func name() -> String:
-		var field_start: int = get_offset_field_start( VT_NAME )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_NAME )
 
 	## Return true if type is present in the buffer, else false
 	## attribute: required
@@ -1070,9 +1058,7 @@ class Object_ extends FlatBuffer:
 		return get_field_offset( VT_NAME )
 
 	func name() -> String:
-		var field_start: int = get_offset_field_start( VT_NAME )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_NAME )
 
 	## Return true if fields is present in the buffer, else false
 	## attribute: required
@@ -1223,9 +1209,7 @@ class Object_ extends FlatBuffer:
 		return get_field_offset( VT_DECLARATION_FILE )
 
 	func declaration_file() -> String:
-		var field_start: int = get_offset_field_start( VT_DECLARATION_FILE )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_DECLARATION_FILE )
 
 
 ## Builder class for Object_
@@ -1343,9 +1327,7 @@ class RPCCall extends FlatBuffer:
 		return get_field_offset( VT_NAME )
 
 	func name() -> String:
-		var field_start: int = get_offset_field_start( VT_NAME )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_NAME )
 
 	## Return true if request is present in the buffer, else false
 	## attribute: required
@@ -1541,9 +1523,7 @@ class Service extends FlatBuffer:
 		return get_field_offset( VT_NAME )
 
 	func name() -> String:
-		var field_start: int = get_offset_field_start( VT_NAME )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_NAME )
 
 	## Return true if calls is present in the buffer, else false
 	func calls_is_present() -> bool:
@@ -1672,9 +1652,7 @@ class Service extends FlatBuffer:
 		return get_field_offset( VT_DECLARATION_FILE )
 
 	func declaration_file() -> String:
-		var field_start: int = get_offset_field_start( VT_DECLARATION_FILE )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_DECLARATION_FILE )
 
 
 ## Builder class for Service
@@ -1762,9 +1740,7 @@ class SchemaFile extends FlatBuffer:
 		return get_field_offset( VT_FILENAME )
 
 	func filename() -> String:
-		var field_start: int = get_offset_field_start( VT_FILENAME )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_FILENAME )
 
 	## Return true if included_filenames is present in the buffer, else false
 	func included_filenames_is_present() -> bool:
@@ -1980,18 +1956,14 @@ class Schema extends FlatBuffer:
 		return get_field_offset( VT_FILE_IDENT )
 
 	func file_ident() -> String:
-		var field_start: int = get_offset_field_start( VT_FILE_IDENT )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_FILE_IDENT )
 
 	## Return true if file_ext is present in the buffer, else false
 	func file_ext_is_present() -> bool:
 		return get_field_offset( VT_FILE_EXT )
 
 	func file_ext() -> String:
-		var field_start: int = get_offset_field_start( VT_FILE_EXT )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_FILE_EXT )
 
 	## Return true if root_table is present in the buffer, else false
 	func root_table_is_present() -> bool:

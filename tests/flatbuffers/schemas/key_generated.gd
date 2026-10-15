@@ -34,9 +34,7 @@ class Named extends FlatBuffer:
 		return get_field_offset( VT_NAME )
 
 	func name() -> String:
-		var field_start: int = get_offset_field_start( VT_NAME )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_NAME )
 
 	## Return true if n is present in the buffer, else false
 	func n_is_present() -> bool:
@@ -113,9 +111,7 @@ class Numbered extends FlatBuffer:
 		return get_field_offset( VT_LABEL )
 
 	func label() -> String:
-		var field_start: int = get_offset_field_start( VT_LABEL )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_LABEL )
 
 
 ## Builder class for Numbered

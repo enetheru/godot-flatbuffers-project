@@ -97,9 +97,7 @@ class Monster extends FlatBuffer:
 		return get_field_offset( VT_NAME )
 
 	func name() -> String:
-		var field_start: int = get_offset_field_start( VT_NAME )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_NAME )
 
 	## Return true if inventory is present in the buffer, else false
 	func inventory_is_present() -> bool:
@@ -332,9 +330,7 @@ class Weapon extends FlatBuffer:
 		return get_field_offset( VT_NAME )
 
 	func name() -> String:
-		var field_start: int = get_offset_field_start( VT_NAME )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_NAME )
 
 	## Return true if damage is present in the buffer, else false
 	func damage_is_present() -> bool:

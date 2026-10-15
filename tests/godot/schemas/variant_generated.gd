@@ -120,9 +120,7 @@ class RootTable extends FlatBuffer:
 		return get_field_offset( VT_STRING )
 
 	func string() -> String:
-		var field_start: int = get_offset_field_start( VT_STRING )
-		if not field_start: return ''
-		return decode_variant( field_start, TYPE_STRING )
+		return get_string( VT_STRING )
 
 	## Return true if vector2 is present in the buffer, else false
 	func vector2_is_present() -> bool:
