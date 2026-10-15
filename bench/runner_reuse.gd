@@ -4,11 +4,14 @@ const FunctionBenchmark = RegisterLib.FunctionBenchmark
 const CntFlags = Counter.Flags
 const CntOneK = Counter.OneK
 
-## Load, Spawn, and Update on the 64-record scenario payload. Each reuses
-## one FBFooBar, one FBBar, and one FBFoo. Store and Peek do not.
+## Load, Spawn, Update, and Peek on the 64-record scenario payload.
+## Load, Spawn, and Update reuse one FBFooBar, one FBBar, and one FBFoo.
+## Peek reuses the root and one FBFooBar and does not read the structs.
+## Store does not.
 static var _payload_error:String = ""
 static var _spawn_error:String = ""
 static var _update_error:String = ""
+static var _peek_error:String = ""
 
 
 func _init() -> void:
@@ -38,17 +41,24 @@ func _init() -> void:
 			var update_plain := work.dict_sum(plain_dest)
 			if not applied or update_sum != update_plain:
 				_update_error = "reuse update checksum %d != %d" % [update_sum, update_plain]
+			var peeked := work.peek_flat_reuse(buf, readers)
+			var peek_plain := work.peek_flat(buf)
+			if peeked < 0 or peeked != peek_plain:
+				_peek_error = "reuse peek %d != %d" % [peeked, peek_plain]
 	if not _payload_error.is_empty():
 		printerr(_payload_error)
 	if not _spawn_error.is_empty():
 		printerr(_spawn_error)
 	if not _update_error.is_empty():
 		printerr(_update_error)
+	if not _peek_error.is_empty():
+		printerr(_peek_error)
 
 	@warning_ignore_start("return_value_discarded")
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_LoadReuse))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_SpawnReuse))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_UpdateReuse))
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_PeekReuse))
 	@warning_ignore_restore("return_value_discarded")
 
 
@@ -129,3 +139,30 @@ static func BM_Flatbuffers_UpdateReuse(state:State) -> void:
 	for _i in state:
 		work.apply_flat_reuse(buf, dest, readers)
 		throughput.value += buf.size()
+
+
+static func BM_Flatbuffers_PeekReuse(state:State) -> void:
+	if not _payload_error.is_empty():
+		state.SkipWithError(_payload_error)
+		return
+	if not _peek_error.is_empty():
+		state.SkipWithError(_peek_error)
+		return
+	var work := CompareWork.new()
+	var buf := work.encode_flat()
+	var readers := work.make_readers()
+	var expected := work.peek_flat(buf)
+	var rating := work.peek_flat_reuse(buf, readers)
+	if rating < 0 or rating != expected:
+		state.SkipWithError("reuse peek %d != %d" % [rating, expected])
+		return
+	var throughput := Counter.new(0, CntFlags.kIsRate, CntOneK.kIs1024)
+	state.counters["bytes_size"] = Counter.new(
+			buf.size(), CntFlags.kIsIterationInvariant, CntOneK.kIs1024)
+	state.counters["bytes/s"] = throughput
+	for _i in state:
+		rating = work.peek_flat_reuse(buf, readers)
+		throughput.value += buf.size()
+		if rating != expected:
+			state.SkipWithError("reuse peek %d != %d" % [rating, expected])
+			return

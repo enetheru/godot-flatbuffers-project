@@ -445,6 +445,19 @@ func peek_flat(buf:PackedByteArray) -> int:
 	return int(root.list_at(COUNT >> 1).rating())
 
 
+## Rating at the same index as peek_flat. The root and the one table are reused.
+## Sibling and parent are not read. Peek does not read them.
+func peek_flat_reuse(buf:PackedByteArray, readers:Readers) -> int:
+	if buf.is_empty() or readers == null:
+		return -1
+	var root := readers.root as FB.FBFooBarContainer
+	var item_into := readers.item as FB.FBFooBar
+	root.assign_buffer(buf, buf.decode_u32(0))
+	if root.list_size() <= (COUNT >> 1):
+		return -1
+	return int(root.list_at(COUNT >> 1, item_into).rating())
+
+
 func peek_dict(buf:PackedByteArray) -> int:
 	var list := _array_from(_dict_from(bytes_to_var(buf)).list)
 	if list.size() <= (COUNT >> 1):
