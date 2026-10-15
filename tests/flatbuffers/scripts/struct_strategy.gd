@@ -102,6 +102,7 @@ func _flow( selection:Array[int] ) -> void:
 	var can_use:bool = use.call(unpacked)
 	if can_use: pass
 	_table_cases()
+	_struct_span()
 
 #               ██████  ██   ██  █████  ███████ ███████ ███████                #
 #               ██   ██ ██   ██ ██   ██ ██      ██      ██                     #
@@ -163,6 +164,7 @@ func _table_cases() -> void:
 	test.TEST_EQ(-4, got.x, "embedded x")
 	test.TEST_EQ(3.5, got.y, "embedded y")
 	test.TEST_EQ(Vector3(-1, 0, 2), got.w, "embedded w")
+	test.TEST_TRUE(got.verify(verifier), "embedded struct span fits")
 
 	var absent_fbb := FlatBufferBuilder.new()
 	var absent_builder := Schema.RootTableBuilder.new(absent_fbb)
@@ -182,6 +184,18 @@ func _table_cases() -> void:
 	test.TEST_FALSE(elided.z_is_present(), "z default elided")
 	test.TEST_EQ(0, elided.z(), "z default reads 0")
 	test.TEST_TRUE(elided.verify(FlatBufferVerifier.new()), "elided z verifies")
+
+
+func _struct_span() -> void:
+	var verifier := FlatBufferVerifier.new()
+	var fitted := Schema.CustomStruct.new()
+	test.TEST_TRUE(fitted.verify(verifier), "struct span fits")
+
+	var bytes := PackedByteArray()
+	bytes.resize(Schema.CustomStruct._fb_struct_size)
+	var overrun := Schema.CustomStruct.new()
+	overrun.assign_buffer(bytes, 1)
+	test.TEST_FALSE(overrun.verify(verifier), "struct offset overruns the buffer")
 
 
 func                        __BoilerPlate____________              ()->void:pass

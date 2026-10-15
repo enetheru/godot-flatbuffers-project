@@ -203,6 +203,25 @@ func read_omitted_defaults() -> void:
 	test.TEST_FALSE(monster.pos_is_present(), "omitted pos")
 	test.TEST_FALSE(monster.path_is_present(), "omitted path")
 	test.TEST_EQ(0, monster.path_size(), "omitted path size")
+	test.TEST_TRUE(schema.equipment_verify(verifier, null, schema.Equipment.NONE), "omitted union verifies")
+	test.TEST_FALSE(schema.equipment_verify(verifier, null, 9), "unknown equipment type fails")
+
+
+## A stored discriminant of 0 is present, and it still has no union value.
+func read_written_none() -> void:
+	var fbb := FlatBufferBuilder.new()
+	var builder := schema.MonsterBuilder.new(fbb)
+	builder.add_equipped_type(schema.Equipment.NONE)
+	fbb.finish(builder.finish())
+	var bytes:PackedByteArray = fbb.get_buffer()
+	var monster := schema.Monster.new()
+	monster.assign_buffer(bytes, bytes.decode_u32(0))
+	if not test.TEST_TRUE_RET(monster.verify(verifier), "written none verifies"):
+		return
+	test.TEST_TRUE(monster.get_field_offset(schema.Monster.VT_EQUIPPED_TYPE) != 0, "written none type is stored")
+	test.TEST_EQ(schema.Equipment.NONE, monster.equipped_type(), "written none type")
+	test.TEST_FALSE(monster.equipped_is_present(), "none has no value")
+	test.TEST_EQ(null, monster.equipped(), "none value")
 
 
 ## Each case copies the good orc and breaks one slot. verify() must return false.
