@@ -181,6 +181,16 @@ func read_orc_flatbuffer( bytes:PackedByteArray ) -> void:
 			test.TEST_EQ( weapon_name, "Axe", "weapon.name()" )
 			test.TEST_EQ( weapon_damage, 5, "weapon.damage()" )
 
+	test.TEST_TRUE(monster.path_is_present(), "path stored")
+	test.TEST_EQ(2, monster.path_size(), "path size")
+	test.TEST_EQ(Vector3(1, 2, 3), monster.path_at(0), "path 0")
+	test.TEST_EQ(Vector3(4, 5, 6), monster.path_at(1), "path 1")
+	var points:PackedVector3Array = monster.path()
+	test.TEST_EQ(2, points.size(), "path() size")
+	test.TEST_EQ(Vector3(1, 2, 3), points[0], "path() 0")
+	test.TEST_EQ(Vector3(4, 5, 6), points[1], "path() 1")
+	test.TEST_FALSE(monster.has_method(&"friendly"), "deprecated friendly is omitted")
+
 
 ## A monster with no fields stored still reads the schema defaults.
 func read_omitted_defaults() -> void:
