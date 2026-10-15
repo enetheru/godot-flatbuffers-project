@@ -353,23 +353,13 @@ class EnumVal extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## The caller passes a present vector and an index inside it. The element
+## offset stays in the extension so the read does not return to GDScript.
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
-		var field_start: int = get_offset_field_start( VT_ATTRIBUTES )
-		assert(field_start, 'Field "attributes" is not present in buffer' )
-
-		# The field is a vector of table, so the inline data is a vector of
-		# offsets to the element location.
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4
-		var element_pos: int = array_start + idx * 4
-		var element_offset: int = _fb_bytes.decode_u32(element_pos)
-		if into:
-			into.assign_buffer(_fb_bytes, element_pos + element_offset)
-			return into
-		return _Reflection_schema.KeyValue.new( _fb_bytes, element_pos + element_offset )
+		if into == null:
+			into = _Reflection_schema.KeyValue.new()
+		read_vector_table_into(into, VT_ATTRIBUTES, idx)
+		return into
 
 	func attributes() -> Array:
 		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
@@ -522,23 +512,13 @@ class Enum extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## The caller passes a present vector and an index inside it. The element
+## offset stays in the extension so the read does not return to GDScript.
 	func values_at( idx: int, into: EnumVal = null ) -> EnumVal:
-		var field_start: int = get_offset_field_start( VT_VALUES )
-		assert(field_start, 'Field "values" is not present in buffer' )
-
-		# The field is a vector of table, so the inline data is a vector of
-		# offsets to the element location.
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4
-		var element_pos: int = array_start + idx * 4
-		var element_offset: int = _fb_bytes.decode_u32(element_pos)
-		if into:
-			into.assign_buffer(_fb_bytes, element_pos + element_offset)
-			return into
-		return _Reflection_schema.EnumVal.new( _fb_bytes, element_pos + element_offset )
+		if into == null:
+			into = _Reflection_schema.EnumVal.new()
+		read_vector_table_into(into, VT_VALUES, idx)
+		return into
 
 	func values() -> Array:
 		var array_start: int = get_offset_field_start( VT_VALUES )
@@ -599,23 +579,13 @@ class Enum extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## The caller passes a present vector and an index inside it. The element
+## offset stays in the extension so the read does not return to GDScript.
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
-		var field_start: int = get_offset_field_start( VT_ATTRIBUTES )
-		assert(field_start, 'Field "attributes" is not present in buffer' )
-
-		# The field is a vector of table, so the inline data is a vector of
-		# offsets to the element location.
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4
-		var element_pos: int = array_start + idx * 4
-		var element_offset: int = _fb_bytes.decode_u32(element_pos)
-		if into:
-			into.assign_buffer(_fb_bytes, element_pos + element_offset)
-			return into
-		return _Reflection_schema.KeyValue.new( _fb_bytes, element_pos + element_offset )
+		if into == null:
+			into = _Reflection_schema.KeyValue.new()
+		read_vector_table_into(into, VT_ATTRIBUTES, idx)
+		return into
 
 	func attributes() -> Array:
 		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
@@ -886,23 +856,13 @@ class Field extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## The caller passes a present vector and an index inside it. The element
+## offset stays in the extension so the read does not return to GDScript.
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
-		var field_start: int = get_offset_field_start( VT_ATTRIBUTES )
-		assert(field_start, 'Field "attributes" is not present in buffer' )
-
-		# The field is a vector of table, so the inline data is a vector of
-		# offsets to the element location.
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4
-		var element_pos: int = array_start + idx * 4
-		var element_offset: int = _fb_bytes.decode_u32(element_pos)
-		if into:
-			into.assign_buffer(_fb_bytes, element_pos + element_offset)
-			return into
-		return _Reflection_schema.KeyValue.new( _fb_bytes, element_pos + element_offset )
+		if into == null:
+			into = _Reflection_schema.KeyValue.new()
+		read_vector_table_into(into, VT_ATTRIBUTES, idx)
+		return into
 
 	func attributes() -> Array:
 		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
@@ -1150,23 +1110,13 @@ class Object_ extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## The caller passes a present vector and an index inside it. The element
+## offset stays in the extension so the read does not return to GDScript.
 	func fields_at( idx: int, into: Field = null ) -> Field:
-		var field_start: int = get_offset_field_start( VT_FIELDS )
-		assert(field_start, 'Field "fields" is not present in buffer' )
-
-		# The field is a vector of table, so the inline data is a vector of
-		# offsets to the element location.
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4
-		var element_pos: int = array_start + idx * 4
-		var element_offset: int = _fb_bytes.decode_u32(element_pos)
-		if into:
-			into.assign_buffer(_fb_bytes, element_pos + element_offset)
-			return into
-		return _Reflection_schema.Field.new( _fb_bytes, element_pos + element_offset )
+		if into == null:
+			into = _Reflection_schema.Field.new()
+		read_vector_table_into(into, VT_FIELDS, idx)
+		return into
 
 	func fields() -> Array:
 		var array_start: int = get_offset_field_start( VT_FIELDS )
@@ -1231,23 +1181,13 @@ class Object_ extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## The caller passes a present vector and an index inside it. The element
+## offset stays in the extension so the read does not return to GDScript.
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
-		var field_start: int = get_offset_field_start( VT_ATTRIBUTES )
-		assert(field_start, 'Field "attributes" is not present in buffer' )
-
-		# The field is a vector of table, so the inline data is a vector of
-		# offsets to the element location.
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4
-		var element_pos: int = array_start + idx * 4
-		var element_offset: int = _fb_bytes.decode_u32(element_pos)
-		if into:
-			into.assign_buffer(_fb_bytes, element_pos + element_offset)
-			return into
-		return _Reflection_schema.KeyValue.new( _fb_bytes, element_pos + element_offset )
+		if into == null:
+			into = _Reflection_schema.KeyValue.new()
+		read_vector_table_into(into, VT_ATTRIBUTES, idx)
+		return into
 
 	func attributes() -> Array:
 		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
@@ -1469,23 +1409,13 @@ class RPCCall extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## The caller passes a present vector and an index inside it. The element
+## offset stays in the extension so the read does not return to GDScript.
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
-		var field_start: int = get_offset_field_start( VT_ATTRIBUTES )
-		assert(field_start, 'Field "attributes" is not present in buffer' )
-
-		# The field is a vector of table, so the inline data is a vector of
-		# offsets to the element location.
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4
-		var element_pos: int = array_start + idx * 4
-		var element_offset: int = _fb_bytes.decode_u32(element_pos)
-		if into:
-			into.assign_buffer(_fb_bytes, element_pos + element_offset)
-			return into
-		return _Reflection_schema.KeyValue.new( _fb_bytes, element_pos + element_offset )
+		if into == null:
+			into = _Reflection_schema.KeyValue.new()
+		read_vector_table_into(into, VT_ATTRIBUTES, idx)
+		return into
 
 	func attributes() -> Array:
 		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
@@ -1664,23 +1594,13 @@ class Service extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## The caller passes a present vector and an index inside it. The element
+## offset stays in the extension so the read does not return to GDScript.
 	func calls_at( idx: int, into: RPCCall = null ) -> RPCCall:
-		var field_start: int = get_offset_field_start( VT_CALLS )
-		assert(field_start, 'Field "calls" is not present in buffer' )
-
-		# The field is a vector of table, so the inline data is a vector of
-		# offsets to the element location.
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4
-		var element_pos: int = array_start + idx * 4
-		var element_offset: int = _fb_bytes.decode_u32(element_pos)
-		if into:
-			into.assign_buffer(_fb_bytes, element_pos + element_offset)
-			return into
-		return _Reflection_schema.RPCCall.new( _fb_bytes, element_pos + element_offset )
+		if into == null:
+			into = _Reflection_schema.RPCCall.new()
+		read_vector_table_into(into, VT_CALLS, idx)
+		return into
 
 	func calls() -> Array:
 		var array_start: int = get_offset_field_start( VT_CALLS )
@@ -1724,23 +1644,13 @@ class Service extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## The caller passes a present vector and an index inside it. The element
+## offset stays in the extension so the read does not return to GDScript.
 	func attributes_at( idx: int, into: KeyValue = null ) -> KeyValue:
-		var field_start: int = get_offset_field_start( VT_ATTRIBUTES )
-		assert(field_start, 'Field "attributes" is not present in buffer' )
-
-		# The field is a vector of table, so the inline data is a vector of
-		# offsets to the element location.
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4
-		var element_pos: int = array_start + idx * 4
-		var element_offset: int = _fb_bytes.decode_u32(element_pos)
-		if into:
-			into.assign_buffer(_fb_bytes, element_pos + element_offset)
-			return into
-		return _Reflection_schema.KeyValue.new( _fb_bytes, element_pos + element_offset )
+		if into == null:
+			into = _Reflection_schema.KeyValue.new()
+		read_vector_table_into(into, VT_ATTRIBUTES, idx)
+		return into
 
 	func attributes() -> Array:
 		var array_start: int = get_offset_field_start( VT_ATTRIBUTES )
@@ -2035,23 +1945,13 @@ class Schema extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## The caller passes a present vector and an index inside it. The element
+## offset stays in the extension so the read does not return to GDScript.
 	func objects_at( idx: int, into: Object_ = null ) -> Object_:
-		var field_start: int = get_offset_field_start( VT_OBJECTS )
-		assert(field_start, 'Field "objects" is not present in buffer' )
-
-		# The field is a vector of table, so the inline data is a vector of
-		# offsets to the element location.
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4
-		var element_pos: int = array_start + idx * 4
-		var element_offset: int = _fb_bytes.decode_u32(element_pos)
-		if into:
-			into.assign_buffer(_fb_bytes, element_pos + element_offset)
-			return into
-		return _Reflection_schema.Object_.new( _fb_bytes, element_pos + element_offset )
+		if into == null:
+			into = _Reflection_schema.Object_.new()
+		read_vector_table_into(into, VT_OBJECTS, idx)
+		return into
 
 	func objects() -> Array:
 		var array_start: int = get_offset_field_start( VT_OBJECTS )
@@ -2096,23 +1996,13 @@ class Schema extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## The caller passes a present vector and an index inside it. The element
+## offset stays in the extension so the read does not return to GDScript.
 	func enums_at( idx: int, into: Enum = null ) -> Enum:
-		var field_start: int = get_offset_field_start( VT_ENUMS )
-		assert(field_start, 'Field "enums" is not present in buffer' )
-
-		# The field is a vector of table, so the inline data is a vector of
-		# offsets to the element location.
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4
-		var element_pos: int = array_start + idx * 4
-		var element_offset: int = _fb_bytes.decode_u32(element_pos)
-		if into:
-			into.assign_buffer(_fb_bytes, element_pos + element_offset)
-			return into
-		return _Reflection_schema.Enum.new( _fb_bytes, element_pos + element_offset )
+		if into == null:
+			into = _Reflection_schema.Enum.new()
+		read_vector_table_into(into, VT_ENUMS, idx)
+		return into
 
 	func enums() -> Array:
 		var array_start: int = get_offset_field_start( VT_ENUMS )
@@ -2179,23 +2069,13 @@ class Schema extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## The caller passes a present vector and an index inside it. The element
+## offset stays in the extension so the read does not return to GDScript.
 	func services_at( idx: int, into: Service = null ) -> Service:
-		var field_start: int = get_offset_field_start( VT_SERVICES )
-		assert(field_start, 'Field "services" is not present in buffer' )
-
-		# The field is a vector of table, so the inline data is a vector of
-		# offsets to the element location.
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4
-		var element_pos: int = array_start + idx * 4
-		var element_offset: int = _fb_bytes.decode_u32(element_pos)
-		if into:
-			into.assign_buffer(_fb_bytes, element_pos + element_offset)
-			return into
-		return _Reflection_schema.Service.new( _fb_bytes, element_pos + element_offset )
+		if into == null:
+			into = _Reflection_schema.Service.new()
+		read_vector_table_into(into, VT_SERVICES, idx)
+		return into
 
 	func services() -> Array:
 		var array_start: int = get_offset_field_start( VT_SERVICES )
@@ -2252,23 +2132,13 @@ class Schema extends FlatBuffer:
 
 	## All the files used in this compilation. Files are relative to where
 ## flatc was invoked.
+	## The caller passes a present vector and an index inside it. The element
+## offset stays in the extension so the read does not return to GDScript.
 	func fbs_files_at( idx: int, into: SchemaFile = null ) -> SchemaFile:
-		var field_start: int = get_offset_field_start( VT_FBS_FILES )
-		assert(field_start, 'Field "fbs_files" is not present in buffer' )
-
-		# The field is a vector of table, so the inline data is a vector of
-		# offsets to the element location.
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4
-		var element_pos: int = array_start + idx * 4
-		var element_offset: int = _fb_bytes.decode_u32(element_pos)
-		if into:
-			into.assign_buffer(_fb_bytes, element_pos + element_offset)
-			return into
-		return _Reflection_schema.SchemaFile.new( _fb_bytes, element_pos + element_offset )
+		if into == null:
+			into = _Reflection_schema.SchemaFile.new()
+		read_vector_table_into(into, VT_FBS_FILES, idx)
+		return into
 
 	## All the files used in this compilation. Files are relative to where
 ## flatc was invoked.

@@ -227,24 +227,13 @@ class FBFooBarContainer extends FlatBuffer:
 			array[i] = _bench_schema.FBFooBar.new( _fb_bytes, p + _fb_bytes.decode_u32( p ) )
 		return array
 
+	## The caller passes a present vector and an index inside it. The element
+	## offset stays in the extension so the read does not return to GDScript.
 	func list_at( idx: int, into: FBFooBar = null ) -> FBFooBar:
-		var field_start: int = get_offset_field_start( VT_LIST )
-		assert(field_start, 'Field is not present in buffer' )
-
-		# The field is a vector of table, so the inline data is a vector of
-		# offsets to the element location.
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4
-		var element_pos: int = array_start + idx * 4
-		var element_offset: int = _fb_bytes.decode_u32(element_pos)
-		if into:
-			into._fb_bytes = _fb_bytes
-			into._fb_start = element_pos + element_offset
-			return into
-		return _bench_schema.FBFooBar.new( _fb_bytes, element_pos + element_offset )
+		if into == null:
+			into = _bench_schema.FBFooBar.new()
+		read_vector_table_into(into, VT_LIST, idx)
+		return into
 
 	## Return true if initialized is present in the buffer, else false
 	func initialized_is_present() -> bool:

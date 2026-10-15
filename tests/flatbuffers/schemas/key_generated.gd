@@ -200,23 +200,13 @@ class Root extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## The caller passes a present vector and an index inside it. The element
+## offset stays in the extension so the read does not return to GDScript.
 	func named_at( idx: int, into: Named = null ) -> Named:
-		var field_start: int = get_offset_field_start( VT_NAMED )
-		assert(field_start, 'Field "named" is not present in buffer' )
-
-		# The field is a vector of table, so the inline data is a vector of
-		# offsets to the element location.
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4
-		var element_pos: int = array_start + idx * 4
-		var element_offset: int = _fb_bytes.decode_u32(element_pos)
-		if into:
-			into.assign_buffer(_fb_bytes, element_pos + element_offset)
-			return into
-		return _key_schema.Named.new( _fb_bytes, element_pos + element_offset )
+		if into == null:
+			into = _key_schema.Named.new()
+		read_vector_table_into(into, VT_NAMED, idx)
+		return into
 
 	func named() -> Array:
 		var array_start: int = get_offset_field_start( VT_NAMED )
@@ -260,23 +250,13 @@ class Root extends FlatBuffer:
 		if not array_start: return 0
 		return _fb_bytes.decode_u32( array_start )
 
+	## The caller passes a present vector and an index inside it. The element
+## offset stays in the extension so the read does not return to GDScript.
 	func numbered_at( idx: int, into: Numbered = null ) -> Numbered:
-		var field_start: int = get_offset_field_start( VT_NUMBERED )
-		assert(field_start, 'Field "numbered" is not present in buffer' )
-
-		# The field is a vector of table, so the inline data is a vector of
-		# offsets to the element location.
-
-		var array_size: int = _fb_bytes.decode_u32( field_start )
-		assert( idx < array_size, 'index is out of bounds')
-
-		var array_start: int = field_start + 4
-		var element_pos: int = array_start + idx * 4
-		var element_offset: int = _fb_bytes.decode_u32(element_pos)
-		if into:
-			into.assign_buffer(_fb_bytes, element_pos + element_offset)
-			return into
-		return _key_schema.Numbered.new( _fb_bytes, element_pos + element_offset )
+		if into == null:
+			into = _key_schema.Numbered.new()
+		read_vector_table_into(into, VT_NUMBERED, idx)
+		return into
 
 	func numbered() -> Array:
 		var array_start: int = get_offset_field_start( VT_NUMBERED )
