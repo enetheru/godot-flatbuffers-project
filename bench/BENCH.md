@@ -136,3 +136,11 @@ Load and Peek also compare the result to a value computed before the loop, and s
 
 **Update and Spawn are checked once, then timed**
   Before any benchmark, `check_payload` clears `location` on a destination, applies the buffer, and requires the checksum to return. A no-op apply fails there, and every benchmark in that process is skipped. The timed Update and Spawn loops do not repeat that checksum. A later break that still returns a non-empty value would still record a time.
+
+## Load with reused readers
+
+`runner_reuse.gd` (`reuse` in `run.ps1`) registers `BM_Flatbuffers_LoadReuse` only. It is the Load question above, with the per-record reader allocations taken out. Store, Spawn, Update, and Peek are not in this suite.
+
+The payload and the checksum terms are the same as scenario Load. `CompareWork.flat_sum_reuse` adds the same values as `FlatBuffersBench.Use`, in the same order. Before the timed loop, and again on every iteration, that sum has to match `flat_sum`. A mismatch skips the run.
+
+`Readers` is built once, before the loop: one `FBFooBarContainer`, one `FBFooBar`, one `FBBar`, and one `FBFoo`. Each iteration calls `_interpret_as_root` on that container. Each record calls `list_at(i, into)` with the same `FBFooBar`. The sibling view writes `_fb_bytes` and `_fb_start` on the same `FBBar` (`VT_SIBLING`, the same offset `sibling()` would pass to `FBBar.new`). The parent view does that on the same `FBFoo` at the start of the bar, which is what the `parent` getter constructs. `name`, `postfix`, `rating`, `location`, `initialized`, and `fruit` are still one call each. The string objects those calls return are not reused.

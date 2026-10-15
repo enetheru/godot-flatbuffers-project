@@ -26,6 +26,25 @@ class Record:
 	var label:String
 
 
+## One root, one table, and one of each struct. LoadReuse fills these
+## instead of constructing a reader per record. The nested class cannot
+## see this file's preload, so make_readers() builds the four objects.
+class Readers:
+	var root:RefCounted
+	var item:RefCounted
+	var bar:RefCounted
+	var foo:RefCounted
+
+
+func make_readers() -> Readers:
+	var readers := Readers.new()
+	readers.root = FB.FBFooBarContainer.new()
+	readers.item = FB.FBFooBar.new()
+	readers.bar = FB.FBBar.new()
+	readers.foo = FB.FBFoo.new()
+	return readers
+
+
 func check_payload() -> String:
 	var flat_buf := encode_flat()
 	var dict_value := make_dict()
@@ -212,6 +231,36 @@ func flat_sum(buf:PackedByteArray) -> int:
 	return bench.Use(FB.get_FBFooBarContainer(buf))
 
 
+## Same terms as FlatBuffersBench.Use. list_at, sibling, and parent reuse
+## the Readers objects, so those three allocations stay outside the records.
+func flat_sum_reuse(buf:PackedByteArray, readers:Readers) -> int:
+	if buf.is_empty() or readers == null:
+		return -1
+	var root := readers.root
+	root._interpret_as_root(buf)
+	var total := 0
+	total += int(root.initialized())
+	total += root.location().length()
+	total += int(root.fruit())
+	for i in root.list_size():
+		var item := root.list_at(i, readers.item)
+		total += item.name().length()
+		total += item.postfix()
+		total += int(item.rating())
+		var bar := _sibling_into(item, readers.bar)
+		if bar == null:
+			return -1
+		total += int(bar.ratio)
+		total += bar.ssize
+		total += bar.time
+		var foo := _parent_into(bar, readers.foo)
+		total += foo.count
+		total += foo.id
+		total += foo.length
+		total += foo.prefix
+	return total
+
+
 func dict_sum(value:Dictionary) -> int:
 	var bench:BenchCase = DictCase.new()
 	return bench.Use(value)
@@ -331,6 +380,21 @@ func peek_objects(buf:PackedByteArray) -> int:
 	if row == null:
 		return -1
 	return int(row.rating)
+
+
+func _sibling_into(item:FB.FBFooBar, into:FB.FBBar) -> FB.FBBar:
+	var field_start := item.get_inline_field_start(FB.FBFooBar.VT_SIBLING)
+	if not field_start:
+		return null
+	into._fb_bytes = item._fb_bytes
+	into._fb_start = field_start
+	return into
+
+
+func _parent_into(bar:FB.FBBar, into:FB.FBFoo) -> FB.FBFoo:
+	into._fb_bytes = bar._fb_bytes
+	into._fb_start = bar._fb_start
+	return into
 
 
 func _apply(i:int, rec:Record) -> void:
