@@ -75,6 +75,7 @@ func                        __________FLOW___________              ()->void:pass
 
 ## A selection is an array of strategies, one for each phase.
 func _flow( selection:Array[int] ) -> void:
+	_included_tables()
 	test.logp("[b]== Flow ==[/b]")
 
 	# encode
@@ -127,3 +128,67 @@ func use_a( minimum:Schema.minimum_schema.Minimum ) -> int:
 	test.TEST_EQ(initial_value, minimum.my_field(),
 			"Initial value and decompiled value should be the same")
 	return TestBase.RetCode.TEST_OK
+
+
+func _included_tables() -> void:
+	_included_present()
+	_included_absent()
+	_included_empty_array()
+
+
+func _included_present() -> void:
+	var fbb := FlatBufferBuilder.new()
+	var kept:int = Schema.minimum_schema.create_Minimum(fbb, 42)
+	var zeroed:int = Schema.minimum_schema.create_Minimum(fbb, 0)
+	if not test.TEST_TRUE_RET(kept != 0 and zeroed != 0, "included tables"):
+		return
+	var array_offset:int = fbb.create_vector_offset(PackedInt32Array([zeroed, kept]))
+	if not test.TEST_TRUE_RET(array_offset != 0, "included array"):
+		return
+	var root_offset:int = Schema.create_RootTable(fbb, kept, array_offset)
+	if not test.TEST_TRUE_RET(root_offset != 0, "included root"):
+		return
+	fbb.finish(root_offset)
+	var root:Schema.RootTable = Schema.get_RootTable(fbb.get_buffer())
+	var verifier := FlatBufferVerifier.new()
+	if not test.TEST_TRUE_RET(root.verify(verifier), "included root verifies"):
+		return
+	test.TEST_TRUE(root.external_is_present(), "external present")
+	var external:Schema.minimum_schema.Minimum = root.external()
+	test.TEST_EQ(42, external.my_field(), "external field")
+	test.TEST_TRUE(external.my_field_is_present(), "non-default included field stored")
+	test.TEST_EQ(2, root.external_array_size(), "array size")
+	var zero_row:Schema.minimum_schema.Minimum = root.external_array_at(0)
+	test.TEST_FALSE(zero_row.my_field_is_present(), "included default elided")
+	test.TEST_EQ(0, zero_row.my_field(), "included default reads 0")
+	test.TEST_EQ(42, root.external_array_at(1).my_field(), "shared included row")
+
+
+func _included_absent() -> void:
+	var fbb := FlatBufferBuilder.new()
+	var builder := Schema.RootTableBuilder.new(fbb)
+	fbb.finish(builder.finish())
+	var root:Schema.RootTable = Schema.get_RootTable(fbb.get_buffer())
+	test.TEST_FALSE(root.external_is_present(), "external absent")
+	test.TEST_EQ(null, root.external(), "absent external")
+	test.TEST_FALSE(root.external_array_is_present(), "array absent")
+	test.TEST_EQ(0, root.external_array_size(), "absent array size")
+
+
+func _included_empty_array() -> void:
+	var fbb := FlatBufferBuilder.new()
+	var kept:int = Schema.minimum_schema.create_Minimum(fbb, 3)
+	var array_offset:int = fbb.create_vector_offset(PackedInt32Array())
+	if not test.TEST_TRUE_RET(array_offset != 0, "empty included array"):
+		return
+	var root_offset:int = Schema.create_RootTable(fbb, kept, array_offset)
+	if not test.TEST_TRUE_RET(root_offset != 0, "root beside empty array"):
+		return
+	fbb.finish(root_offset)
+	var root:Schema.RootTable = Schema.get_RootTable(fbb.get_buffer())
+	var verifier := FlatBufferVerifier.new()
+	if not test.TEST_TRUE_RET(root.verify(verifier), "empty included array verifies"):
+		return
+	test.TEST_TRUE(root.external_array_is_present(), "empty array present")
+	test.TEST_EQ(0, root.external_array_size(), "empty array size")
+	test.TEST_EQ(3, root.external().my_field(), "external beside empty array")

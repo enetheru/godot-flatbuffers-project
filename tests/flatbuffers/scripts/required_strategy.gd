@@ -22,6 +22,7 @@ func _get_strategy(_idx:int, _idx2:int) -> Callable:
 
 func _flow(_selection:Array[int]) -> void:
 	_present_round_trip()
+	_present_empty_string()
 	_builder_missing_string()
 	_builder_missing_table()
 	_verify_missing_string()
@@ -42,6 +43,31 @@ func _present_round_trip() -> void:
 		return
 	test.TEST_EQ("required-label", root.label(), "label()")
 	test.TEST_EQ(7, root.child().my_field(), "child().my_field()")
+
+
+func _present_empty_string() -> void:
+	var fbb := FlatBufferBuilder.new()
+	var label_offset:int = fbb.create_variant("")
+	var child_offset:int = Schema.create_Child(fbb, 0)
+	if not test.TEST_TRUE_RET(label_offset != 0, "empty string still has an offset"):
+		return
+	if not test.TEST_TRUE_RET(child_offset != 0, "child table still has an offset"):
+		return
+	var root_offset:int = Schema.create_RootTable(fbb, label_offset, child_offset)
+	if not test.TEST_TRUE_RET(root_offset != 0, "empty required string is accepted"):
+		return
+	fbb.finish(root_offset)
+	var root:Schema.RootTable = Schema.get_RootTable(fbb.get_buffer())
+	var verifier := FlatBufferVerifier.new()
+	if not test.TEST_TRUE_RET(root.verify(verifier), "empty required string verifies"):
+		return
+	test.TEST_TRUE(root.label_is_present(), "empty label is present")
+	test.TEST_EQ("", root.label(), "empty label")
+	var child:Schema.Child = root.child()
+	if not test.TEST_TRUE_RET(child != null, "required child exists"):
+		return
+	test.TEST_FALSE(child.my_field_is_present(), "child default field elided")
+	test.TEST_EQ(0, child.my_field(), "child default field reads 0")
 
 
 func _builder_missing_string() -> void:

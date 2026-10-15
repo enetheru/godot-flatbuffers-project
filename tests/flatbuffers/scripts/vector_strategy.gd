@@ -37,7 +37,7 @@ class Initial:
 	var enums:PackedByteArray = [TestEnum.ZERO, TestEnum.ONE, TestEnum.ZERO ]
 
 	# Vector of Strings
-	var strings:PackedStringArray = ["An", "Array", "Of", "Strings"]
+	var strings:PackedStringArray = ["An", "café — 日本語", "", "Strings"]
 
 	# Vector of Godot Structs
 	var godot_structs:PackedVector3Array = [
@@ -140,6 +140,7 @@ func                        __________FLOW___________              ()->void:pass
 
 ## A selection is an array of strategies, one for each phase.
 func _flow( selection:Array[int] ) -> void:
+	_vector_edges()
 	test.logp("[b]== Flow ==[/b]")
 
 	# encode
@@ -345,3 +346,94 @@ func use_a( rtb:Schema.RootTable ) -> int:
 							"decoded unions_at(i).a should match initia data")
 
 	return test.runcode
+
+
+func _root_from(fbb:FlatBufferBuilder, offset:int) -> Schema.RootTable:
+	fbb.finish(offset)
+	return Schema.get_RootTable(fbb.get_buffer())
+
+
+func _vector_edges() -> void:
+	_absent_vectors()
+	_empty_vectors()
+
+
+func _absent_vectors() -> void:
+	var fbb := FlatBufferBuilder.new()
+	var builder := Schema.RootTableBuilder.new(fbb)
+	var root:Schema.RootTable = _root_from(fbb, builder.finish())
+	var verifier := FlatBufferVerifier.new()
+	if not test.TEST_TRUE_RET(root.verify(verifier), "absent vectors verify"):
+		return
+	test.TEST_FALSE(root.scalars_is_present(), "scalars absent")
+	test.TEST_EQ(0, root.scalars_size(), "absent scalars size")
+	test.TEST_EQ(0, root.scalars().size(), "absent scalars array")
+	test.TEST_FALSE(root.enums_is_present(), "enums absent")
+	test.TEST_EQ(0, root.enums_size(), "absent enums size")
+	test.TEST_FALSE(root.strings_is_present(), "strings absent")
+	test.TEST_EQ(0, root.strings_size(), "absent strings size")
+	test.TEST_EQ("", root.strings_at(0), "absent strings_at")
+	test.TEST_FALSE(root.godot_structs_is_present(), "godot structs absent")
+	test.TEST_EQ(0, root.godot_structs_size(), "absent godot structs size")
+	test.TEST_FALSE(root.custom_structs_is_present(), "custom structs absent")
+	test.TEST_EQ(0, root.custom_structs_size(), "absent custom structs size")
+	test.TEST_FALSE(root.tables_is_present(), "tables absent")
+	test.TEST_EQ(0, root.tables_size(), "absent tables size")
+	test.TEST_FALSE(root.unions_is_present(), "unions absent")
+	test.TEST_FALSE(root.unions_type_is_present(), "union types absent")
+	test.TEST_EQ(0, root.unions_size(), "absent unions size")
+	test.TEST_EQ(0, root.unions_type_size(), "absent union type size")
+
+
+func _empty_vectors() -> void:
+	var fbb := FlatBufferBuilder.new()
+	var scalars_ofs:int = fbb.create_variant(PackedInt32Array(), TYPE_PACKED_INT32_ARRAY)
+	var enums_ofs:int = fbb.create_variant(PackedByteArray(), TYPE_PACKED_BYTE_ARRAY)
+	var strings_ofs:int = fbb.create_variant(PackedStringArray(), TYPE_PACKED_STRING_ARRAY)
+	var godot_ofs:int = fbb.create_variant(PackedVector3Array(), TYPE_PACKED_VECTOR3_ARRAY)
+	var custom_ofs:int = fbb.create_vector_of_custom_struct([], TestStruct._fb_struct_size)
+	var tables_ofs:int = fbb.create_vector_of_table([], initial.table_creator)
+	var unions_pair:Array = fbb.create_vector_of_union([], initial.unions_creator)
+	if not test.TEST_TRUE_RET(scalars_ofs != 0, "empty scalar vector"):
+		return
+	if not test.TEST_TRUE_RET(enums_ofs != 0, "empty enum vector"):
+		return
+	if not test.TEST_TRUE_RET(strings_ofs != 0, "empty string vector"):
+		return
+	if not test.TEST_TRUE_RET(godot_ofs != 0, "empty godot struct vector"):
+		return
+	if not test.TEST_TRUE_RET(custom_ofs != 0, "empty custom struct vector"):
+		return
+	if not test.TEST_TRUE_RET(tables_ofs != 0, "empty table vector"):
+		return
+	if not test.TEST_EQ_RET(2, unions_pair.size(), "empty union vector pair"):
+		return
+	var builder := Schema.RootTableBuilder.new(fbb)
+	builder.add_unions(unions_pair[0])
+	builder.add_unions_type(unions_pair[1])
+	builder.add_tables(tables_ofs)
+	builder.add_custom_structs(custom_ofs)
+	builder.add_godot_structs(godot_ofs)
+	builder.add_strings(strings_ofs)
+	builder.add_enums(enums_ofs)
+	builder.add_scalars(scalars_ofs)
+	var root:Schema.RootTable = _root_from(fbb, builder.finish())
+	var verifier := FlatBufferVerifier.new()
+	if not test.TEST_TRUE_RET(root.verify(verifier), "empty vectors verify"):
+		return
+	test.TEST_TRUE(root.scalars_is_present(), "empty scalars present")
+	test.TEST_EQ(0, root.scalars_size(), "empty scalars size")
+	test.TEST_TRUE(root.enums_is_present(), "empty enums present")
+	test.TEST_EQ(0, root.enums_size(), "empty enums size")
+	test.TEST_TRUE(root.strings_is_present(), "empty strings present")
+	test.TEST_EQ(0, root.strings_size(), "empty strings size")
+	test.TEST_TRUE(root.godot_structs_is_present(), "empty godot structs present")
+	test.TEST_EQ(0, root.godot_structs_size(), "empty godot structs size")
+	test.TEST_TRUE(root.custom_structs_is_present(), "empty custom structs present")
+	test.TEST_EQ(0, root.custom_structs_size(), "empty custom structs size")
+	test.TEST_TRUE(root.tables_is_present(), "empty tables present")
+	test.TEST_EQ(0, root.tables_size(), "empty tables size")
+	test.TEST_TRUE(root.unions_is_present(), "empty unions present")
+	test.TEST_TRUE(root.unions_type_is_present(), "empty union types present")
+	test.TEST_EQ(0, root.unions_size(), "empty unions size")
+	test.TEST_EQ(0, root.unions_type_size(), "empty union type size")

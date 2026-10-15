@@ -23,6 +23,9 @@ func _get_strategy(_idx:int, _idx2:int) -> Callable:
 func _flow(_selection:Array[int]) -> void:
 	_values()
 	_round_trip()
+	_omitted()
+	_masks()
+	_written_zero()
 
 
 func _values() -> void:
@@ -49,3 +52,50 @@ func _round_trip() -> void:
 		return
 	test.TEST_EQ(combined, root.flag(), "combined flags")
 	test.TEST_EQ(Schema.Sparse.F_15, root.sparse(), "sparse flag")
+
+
+func _finish(fbb:FlatBufferBuilder, offset:int) -> Schema.Root:
+	fbb.finish(offset)
+	return Schema.get_Root(fbb.get_buffer())
+
+
+func _omitted() -> void:
+	var fbb := FlatBufferBuilder.new()
+	var builder := Schema.RootBuilder.new(fbb)
+	var root:Schema.Root = _finish(fbb, builder.finish())
+	var verifier := FlatBufferVerifier.new()
+	if not test.TEST_TRUE_RET(root.verify(verifier), "omitted flags verify"):
+		return
+	test.TEST_FALSE(root.flag_is_present(), "flag absent")
+	test.TEST_EQ(0, root.flag(), "omitted flag reads 0")
+	test.TEST_FALSE(root.sparse_is_present(), "sparse absent")
+	test.TEST_EQ(0, root.sparse(), "omitted sparse reads 0")
+
+
+func _masks() -> void:
+	var flag:int = Schema.Flags.A | Schema.Flags.B | Schema.Flags.C
+	var sparse:int = Schema.Sparse.F_0 | Schema.Sparse.F_08 | Schema.Sparse.F_15
+	var fbb := FlatBufferBuilder.new()
+	var root_offset:int = Schema.create_Root(fbb, flag, sparse)
+	if not test.TEST_TRUE_RET(root_offset != 0, "finish flag masks"):
+		return
+	var root:Schema.Root = _finish(fbb, root_offset)
+	var verifier := FlatBufferVerifier.new()
+	if not test.TEST_TRUE_RET(root.verify(verifier), "flag masks verify"):
+		return
+	test.TEST_TRUE(root.flag_is_present(), "full flag mask stored")
+	test.TEST_EQ(flag, root.flag(), "A|B|C")
+	test.TEST_TRUE(root.sparse_is_present(), "sparse mask stored")
+	test.TEST_EQ(sparse, root.sparse(), "F0|F08|F15")
+
+
+func _written_zero() -> void:
+	var fbb := FlatBufferBuilder.new()
+	var builder := Schema.RootBuilder.new(fbb)
+	builder.add_sparse(0)
+	builder.add_flag(0)
+	var root:Schema.Root = _finish(fbb, builder.finish())
+	test.TEST_TRUE(root.flag_is_present(), "zero flag is stored")
+	test.TEST_EQ(0, root.flag(), "written zero flag")
+	test.TEST_TRUE(root.sparse_is_present(), "zero sparse is stored")
+	test.TEST_EQ(0, root.sparse(), "written zero sparse")
