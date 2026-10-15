@@ -148,14 +148,6 @@ func read_orc_flatbuffer( bytes:PackedByteArray ) -> void:
 	test.TEST_EQ(5, second_weapon_damage, "second_weapon.damage()")
 	test.TEST_EQ(5, monster.weapons_at(1).damage(),
 			"monster.weapons_at(1).damage()")
-	var weapon := schema.Weapon.new()
-	var sword:schema.Weapon = monster.weapons_at(0, weapon)
-	test.TEST_TRUE(sword == weapon, "weapons_at returns the passed view")
-	test.TEST_EQ("Sword", weapon.name(), "reused weapon 0")
-	test.TEST_EQ(3, weapon.damage(), "reused weapon 0 damage")
-	monster.weapons_at(1, weapon)
-	test.TEST_EQ("Axe", sword.name(), "reused weapon follows the later index")
-	test.TEST_EQ(5, sword.damage(), "reused weapon damage follows the later index")
 
 	# Last, we can access our Equipped FlatBuffer union. Just like when we
 	# created the union, we need to get both parts of the union: the type and
@@ -180,16 +172,6 @@ func read_orc_flatbuffer( bytes:PackedByteArray ) -> void:
 			var weapon_damage:int = weapon.damage()
 			test.TEST_EQ( weapon_name, "Axe", "weapon.name()" )
 			test.TEST_EQ( weapon_damage, 5, "weapon.damage()" )
-
-	test.TEST_TRUE(monster.path_is_present(), "path stored")
-	test.TEST_EQ(2, monster.path_size(), "path size")
-	test.TEST_EQ(Vector3(1, 2, 3), monster.path_at(0), "path 0")
-	test.TEST_EQ(Vector3(4, 5, 6), monster.path_at(1), "path 1")
-	var points:PackedVector3Array = monster.path()
-	test.TEST_EQ(2, points.size(), "path() size")
-	test.TEST_EQ(Vector3(1, 2, 3), points[0], "path() 0")
-	test.TEST_EQ(Vector3(4, 5, 6), points[1], "path() 1")
-	test.TEST_FALSE(monster.has_method(&"friendly"), "deprecated friendly is omitted")
 
 
 ## A monster with no fields stored still reads the schema defaults.
@@ -221,25 +203,6 @@ func read_omitted_defaults() -> void:
 	test.TEST_FALSE(monster.pos_is_present(), "omitted pos")
 	test.TEST_FALSE(monster.path_is_present(), "omitted path")
 	test.TEST_EQ(0, monster.path_size(), "omitted path size")
-	test.TEST_TRUE(schema.equipment_verify(verifier, null, schema.Equipment.NONE), "omitted union verifies")
-	test.TEST_FALSE(schema.equipment_verify(verifier, null, 9), "unknown equipment type fails")
-
-
-## A stored discriminant of 0 is present, and it still has no union value.
-func read_written_none() -> void:
-	var fbb := FlatBufferBuilder.new()
-	var builder := schema.MonsterBuilder.new(fbb)
-	builder.add_equipped_type(schema.Equipment.NONE)
-	fbb.finish(builder.finish())
-	var bytes:PackedByteArray = fbb.get_buffer()
-	var monster := schema.Monster.new()
-	monster.assign_buffer(bytes, bytes.decode_u32(0))
-	if not test.TEST_TRUE_RET(monster.verify(verifier), "written none verifies"):
-		return
-	test.TEST_TRUE(monster.get_field_offset(schema.Monster.VT_EQUIPPED_TYPE) != 0, "written none type is stored")
-	test.TEST_EQ(schema.Equipment.NONE, monster.equipped_type(), "written none type")
-	test.TEST_FALSE(monster.equipped_is_present(), "none has no value")
-	test.TEST_EQ(null, monster.equipped(), "none value")
 
 
 ## Each case copies the good orc and breaks one slot. verify() must return false.

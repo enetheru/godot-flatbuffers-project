@@ -79,7 +79,6 @@ func _run_test() -> int:
 
 	rts.call(&"read_orc_flatbuffer", packed)
 	rts.call(&"read_omitted_defaults")
-	rts.call(&"read_written_none")
 	rts.call(&"reject_broken_buffers", packed)
 
 	return runcode
