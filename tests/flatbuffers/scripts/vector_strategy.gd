@@ -443,6 +443,9 @@ func _empty_vectors() -> void:
 
 
 func _union_discriminant() -> void:
+	test.TEST_EQ(0, TestUnion.NONE, "union none is 0")
+	test.TEST_EQ(1, TestUnion.TEST_TABLE_A, "first member is 1")
+	test.TEST_EQ(2, TestUnion.TEST_TABLE_B, "second member is 2")
 	var verifier := FlatBufferVerifier.new()
 	test.TEST_TRUE(Schema.test_union_verify(verifier, null, TestUnion.NONE), "none union verifies")
 	test.TEST_FALSE(Schema.test_union_verify(verifier, null, 9), "unknown union type fails")
