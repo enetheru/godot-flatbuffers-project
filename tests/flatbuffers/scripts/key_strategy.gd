@@ -23,6 +23,8 @@ func _get_strategy(_idx:int, _idx2:int) -> Callable:
 func _flow(_selection:Array[int]) -> void:
 	_unsorted_string_vector()
 	_sorted_string_and_long()
+	_missing_name()
+	_default_fields()
 
 
 func _named(fbb:FlatBufferBuilder, name:String, n:int) -> int:
@@ -92,4 +94,40 @@ func _sorted_string_and_long() -> void:
 	var long_hit:Schema.Numbered = root.numbered_lookup(0)
 	if test.TEST_TRUE_RET(long_hit != null, "long hit exists"):
 		test.TEST_EQ("zero", long_hit.label(), "long hit uses the default")
+		test.TEST_FALSE(long_hit.n_is_present(), "zero key is omitted")
+		test.TEST_EQ(0, long_hit.n(), "omitted key reads 0")
 	test.TEST_EQ(null, root.numbered_lookup(1), "long miss")
+
+
+func _missing_name() -> void:
+	var fbb := FlatBufferBuilder.new()
+	test.TEST_EQ(0, Schema.create_Named(fbb, 0, 4), "named without a name fails")
+
+
+func _default_fields() -> void:
+	var fbb := FlatBufferBuilder.new()
+	var name_offset:int = fbb.create_variant("café")
+	var named:int = Schema.create_Named(fbb, name_offset, 0)
+	if not test.TEST_TRUE_RET(named != 0, "finish named with default n"):
+		return
+	var named_offset:int = fbb.create_vector_offset(PackedInt32Array([named]))
+	var root_offset:int = Schema.create_Root(fbb, named_offset, 0)
+	if not test.TEST_TRUE_RET(root_offset != 0, "finish key root"):
+		return
+	fbb.finish(root_offset)
+	var root:Schema.Root = Schema.get_Root(fbb.get_buffer())
+	var verifier := FlatBufferVerifier.new()
+	if not test.TEST_TRUE_RET(root.verify(verifier), "default key fields verify"):
+		return
+	var row:Schema.Named = root.named_at(0)
+	test.TEST_EQ("café", row.name(), "name")
+	test.TEST_TRUE(row.name_is_present(), "name stored")
+	test.TEST_FALSE(row.n_is_present(), "default n omitted")
+	test.TEST_EQ(0, row.n(), "omitted n reads 0")
+	var hit:Schema.Named = root.named_lookup("café")
+	if test.TEST_TRUE_RET(hit != null, "lookup café"):
+		test.TEST_EQ(0, hit.n(), "lookup reads omitted n")
+	test.TEST_EQ(null, root.named_lookup("cafe"), "lookup miss")
+	test.TEST_FALSE(root.numbered_is_present(), "numbered absent")
+	test.TEST_EQ(0, root.numbered_size(), "absent numbered size")
+	test.TEST_EQ(null, root.numbered_lookup(0), "lookup in an absent vector")

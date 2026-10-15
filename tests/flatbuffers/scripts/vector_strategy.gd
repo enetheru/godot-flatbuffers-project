@@ -356,6 +356,8 @@ func _root_from(fbb:FlatBufferBuilder, offset:int) -> Schema.RootTable:
 func _vector_edges() -> void:
 	_absent_vectors()
 	_empty_vectors()
+	_union_discriminant()
+	_struct_span()
 
 
 func _absent_vectors() -> void:
@@ -437,3 +439,20 @@ func _empty_vectors() -> void:
 	test.TEST_TRUE(root.unions_type_is_present(), "empty union types present")
 	test.TEST_EQ(0, root.unions_size(), "empty unions size")
 	test.TEST_EQ(0, root.unions_type_size(), "empty union type size")
+
+
+func _union_discriminant() -> void:
+	var verifier := FlatBufferVerifier.new()
+	test.TEST_TRUE(Schema.test_union_verify(verifier, null, TestUnion.NONE), "none union verifies")
+	test.TEST_FALSE(Schema.test_union_verify(verifier, null, 9), "unknown union type fails")
+
+
+func _struct_span() -> void:
+	var verifier := FlatBufferVerifier.new()
+	var fitted := TestStruct.new()
+	test.TEST_TRUE(fitted.verify(verifier), "test struct span fits")
+	var bytes := PackedByteArray()
+	bytes.resize(TestStruct._fb_struct_size)
+	var overrun := TestStruct.new()
+	overrun.assign_buffer(bytes, 1)
+	test.TEST_FALSE(overrun.verify(verifier), "test struct offset overruns")
