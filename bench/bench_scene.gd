@@ -14,7 +14,7 @@ const COMPARE_SCENE := "res://bench/BenchCompare.tscn"
 const SLIDES_SCENE := "res://bench/BenchSlides.tscn"
 
 const _OPS:PackedStringArray = [
-	"Store", "Load", "LoadReuse", "Spawn", "SpawnReuse", "Update", "UpdateReuse", "Peek", "PeekReuse",
+	"Store", "StoreReuse", "Load", "LoadReuse", "Spawn", "SpawnReuse", "Update", "UpdateReuse", "Peek", "PeekReuse",
 	"Encode", "Decode", "ReadAll", "RoundTrip", "MetadataOnly", "RandomElement",
 ]
 

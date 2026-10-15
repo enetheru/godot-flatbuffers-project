@@ -4,11 +4,14 @@ const FunctionBenchmark = RegisterLib.FunctionBenchmark
 const CntFlags = Counter.Flags
 const CntOneK = Counter.OneK
 
-## Load, Spawn, Update, and Peek on the 64-record scenario payload.
+## Store, Load, Spawn, Update, and Peek on the 64-record scenario payload.
+## Store reuses one FBFoo and one FBBar. The metric is the time difference
+## from BM_Flatbuffers_Store, which is the per-record struct allocation.
 ## Load, Spawn, and Update reuse one FBFooBar, one FBBar, and one FBFoo.
 ## Peek reuses the root and one FBFooBar and does not read the structs.
-## Store does not.
+static var _check_error:String = ""
 static var _payload_error:String = ""
+static var _store_error:String = ""
 static var _spawn_error:String = ""
 static var _update_error:String = ""
 static var _peek_error:String = ""
@@ -17,10 +20,15 @@ static var _peek_error:String = ""
 func _init() -> void:
 	RegisterLib.ClearRegisteredBenchmarks()
 	var work := CompareWork.new()
-	_payload_error = work.check_payload()
-	if _payload_error.is_empty():
+	_check_error = work.check_payload()
+	_payload_error = _check_error
+	if _check_error.is_empty():
 		var buf := work.encode_flat()
 		var readers := work.make_readers()
+		var writers := work.make_store_writers()
+		var stored := work.encode_flat_reuse(writers)
+		if stored != buf:
+			_store_error = "reuse store buffer differs (%d bytes vs %d)" % [stored.size(), buf.size()]
 		var expected := work.flat_sum(buf)
 		var reuse := work.flat_sum_reuse(buf, readers)
 		if reuse != expected:
@@ -45,8 +53,12 @@ func _init() -> void:
 			var peek_plain := work.peek_flat(buf)
 			if peeked < 0 or peeked != peek_plain:
 				_peek_error = "reuse peek %d != %d" % [peeked, peek_plain]
-	if not _payload_error.is_empty():
+	if not _check_error.is_empty():
+		printerr(_check_error)
+	elif not _payload_error.is_empty():
 		printerr(_payload_error)
+	if not _store_error.is_empty():
+		printerr(_store_error)
 	if not _spawn_error.is_empty():
 		printerr(_spawn_error)
 	if not _update_error.is_empty():
@@ -55,11 +67,34 @@ func _init() -> void:
 		printerr(_peek_error)
 
 	@warning_ignore_start("return_value_discarded")
+	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_StoreReuse))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_LoadReuse))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_SpawnReuse))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_UpdateReuse))
 	RegisterLib.RegisterBenchmarkInternal(FunctionBenchmark.new(BM_Flatbuffers_PeekReuse))
 	@warning_ignore_restore("return_value_discarded")
+
+
+static func BM_Flatbuffers_StoreReuse(state:State) -> void:
+	if not _check_error.is_empty():
+		state.SkipWithError(_check_error)
+		return
+	if not _store_error.is_empty():
+		state.SkipWithError(_store_error)
+		return
+	var work := CompareWork.new()
+	var writers := work.make_store_writers()
+	var plain := work.encode_flat()
+	var sample := work.encode_flat_reuse(writers)
+	if sample != plain:
+		state.SkipWithError("reuse store buffer differs (%d bytes vs %d)" % [sample.size(), plain.size()])
+		return
+	state.counters["bytes_size"] = Counter.new(
+			sample.size(), CntFlags.kIsIterationInvariant, CntOneK.kIs1024)
+	var throughput := Counter.new(0, CntFlags.kIsRate, CntOneK.kIs1024)
+	state.counters["bytes/s"] = throughput
+	for _i in state:
+		throughput.value += work.encode_flat_reuse(writers).size()
 
 
 static func BM_Flatbuffers_LoadReuse(state:State) -> void:
